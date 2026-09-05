@@ -9,12 +9,18 @@ type MediaProduitEnregistre = {
   ordre: number;
 };
 
-function formaterMedias(medias?: MediaProduitEnregistre[]) {
+type MediaProduitApi = {
+  type: "IMAGE" | "VIDEO";
+  url: string;
+  urlCouverture?: string;
+};
+
+function formaterMedias(medias?: MediaProduitEnregistre[]): MediaProduitApi[] {
   return (medias ?? [])
     .slice()
     .sort((a, b) => a.ordre - b.ordre)
     .map((media) => ({
-      type: media.typeMedia === "VIDEO" ? ("VIDEO" as const) : ("IMAGE" as const),
+      type: media.typeMedia === "VIDEO" ? "VIDEO" : "IMAGE",
       url: media.url,
       urlCouverture: media.urlCouverture ?? undefined,
     }));
