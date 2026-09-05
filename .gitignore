@@ -13,6 +13,6 @@ backend/.env
 *.pem
 *.key
 credentials.json
-ChatGPT Image *
+
 Untitled
 deploy/_*.sh
