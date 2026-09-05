@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleUtilisateur {
+  CLIENT
+  SUPER_ADMIN
+  DIRECTEUR
+  COMMERCIAL
+  COMPTABLE
+  MAGASINIER
+  SUPPORT
+  LIVREUR
+}
+
+enum StatutCommande {
+  BROUILLON
+  ENVOYEE
+  EN_ATTENTE
+  VALIDEE
+  REFUSEE
+  ANNULEE
+  EN_PREPARATION
+  PRET_RETRAIT
+  EXPEDIEE
+  EN_ROUTE
+  LIVREE
+  CLOTUREE
+}
+
+enum StatutPaiement {
+  EN_ATTENTE
+  PARTIEL
+  PAYE
+  ECHEC
+  REMBOURSE
+}
+
+enum ModePaiement {
+  MOBILE_MONEY_MPESA
+  MOBILE_MONEY_AIRTEL
+  MOBILE_MONEY_ORANGE
+  MOBILE_MONEY_AFRIMONEY
+  CARTE_BANCAIRE
+  VIREMENT
+  PAIEMENT_RETRAIT
+  PAIEMENT_LIVRAISON
+}
+
+enum TypeMessage {
+  TEXTE
+  IMAGE
+  PDF
+  AUDIO
+  VIDEO
+  DOCUMENT
+}
+
+enum TypeNotification {
+  COMMANDE
+  MESSAGE
+  FACTURE
+  STOCK
+  SYSTEME
+}
+
+enum TypeDocument {
+  PROFORMA
+  FACTURE
+  BON_LIVRAISON
+  BON_CAISSE
+  AUTRE
+}
+
+model Utilisateur {
+  id            String          @id @default(uuid())
+  prenom        String
+  nom           String
+  email         String          @unique
+  telephone     String?
+  motDePasse    String          @map("mot_de_passe")
+  role          RoleUtilisateur @default(CLIENT)
+  photoProfil   String?         @map("photo_profil")
+  nomSociete    String?         @map("nom_societe")
+  adresse       String?
+  ville         String?
+  actif         Boolean         @default(true)
+  dateCreation  DateTime        @default(now()) @map("date_creation")
+  dateMaj       DateTime        @updatedAt @map("date_maj")
+
+  commandes       Commande[]
+  lignesPanier    LignePanier[]
+  notifications   Notification[]
+  conversations   Conversation[] @relation("ClientConversation")
+  messages        Message[]
+  journauxAudit   JournalAudit[]
+
+  @@map("utilisateurs")
+}
+
+model Categorie {
+  id          String    @id @default(uuid())
+  nom         String
+  slug        String    @unique
+  icone       String
+  description String?
+  ordre       Int       @default(0)
+  produits    Produit[]
+
+  @@map("categories")
+}
+
+model Produit {
+  id            String   @id @default(uuid())
+  sku           String   @unique
+  nom           String
+  description   String?
+  prix          Decimal  @db.Decimal(12, 2)
+  image         String?
+  populaire     Boolean  @default(false)
+  disponible    Boolean  @default(true)
+  quantiteStock Int      @default(0) @map("quantite_stock")
+  codeQr        String?  @map("code_qr")
+  categorieId   String   @map("categorie_id")
+  dateCreation  DateTime @default(now()) @map("date_creation")
+
+  categorie      Categorie       @relation(fields: [categorieId], references: [id])
+  lignesCommande LigneCommande[]
+  lignesPanier   LignePanier[]
+  lots           LotProduit[]
+
+  @@map("produits")
+}
+
+model LotProduit {
+  id                String    @id @default(uuid())
+  produitId         String    @map("produit_id")
+  numeroLot         String    @map("numero_lot")
+  fabricant         String?
+  dateFabrication   DateTime? @map("date_fabrication")
+  dateExpiration    DateTime  @map("date_expiration")
+  quantite          Int
+
+  produit Produit @relation(fields: [produitId], references: [id])
+
+  @@map("lots_produits")
+}
+
+model Entrepot {
+  id        String  @id @default(uuid())
+  nom       String
+  adresse   String
+  ville     String
+  telephone String?
+  latitude  Float?
+  longitude Float?
+  heures    String?
+  stocks    Stock[]
+
+  @@map("entrepots")
+}
+
+model Stock {
+  id          String @id @default(uuid())
+  entrepotId  String @map("entrepot_id")
+  produitId   String @map("produit_id")
+  quantite    Int    @default(0)
+  reserve     Int    @default(0)
+
+  entrepot Entrepot @relation(fields: [entrepotId], references: [id])
+
+  @@unique([entrepotId, produitId])
+  @@map("stocks")
+}
+
+model Commande {
+  id              String         @id @default(uuid())
+  numeroCommande  String         @unique @map("numero_commande")
+  clientId        String         @map("client_id")
+  statut          StatutCommande @default(EN_ATTENTE)
+  montantTotal    Decimal        @db.Decimal(12, 2) @map("montant_total")
+  notes           String?
+  dateCommande    DateTime       @default(now()) @map("date_commande")
+  dateMaj         DateTime       @updatedAt @map("date_maj")
+
+  client         Utilisateur     @relation(fields: [clientId], references: [id])
+  lignes         LigneCommande[]
+  paiements      Paiement[]
+  documents      Document[]
+  conversation   Conversation?
+
+  @@map("commandes")
+}
+
+model LigneCommande {
+  id            String  @id @default(uuid())
+  commandeId    String  @map("commande_id")
+  produitId     String  @map("produit_id")
+  quantite      Int
+  prixUnitaire  Decimal @db.Decimal(12, 2) @map("prix_unitaire")
+
+  commande Commande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  produit  Produit  @relation(fields: [produitId], references: [id])
+
+  @@map("lignes_commande")
+}
+
+model LignePanier {
+  id            String @id @default(uuid())
+  clientId      String @map("client_id")
+  produitId     String @map("produit_id")
+  quantite      Int    @default(1)
+
+  client  Utilisateur @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  produit Produit     @relation(fields: [produitId], references: [id])
+
+  @@unique([clientId, produitId])
+  @@map("lignes_panier")
+}
+
+model Paiement {
+  id            String         @id @default(uuid())
+  commandeId    String         @map("commande_id")
+  montant       Decimal        @db.Decimal(12, 2)
+  modePaiement  ModePaiement   @map("mode_paiement")
+  statut        StatutPaiement @default(EN_ATTENTE)
+  reference     String?
+  datePaiement  DateTime       @default(now()) @map("date_paiement")
+
+  commande Commande @relation(fields: [commandeId], references: [id])
+
+  @@map("paiements")
+}
+
+model Document {
+  id              String       @id @default(uuid())
+  commandeId      String?      @map("commande_id")
+  typeDocument    TypeDocument @map("type_document")
+  numeroDocument  String       @unique @map("numero_document")
+  urlPdf          String?      @map("url_pdf")
+  codeQr          String?      @map("code_qr")
+  dateCreation    DateTime     @default(now()) @map("date_creation")
+
+  commande Commande? @relation(fields: [commandeId], references: [id])
+
+  @@map("documents")
+}
+
+model Conversation {
+  id            String   @id @default(uuid())
+  clientId      String   @map("client_id")
+  commandeId    String?  @unique @map("commande_id")
+  dateCreation  DateTime @default(now()) @map("date_creation")
+  dateMaj       DateTime @updatedAt @map("date_maj")
+
+  client   Utilisateur @relation("ClientConversation", fields: [clientId], references: [id])
+  commande Commande?   @relation(fields: [commandeId], references: [id])
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id              String      @id @default(uuid())
+  conversationId  String      @map("conversation_id")
+  auteurId        String      @map("auteur_id")
+  contenu         String
+  typeMessage     TypeMessage @default(TEXTE) @map("type_message")
+  fichierUrl      String?     @map("fichier_url")
+  lu              Boolean     @default(false)
+  epingle         Boolean     @default(false)
+  dateEnvoi       DateTime    @default(now()) @map("date_envoi")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  auteur       Utilisateur  @relation(fields: [auteurId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  utilisateurId String           @map("utilisateur_id")
+  titre         String
+  contenu       String
+  typeNotif     TypeNotification @map("type_notif")
+  lue           Boolean          @default(false)
+  lien          String?
+  dateCreation  DateTime         @default(now()) @map("date_creation")
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model JournalAudit {
+  id            String   @id @default(uuid())
+  utilisateurId String?  @map("utilisateur_id")
+  action        String
+  tableCible    String   @map("table_cible")
+  details       String?
+  adresseIp     String?  @map("adresse_ip")
+  dateAction    DateTime @default(now()) @map("date_action")
+
+  utilisateur Utilisateur? @relation(fields: [utilisateurId], references: [id])
+
+  @@map("journaux_audit")
+}

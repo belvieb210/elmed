@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+.env
+.env.*
+!.env.example
+!.env*.example
+*.log
+.DS_Store
+frontend/.next
+backend/dist
+backend/.env
+*.pem
+*.key
+credentials.json
+ChatGPT Image *
+Untitled

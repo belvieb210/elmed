@@ -1,0 +1,28 @@
+import Link from "next/link";
+import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
+import { EnTetePage } from "@/composants/client/EnTetePage";
+import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
+
+export default function PageAide() {
+  return (
+    <MiseEnPageClient>
+      <EnTetePage titre="Aide & Contact" description="MateMedical vous accompagne pour vos commandes B2B." />
+      <div className="grid gap-4 md:grid-cols-2">
+        <article className="rounded-2xl border border-slate-100 bg-white p-6">
+          <h2 className="font-semibold text-slate-800">Service commercial</h2>
+          <p className="mt-2 text-sm text-slate-500">Téléphone : +243 890 000 100</p>
+          <p className="text-sm text-slate-500">Email : support@matemedical.cd</p>
+          <p className="text-sm text-slate-500">Horaires : 08h00 - 17h00</p>
+        </article>
+        <article className="rounded-2xl border border-slate-100 bg-white p-6">
+          <h2 className="font-semibold text-slate-800">Entrepôt Central Kinshasa</h2>
+          <p className="mt-2 text-sm text-slate-500">Avenue des Poids Lourds, Kinshasa</p>
+          <Link href="/messagerie" className="mt-4 inline-block text-sm font-medium text-violet-marque">
+            Écrire au support
+          </Link>
+        </article>
+      </div>
+      <BandeauMessagerie />
+    </MiseEnPageClient>
+  );
+}
