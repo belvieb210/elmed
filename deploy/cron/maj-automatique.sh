@@ -64,6 +64,7 @@ cd "$RACINE/backend"
 ecrire_journal "migrations PostgreSQL"
 npx prisma generate
 npx prisma migrate deploy
+npx tsx prisma/enrichir-catalogue.ts
 
 ecrire_journal "build API"
 npm run build

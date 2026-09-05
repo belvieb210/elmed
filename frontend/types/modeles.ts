@@ -33,11 +33,23 @@ export interface Produit {
   description?: string | null;
   prix: number;
   image: string | null;
+  images?: string[];
   sku: string;
   quantiteStock?: number;
   populaire?: boolean;
   nomCategorie?: string;
   slugCategorie?: string;
+}
+
+export interface CaracteristiqueProduit {
+  libelle: string;
+  valeur: string;
+}
+
+export interface DetailProduit extends Produit {
+  images: string[];
+  caracteristiques: CaracteristiqueProduit[];
+  produitsSimilaires: Produit[];
 }
 
 export interface CommandeResume {

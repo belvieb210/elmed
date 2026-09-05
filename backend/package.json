@@ -12,6 +12,7 @@
     "prisma:migrer": "prisma migrate dev",
     "prisma:pousser": "prisma db push",
     "prisma:graine": "tsx prisma/graine.ts",
+    "catalogue:enrichir": "tsx prisma/enrichir-catalogue.ts",
     "db:preparer": "prisma generate && prisma migrate deploy && tsx prisma/graine.ts"
   },
   "prisma": {

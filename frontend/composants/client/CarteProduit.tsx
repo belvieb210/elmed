@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
+import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { formaterMontant } from "@/lib/formatage";
 import { useClient } from "@/store/contexteClient";
@@ -9,8 +10,11 @@ import type { Produit } from "@/types/modeles";
 export function CarteProduit({ produit }: { produit: Produit }) {
   const { ajouterProduitAuPanier } = useClient();
   const [enCours, setEnCours] = useState(false);
+  const imageProduit = produit.images?.[0] ?? produit.image ?? "";
 
-  async function ajouter() {
+  async function ajouter(evenement: MouseEvent) {
+    evenement.preventDefault();
+    evenement.stopPropagation();
     setEnCours(true);
     try {
       await ajouterProduitAuPanier(produit.id);
@@ -21,15 +25,21 @@ export function CarteProduit({ produit }: { produit: Produit }) {
 
   return (
     <article className="carte-douce overflow-hidden rounded-2xl border border-slate-100 bg-white">
-      <div className="aspect-[5/4] overflow-hidden bg-slate-100">
-        <img
-          src={produit.image ?? ""}
-          alt={produit.nom}
-          className="h-full w-full object-cover"
-        />
-      </div>
+      <Link href={`/produits/${produit.id}`} className="block">
+        <div className="aspect-[5/4] overflow-hidden bg-slate-100">
+          <img
+            src={imageProduit}
+            alt={produit.nom}
+            className="h-full w-full object-cover transition duration-300 hover:scale-105"
+          />
+        </div>
+      </Link>
       <div className="p-3">
-        <h3 className="line-clamp-2 min-h-10 text-sm font-medium text-slate-800">{produit.nom}</h3>
+        <Link href={`/produits/${produit.id}`}>
+          <h3 className="line-clamp-2 min-h-10 text-sm font-medium text-slate-800 hover:text-violet-marque">
+            {produit.nom}
+          </h3>
+        </Link>
         <div className="mt-3 flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-slate-900">{formaterMontant(produit.prix)}</p>
           <button

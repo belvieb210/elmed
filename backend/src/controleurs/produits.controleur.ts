@@ -2,6 +2,34 @@ import type { Request, Response } from "express";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { identifiantRoute } from "../utils/identifiant";
 
+function formaterProduitListe(produit: {
+  id: string;
+  nom: string;
+  description: string | null;
+  prix: { toString(): string };
+  image: string | null;
+  sku: string;
+  quantiteStock: number;
+  populaire: boolean;
+  categorie: { nom: string; slug: string };
+  images?: { url: string; ordre: number }[];
+}) {
+  const images = (produit.images ?? []).sort((a, b) => a.ordre - b.ordre).map((image) => image.url);
+  return {
+    id: produit.id,
+    nom: produit.nom,
+    description: produit.description,
+    prix: Number(produit.prix),
+    image: images[0] ?? produit.image,
+    images,
+    sku: produit.sku,
+    quantiteStock: produit.quantiteStock,
+    populaire: produit.populaire,
+    nomCategorie: produit.categorie.nom,
+    slugCategorie: produit.categorie.slug,
+  };
+}
+
 export async function listerProduits(requete: Request, reponse: Response) {
   const recherche = String(requete.query.recherche ?? "").trim();
   const slugCategorie = String(requete.query.categorie ?? "").trim();
@@ -20,31 +48,25 @@ export async function listerProduits(requete: Request, reponse: Response) {
         : {}),
       ...(slugCategorie ? { categorie: { slug: slugCategorie } } : {}),
     },
-    include: { categorie: true },
+    include: { categorie: true, images: { orderBy: { ordre: "asc" } } },
     orderBy: { nom: "asc" },
   });
 
   reponse.json({
     succes: true,
-    produits: produits.map((produit) => ({
-      id: produit.id,
-      nom: produit.nom,
-      description: produit.description,
-      prix: Number(produit.prix),
-      image: produit.image,
-      sku: produit.sku,
-      quantiteStock: produit.quantiteStock,
-      populaire: produit.populaire,
-      nomCategorie: produit.categorie.nom,
-      slugCategorie: produit.categorie.slug,
-    })),
+    produits: produits.map(formaterProduitListe),
   });
 }
 
 export async function obtenirProduit(requete: Request, reponse: Response) {
+  const identifiant = identifiantRoute(requete.params.id);
   const produit = await baseDeDonnees.produit.findUnique({
-    where: { id: identifiantRoute(requete.params.id) },
-    include: { categorie: true, lots: true },
+    where: { id: identifiant },
+    include: {
+      categorie: true,
+      images: { orderBy: { ordre: "asc" } },
+      caracteristiques: { orderBy: { ordre: "asc" } },
+    },
   });
 
   if (!produit) {
@@ -52,12 +74,41 @@ export async function obtenirProduit(requete: Request, reponse: Response) {
     return;
   }
 
+  const produitsSimilaires = await baseDeDonnees.produit.findMany({
+    where: {
+      disponible: true,
+      categorieId: produit.categorieId,
+      id: { not: produit.id },
+    },
+    include: { categorie: true, images: { orderBy: { ordre: "asc" } } },
+    take: 8,
+    orderBy: { nom: "asc" },
+  });
+
+  const images = produit.images.map((image) => image.url);
+  if (produit.image && !images.includes(produit.image)) {
+    images.unshift(produit.image);
+  }
+
   reponse.json({
     succes: true,
     produit: {
-      ...produit,
+      id: produit.id,
+      nom: produit.nom,
+      description: produit.description,
       prix: Number(produit.prix),
+      image: images[0] ?? produit.image,
+      images,
+      sku: produit.sku,
+      quantiteStock: produit.quantiteStock,
+      populaire: produit.populaire,
       nomCategorie: produit.categorie.nom,
+      slugCategorie: produit.categorie.slug,
+      caracteristiques: produit.caracteristiques.map((caracteristique) => ({
+        libelle: caracteristique.libelle,
+        valeur: caracteristique.valeur,
+      })),
+      produitsSimilaires: produitsSimilaires.map(formaterProduitListe),
     },
   });
 }

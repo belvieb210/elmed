@@ -2,6 +2,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { PrismaClient, RoleUtilisateur, StatutCommande, TypeNotification } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { detailsCatalogue } from "./catalogue-details";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -389,6 +390,22 @@ async function remplir() {
       },
     ],
   });
+
+  for (const detail of detailsCatalogue) {
+    const produit = produits.find((item) => item.sku === detail.sku);
+    if (!produit) continue;
+    await prisma.imageProduit.createMany({
+      data: detail.images.map((url, ordre) => ({ produitId: produit.id, url, ordre })),
+    });
+    await prisma.caracteristiqueProduit.createMany({
+      data: detail.caracteristiques.map((caracteristique, ordre) => ({
+        produitId: produit.id,
+        libelle: caracteristique.libelle,
+        valeur: caracteristique.valeur,
+        ordre,
+      })),
+    });
+  }
 
   console.log("Base MateMedical remplie.");
   console.log("Comptes créés : jean.victor@matemedical.cd et admin@matemedical.cd");
