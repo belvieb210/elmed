@@ -41,6 +41,12 @@ export interface Produit {
   slugCategorie?: string;
 }
 
+export interface MediaProduit {
+  type: "IMAGE" | "VIDEO";
+  url: string;
+  urlCouverture?: string;
+}
+
 export interface CaracteristiqueProduit {
   libelle: string;
   valeur: string;
@@ -48,6 +54,7 @@ export interface CaracteristiqueProduit {
 
 export interface DetailProduit extends Produit {
   images: string[];
+  medias?: MediaProduit[];
   caracteristiques: CaracteristiqueProduit[];
   produitsSimilaires: Produit[];
 }

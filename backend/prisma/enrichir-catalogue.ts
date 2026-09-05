@@ -1,7 +1,7 @@
 import path from "path";
 import dotenv from "dotenv";
-import { PrismaClient } from "@prisma/client";
-import { detailsCatalogue } from "./catalogue-details";
+import { PrismaClient, TypeMediaProduit } from "@prisma/client";
+import { detailsCatalogue, mediasDuCatalogue } from "./catalogue-details";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -12,40 +12,39 @@ async function enrichir() {
     const produit = await prisma.produit.findUnique({ where: { sku: detail.sku } });
     if (!produit) continue;
 
-    const nombreImages = await prisma.imageProduit.count({ where: { produitId: produit.id } });
-    if (nombreImages === 0) {
-      await prisma.imageProduit.createMany({
-        data: detail.images.map((url, ordre) => ({
-          produitId: produit.id,
-          url,
-          ordre,
-        })),
-      });
-    }
+    await prisma.imageProduit.deleteMany({ where: { produitId: produit.id } });
+    await prisma.caracteristiqueProduit.deleteMany({ where: { produitId: produit.id } });
 
-    const nombreCaracteristiques = await prisma.caracteristiqueProduit.count({
-      where: { produitId: produit.id },
+    const medias = mediasDuCatalogue(detail);
+    await prisma.imageProduit.createMany({
+      data: medias.map((media, ordre) => ({
+        produitId: produit.id,
+        url: media.url,
+        urlCouverture: media.urlCouverture ?? null,
+        typeMedia: media.typeMedia === "VIDEO" ? TypeMediaProduit.VIDEO : TypeMediaProduit.IMAGE,
+        ordre,
+      })),
     });
-    if (nombreCaracteristiques === 0) {
-      await prisma.caracteristiqueProduit.createMany({
-        data: detail.caracteristiques.map((caracteristique, ordre) => ({
-          produitId: produit.id,
-          libelle: caracteristique.libelle,
-          valeur: caracteristique.valeur,
-          ordre,
-        })),
-      });
-    }
 
-    if (!produit.image && detail.images[0]) {
+    await prisma.caracteristiqueProduit.createMany({
+      data: detail.caracteristiques.map((caracteristique, ordre) => ({
+        produitId: produit.id,
+        libelle: caracteristique.libelle,
+        valeur: caracteristique.valeur,
+        ordre,
+      })),
+    });
+
+    const premiereImage = detail.images[0];
+    if (premiereImage) {
       await prisma.produit.update({
         where: { id: produit.id },
-        data: { image: detail.images[0] },
+        data: { image: premiereImage },
       });
     }
   }
 
-  console.log("Catalogue enrichi (images et caractéristiques).");
+  console.log("Catalogue enrichi (images, vidéo et caractéristiques).");
 }
 
 enrichir()

@@ -77,7 +77,11 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
       </p>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <GalerieProduit images={produit.images?.length ? produit.images : [produit.image ?? ""]} nomProduit={produit.nom} />
+        <GalerieProduit
+          medias={produit.medias}
+          images={produit.images?.length ? produit.images : [produit.image ?? ""]}
+          nomProduit={produit.nom}
+        />
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-violet-marque">

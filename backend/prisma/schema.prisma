@@ -77,6 +77,11 @@ enum TypeDocument {
   AUTRE
 }
 
+enum TypeMediaProduit {
+  IMAGE
+  VIDEO
+}
+
 model Utilisateur {
   id            String          @id @default(uuid())
   prenom        String
@@ -140,10 +145,12 @@ model Produit {
 }
 
 model ImageProduit {
-  id        String  @id @default(uuid())
-  produitId String  @map("produit_id")
-  url       String
-  ordre     Int     @default(0)
+  id            String           @id @default(uuid())
+  produitId     String           @map("produit_id")
+  url           String
+  urlCouverture String?          @map("url_couverture")
+  typeMedia     TypeMediaProduit @default(IMAGE) @map("type_media")
+  ordre         Int              @default(0)
 
   produit Produit @relation(fields: [produitId], references: [id], onDelete: Cascade)
 

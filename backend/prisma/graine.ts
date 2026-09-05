@@ -1,8 +1,8 @@
 import path from "path";
 import dotenv from "dotenv";
-import { PrismaClient, RoleUtilisateur, StatutCommande, TypeNotification } from "@prisma/client";
+import { PrismaClient, RoleUtilisateur, StatutCommande, TypeMediaProduit, TypeNotification } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { detailsCatalogue } from "./catalogue-details";
+import { detailsCatalogue, mediasDuCatalogue } from "./catalogue-details";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -395,7 +395,13 @@ async function remplir() {
     const produit = produits.find((item) => item.sku === detail.sku);
     if (!produit) continue;
     await prisma.imageProduit.createMany({
-      data: detail.images.map((url, ordre) => ({ produitId: produit.id, url, ordre })),
+      data: mediasDuCatalogue(detail).map((media, ordre) => ({
+        produitId: produit.id,
+        url: media.url,
+        urlCouverture: media.urlCouverture ?? null,
+        typeMedia: media.typeMedia === "VIDEO" ? TypeMediaProduit.VIDEO : TypeMediaProduit.IMAGE,
+        ordre,
+      })),
     });
     await prisma.caracteristiqueProduit.createMany({
       data: detail.caracteristiques.map((caracteristique, ordre) => ({
