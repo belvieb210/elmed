@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
+import { identifiantRoute } from "../utils/identifiant";
 
 function formaterLigne(ligne: {
   id: string;
@@ -85,14 +86,14 @@ export async function modifierQuantitePanier(requete: RequeteAuthentifiee, repon
 
   if (analyse.data.quantite === 0) {
     await baseDeDonnees.lignePanier.deleteMany({
-      where: { id: requete.params.id, clientId: requete.utilisateurId },
+      where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
     });
     reponse.json({ succes: true, message: "Article retiré du panier." });
     return;
   }
 
   const ligne = await baseDeDonnees.lignePanier.update({
-    where: { id: requete.params.id },
+    where: { id: identifiantRoute(requete.params.id) },
     data: { quantite: analyse.data.quantite },
     include: { produit: true },
   });
@@ -102,7 +103,7 @@ export async function modifierQuantitePanier(requete: RequeteAuthentifiee, repon
 
 export async function retirerDuPanier(requete: RequeteAuthentifiee, reponse: Response) {
   await baseDeDonnees.lignePanier.deleteMany({
-    where: { id: requete.params.id, clientId: requete.utilisateurId },
+    where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
   });
   reponse.json({ succes: true, message: "Article retiré du panier." });
 }

@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
+import { identifiantRoute } from "../utils/identifiant";
 
 function libelleStatut(statut: string) {
   const libelles: Record<string, string> = {
@@ -49,7 +50,7 @@ export async function listerCommandes(requete: RequeteAuthentifiee, reponse: Res
 
 export async function obtenirCommande(requete: RequeteAuthentifiee, reponse: Response) {
   const commande = await baseDeDonnees.commande.findFirst({
-    where: { id: requete.params.id, clientId: requete.utilisateurId },
+    where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
     include: { lignes: { include: { produit: true } }, documents: true, paiements: true },
   });
 

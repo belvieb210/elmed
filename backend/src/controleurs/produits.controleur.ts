@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { baseDeDonnees } from "../config/baseDeDonnees";
+import { identifiantRoute } from "../utils/identifiant";
 
 export async function listerProduits(requete: Request, reponse: Response) {
   const recherche = String(requete.query.recherche ?? "").trim();
@@ -42,7 +43,7 @@ export async function listerProduits(requete: Request, reponse: Response) {
 
 export async function obtenirProduit(requete: Request, reponse: Response) {
   const produit = await baseDeDonnees.produit.findUnique({
-    where: { id: requete.params.id },
+    where: { id: identifiantRoute(requete.params.id) },
     include: { categorie: true, lots: true },
   });
 

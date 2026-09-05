@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
+import { identifiantRoute } from "../utils/identifiant";
 
 export async function listerNotifications(requete: RequeteAuthentifiee, reponse: Response) {
   const notifications = await baseDeDonnees.notification.findMany({
@@ -13,7 +14,7 @@ export async function listerNotifications(requete: RequeteAuthentifiee, reponse:
 
 export async function marquerNotificationLue(requete: RequeteAuthentifiee, reponse: Response) {
   await baseDeDonnees.notification.updateMany({
-    where: { id: requete.params.id, utilisateurId: requete.utilisateurId },
+    where: { id: identifiantRoute(requete.params.id), utilisateurId: requete.utilisateurId },
     data: { lue: true },
   });
   reponse.json({ succes: true });
