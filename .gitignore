@@ -15,3 +15,4 @@ backend/.env
 credentials.json
 ChatGPT Image *
 Untitled
+deploy/_*.sh

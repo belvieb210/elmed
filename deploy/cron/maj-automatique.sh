@@ -6,6 +6,13 @@ VERROU="/var/lock/elmed-maj.lock"
 JOURNAL="/var/log/elmed-maj.log"
 BRANCHE="${ELMED_BRANCHE:-main}"
 
+if [ -f /etc/elmed.env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source /etc/elmed.env
+  set +a
+fi
+
 exec 9>"$VERROU"
 if ! flock -n 9; then
   exit 0
