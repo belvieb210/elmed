@@ -26,6 +26,8 @@ export default function RoutePaiement() {
     <MiseEnPageClient>
       <ParcoursPaiement
         montantCommande={montant}
+        articles={panier?.articles ?? []}
+        entrepot={panier?.entrepot}
         utilisateur={utilisateur}
         onFermer={() => routeur.push("/panier")}
         onSucces={() => {

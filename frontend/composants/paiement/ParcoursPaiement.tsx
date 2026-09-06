@@ -14,6 +14,8 @@ import {
   HelpCircle,
   Landmark,
   Lock,
+  MapPin,
+  Package,
   Plus,
   ScanLine,
   ShieldCheck,
@@ -22,7 +24,7 @@ import {
 } from "lucide-react";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
-import type { Utilisateur } from "@/types/modeles";
+import type { ArticlePanier, EntrepotResume, Utilisateur } from "@/types/modeles";
 import {
   enregistrerCarteLocale,
   expirationValide,
@@ -97,7 +99,7 @@ function BoutonPayer({
         {enCours ? "Traitement..." : libelle}
       </button>
       <p className="text-center text-[11px] text-slate-400">
-        Le fournisseur devrait recevoir les fonds en 1-2 hours
+        Le fournisseur devrait recevoir les fonds en 1-2 heures
       </p>
     </div>
   );
@@ -105,11 +107,15 @@ function BoutonPayer({
 
 export function ParcoursPaiement({
   montantCommande,
+  articles,
+  entrepot,
   utilisateur,
   onFermer,
   onSucces,
 }: {
   montantCommande: number;
+  articles: ArticlePanier[];
+  entrepot?: EntrepotResume | null;
   utilisateur: Utilisateur | null;
   onFermer: () => void;
   onSucces: () => void;
@@ -218,6 +224,27 @@ export function ParcoursPaiement({
     void payer("CARTE", { carte });
   }
 
+  function payerSelonEtape() {
+    if (etape === "nouvelle-carte") {
+      payerNouvelleCarte();
+      return;
+    }
+    if (etape === "flexpaie") {
+      const tel = telephone.replace(/\D/g, "");
+      if (tel.length < 9) {
+        setErreur("Indiquez un numéro FlexPaie / Mobile Money valide.");
+        return;
+      }
+      void payer("FLEXPAIE", { telephone });
+      return;
+    }
+    if (etape === "virement") {
+      void payer("VIREMENT");
+      return;
+    }
+    payerCarteEnregistree();
+  }
+
   function revenir() {
     if (etape === "accueil") {
       onFermer();
@@ -238,32 +265,72 @@ export function ParcoursPaiement({
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col rounded-3xl border border-slate-100 bg-white shadow-sm">
-        <header className="flex items-center justify-between px-4 py-3">
+    <div className="mx-auto w-full max-w-6xl">
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           {etape === "accueil" ? (
-            <button type="button" onClick={onFermer} className="grid h-9 w-9 place-items-center" aria-label="Retour au panier">
+            <button
+              type="button"
+              onClick={onFermer}
+              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white"
+              aria-label="Retour au panier"
+            >
               <X className="h-5 w-5 text-slate-700" />
             </button>
           ) : etape === "resultat" ? (
-            <span className="w-9" />
+            <span className="w-10" />
           ) : (
-            <button type="button" onClick={revenir} className="grid h-9 w-9 place-items-center" aria-label="Retour">
+            <button
+              type="button"
+              onClick={revenir}
+              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white"
+              aria-label="Retour"
+            >
               <ChevronLeft className="h-5 w-5 text-slate-700" />
             </button>
           )}
-          <h2 className="text-sm font-semibold text-slate-900">{titre}</h2>
-          <Link href="/messagerie" className="grid h-9 w-9 place-items-center" aria-label="Assistance">
-            <Headset className="h-5 w-5 text-slate-700" />
-          </Link>
-        </header>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-orange-paiement">Paiement sécurisé</p>
+            <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{titre}</h1>
+          </div>
+        </div>
+        <Link
+          href="/messagerie"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <Headset className="h-4 w-4" />
+          Assistance
+        </Link>
+      </header>
 
-        {simulation && etape !== "resultat" && (
-          <p className="mx-4 mb-2 rounded-lg bg-amber-50 px-3 py-1.5 text-center text-[11px] font-medium text-amber-800">
-            Mode simulation — aucun débit réel tant que l&apos;API n&apos;est pas branchée
-          </p>
-        )}
+      <ol className="mb-5 flex flex-wrap items-center gap-2 text-sm">
+        {["Panier", "Paiement", "Confirmation"].map((nom, index) => {
+          const actif = etape === "resultat" ? index <= 2 : index <= 1;
+          const courant = etape === "resultat" ? index === 2 : index === 1;
+          return (
+            <li key={nom} className="flex items-center gap-2">
+              <span
+                className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${
+                  courant ? "bg-orange-paiement text-white" : actif ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"
+                }`}
+              >
+                {index + 1}
+              </span>
+              <span className={courant ? "font-medium text-slate-900" : "text-slate-400"}>{nom}</span>
+              {index < 2 && <span className="text-slate-300">—</span>}
+            </li>
+          );
+        })}
+      </ol>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6">
+      {simulation && etape !== "resultat" && (
+        <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800">
+          Mode simulation — aucun débit réel tant que l&apos;API n&apos;est pas branchée
+        </p>
+      )}
+
+      <div className="grid items-start gap-6 lg:grid-cols-12">
+        <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6 lg:col-span-7 xl:col-span-8">
           {etape === "accueil" && (
             <EcranAccueil
               montantCommande={montantCommande}
@@ -346,19 +413,27 @@ export function ParcoursPaiement({
           )}
 
           {etape === "virement" && (
-            <EcranVirement
-              total={total}
-              enCours={enCours}
-              onPayer={() => void payer("VIREMENT")}
-            />
+            <EcranVirement total={total} enCours={enCours} onPayer={() => void payer("VIREMENT")} />
           )}
 
-          {etape === "resultat" && resultat && (
-            <EcranResultat resultat={resultat} total={total} />
-          )}
+          {etape === "resultat" && resultat && <EcranResultat resultat={resultat} total={total} />}
 
-          {erreur && <p className="mt-3 text-center text-sm text-red-600">{erreur}</p>}
-        </div>
+          {erreur && <p className="mt-4 text-sm font-medium text-red-600">{erreur}</p>}
+        </section>
+
+        <PanneauResume
+          articles={articles}
+          entrepot={entrepot}
+          utilisateur={utilisateur}
+          montantCommande={montantCommande}
+          frais={frais}
+          total={total}
+          etape={etape}
+          enCours={enCours}
+          payee={etape === "resultat"}
+          onPayer={payerSelonEtape}
+        />
+      </div>
     </div>
   );
 }
@@ -385,7 +460,21 @@ function EcranAccueil({
   return (
     <>
       <ResumeMontant montantCommande={montantCommande} frais={frais} total={total} />
-      <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <ApercuCanal titre="Carte Visa / bancaire" onClick={onCartes}>
+          <div className="flex items-center gap-2">
+            <LogoVisa classe="h-5" />
+            <LogoMastercard classe="h-5" />
+          </div>
+        </ApercuCanal>
+        <ApercuCanal titre="FlexPaie" onClick={onAutres}>
+          <Smartphone className="h-7 w-7 text-sky-700" />
+        </ApercuCanal>
+        <ApercuCanal titre="Virement T/T" onClick={onAutres}>
+          <p className="text-lg font-bold text-sky-700">T/T</p>
+        </ApercuCanal>
+      </div>
+      <div className="mt-6 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
         <p className="mb-3 text-sm font-semibold text-slate-800">Vos cartes / comptes enregistrés</p>
         {carte ? (
           <button
@@ -468,6 +557,27 @@ function EcranCanaux({
       </p>
       <BoutonPayer libelle="Payer maintenant" enCours={enCours} onClick={onPayer} />
     </>
+  );
+}
+
+function ApercuCanal({
+  titre,
+  onClick,
+  children,
+}: {
+  titre: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-center hover:border-orange-paiement"
+    >
+      {children}
+      <span className="text-xs font-medium text-slate-600">{titre}</span>
+    </button>
   );
 }
 
@@ -861,5 +971,143 @@ function Champ({
         {icone}
       </div>
     </div>
+  );
+}
+
+function PanneauResume({
+  articles,
+  entrepot,
+  utilisateur,
+  montantCommande,
+  frais,
+  total,
+  etape,
+  enCours,
+  payee,
+  onPayer,
+}: {
+  articles: ArticlePanier[];
+  entrepot?: EntrepotResume | null;
+  utilisateur: Utilisateur | null;
+  montantCommande: number;
+  frais: number;
+  total: number;
+  etape: Etape;
+  enCours: boolean;
+  payee: boolean;
+  onPayer: () => void;
+}) {
+  const nombreArticles = articles.reduce((somme, article) => somme + article.quantite, 0);
+
+  return (
+    <aside className="space-y-4 lg:sticky lg:top-20 lg:col-span-5 xl:col-span-4">
+      <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-slate-900">Récapitulatif</h2>
+          <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-paiement">
+            {nombreArticles} article{nombreArticles > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+          {articles.map((article) => (
+            <div key={article.id} className="flex gap-3">
+              <img
+                src={article.image ?? ""}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-xl bg-slate-100 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 text-sm font-medium text-slate-800">{article.nomProduit}</p>
+                <p className="text-[11px] text-slate-400">
+                  {article.quantite} × {formaterMontant(article.prixUnitaire)}
+                  {article.sku ? ` · ${article.sku}` : ""}
+                </p>
+              </div>
+              <p className="text-sm font-semibold text-slate-900">{formaterMontant(article.sousTotal)}</p>
+            </div>
+          ))}
+        </div>
+
+        <dl className="mt-4 space-y-2 border-t border-slate-100 pt-4 text-sm">
+          <div className="flex justify-between text-slate-600">
+            <dt>Sous-total</dt>
+            <dd>{formaterMontant(montantCommande)}</dd>
+          </div>
+          <div className="flex justify-between text-slate-600">
+            <dt>Livraison</dt>
+            <dd>0 FC</dd>
+          </div>
+          <div className="flex justify-between text-slate-600">
+            <dt className="inline-flex items-center gap-1">
+              Frais de transaction
+              <HelpCircle className="h-3.5 w-3.5" />
+            </dt>
+            <dd>{formaterMontant(frais)}</dd>
+          </div>
+        </dl>
+        <div className="mt-3 flex items-end justify-between rounded-xl bg-orange-50 px-3 py-3">
+          <div>
+            <p className="text-xs text-slate-500">Montant à payer</p>
+            <p className="text-xl font-bold text-slate-900">{formaterMontant(total)}</p>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+            <Lock className="h-3.5 w-3.5" /> FC
+          </span>
+        </div>
+
+        {etape !== "resultat" && (
+          <button
+            type="button"
+            onClick={onPayer}
+            disabled={enCours}
+            className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl ${orange} py-3 text-sm font-bold text-white disabled:opacity-60`}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            {enCours ? "Traitement..." : "Payer maintenant"}
+          </button>
+        )}
+        {payee && (
+          <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-center text-sm font-semibold text-emerald-700">
+            Paiement confirmé
+          </p>
+        )}
+      </article>
+
+      <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <h3 className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <Package className="h-4 w-4 text-orange-paiement" />
+          Client et livraison
+        </h3>
+        <p className="text-sm font-medium text-slate-800">
+          {utilisateur?.nomSociete || utilisateur?.nomComplet || "Client"}
+        </p>
+        {utilisateur?.nomSociete && utilisateur.nomComplet && (
+          <p className="text-xs text-slate-500">{utilisateur.nomComplet}</p>
+        )}
+        {entrepot && (
+          <div className="mt-3 rounded-xl bg-slate-50 p-3">
+            <p className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+              <MapPin className="h-3.5 w-3.5" />
+              Point de retrait
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-800">{entrepot.nom}</p>
+            <p className="text-xs text-slate-500">
+              {entrepot.adresse}, {entrepot.ville}
+            </p>
+            {entrepot.heures && <p className="mt-1 text-[11px] text-slate-400">{entrepot.heures}</p>}
+          </div>
+        )}
+      </article>
+
+      <article className="rounded-2xl border border-slate-100 bg-white p-4 text-xs text-slate-500 shadow-sm">
+        <p className="inline-flex items-center gap-1 font-medium text-emerald-700">
+          <Lock className="h-3.5 w-3.5" />
+          Paiement chiffré · PCI DSS
+        </p>
+        <p className="mt-2">Les fonds sont transmis à ELMED. Le numéro de carte complet n&apos;est jamais enregistré.</p>
+        <p className="mt-1">Pays : RD Congo · Devise : FC</p>
+      </article>
+    </aside>
   );
 }
