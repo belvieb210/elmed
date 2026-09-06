@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, FlaskConical, Package, Printer, Search, Trash2 } from "lucide-react";
+import { Check, FlaskConical, Package, Printer, RefreshCw, Search, Trash2 } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { TableauFacturesEnAttente } from "@/composants/admin/TableauFacturesEnAttente";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
@@ -80,7 +80,6 @@ export function PageFacturationClient({
   const [jour, setJour] = useState(String(aujourdHui.getDate()));
   const [moisPaiement, setMoisPaiement] = useState(String(aujourdHui.getMonth() + 1));
   const [annee, setAnnee] = useState(String(aujourdHui.getFullYear()));
-  const [transferer, setTransferer] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -204,7 +203,6 @@ export function PageFacturationClient({
             numeroRecu,
             notes,
             valider,
-            transferer,
           }),
         },
       );
@@ -397,7 +395,10 @@ export function PageFacturationClient({
                     key={mode.id}
                     type="button"
                     disabled={bloque}
-                    onClick={() => setModeFacture(mode.id)}
+                    onClick={() => {
+                      setModeFacture(mode.id);
+                      if (mode.id === "AVANCE") setMontantPaye(0);
+                    }}
                     className={`rounded-xl border px-3 py-3 text-left ${
                       actif ? "border-2 border-bleu-hero bg-sky-50" : "border-bleu-hero bg-white"
                     } ${bloque ? "opacity-50" : ""}`}
@@ -424,22 +425,31 @@ export function PageFacturationClient({
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <label className="text-sm font-medium text-slate-700">
                 Montant à payer
-                <input readOnly value={formaterMontant(totalAPayer)} className="mt-1.5 w-full rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm" />
+                <input
+                  readOnly
+                  value={formaterMontant(totalAPayer)}
+                  className="mt-1.5 w-full rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
+                />
               </label>
               <label className="text-sm font-medium text-slate-700">
-                Montant payé *
+                {modeFacture === "AVANCE" ? "Montant avance *" : "Montant payé *"}
                 <input
                   type="number"
                   min={0}
                   step="0.01"
+                  readOnly={modeFacture !== "AVANCE"}
                   value={montantPaye}
                   onChange={(e) => setMontantPaye(Number(e.target.value) || 0)}
-                  className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm"
+                  className={`mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm ${
+                    modeFacture === "AVANCE"
+                      ? "border-2 border-bleu-hero"
+                      : "border-bleu-hero bg-slate-50 text-slate-500"
+                  }`}
                 />
               </label>
               <label className="text-sm font-medium text-slate-700">
                 Monnaie
-                <select className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm" defaultValue="USD">
+                <select disabled value="USD" className="mt-1.5 w-full rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm text-slate-500">
                   <option value="USD">USD</option>
                 </select>
               </label>
@@ -447,25 +457,36 @@ export function PageFacturationClient({
             <div className="mt-3">
               <p className="text-sm font-medium text-slate-700">Date paiement</p>
               <div className="mt-1.5 grid grid-cols-3 gap-2">
-                <input value={jour} onChange={(e) => setJour(e.target.value)} className="rounded-xl border border-bleu-hero px-3 py-2.5 text-sm" />
-                <select value={moisPaiement} onChange={(e) => setMoisPaiement(e.target.value)} className="rounded-xl border border-bleu-hero px-3 py-2.5 text-sm">
-                  {mois.map((nom, index) => (
-                    <option key={nom} value={String(index + 1)}>
-                      {nom}
-                    </option>
-                  ))}
-                </select>
-                <input value={annee} onChange={(e) => setAnnee(e.target.value)} className="rounded-xl border border-bleu-hero px-3 py-2.5 text-sm" />
+                <input readOnly value={jour} className="rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm text-slate-500" />
+                <input
+                  readOnly
+                  value={mois[Number(moisPaiement) - 1] ?? ""}
+                  className="rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
+                />
+                <input readOnly value={annee} className="rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm text-slate-500" />
               </div>
             </div>
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
               <label className="text-sm font-medium text-slate-700">
                 N° Reçu *
-                <input
-                  value={numeroRecu}
-                  onChange={(e) => setNumeroRecu(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm"
-                />
+                <span className="relative mt-1.5 block">
+                  <input
+                    readOnly
+                    value={numeroRecu}
+                    className="w-full rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 pr-11 text-sm text-slate-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const suite = Math.random().toString(36).slice(2, 6).toUpperCase();
+                      setNumeroRecu(`REC${aujourdHui.getFullYear()}${String(aujourdHui.getMonth() + 1).padStart(2, "0")}${suite}`);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-bleu-hero"
+                    aria-label="Générer un nouveau numéro"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                </span>
               </label>
               <label className="text-sm font-medium text-slate-700">
                 Notes (optionnel)
@@ -518,7 +539,9 @@ export function PageFacturationClient({
             <div className="mt-4 border-t border-bleu-hero pt-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Total à payer</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{formaterMontant(totalAPayer)}</p>
-              <p className="mt-2 text-sm text-slate-500">Montant payé {formaterMontant(montantPaye)}</p>
+              <p className="mt-2 text-sm text-slate-500">
+                {modeFacture === "AVANCE" ? "Montant avance" : "Montant payé"} {formaterMontant(montantPaye)}
+              </p>
               <p className={`text-sm font-semibold ${resteAPayer > 0 ? "text-orange-600" : "text-emerald-600"}`}>
                 Reste à payer {formaterMontant(resteAPayer)}
               </p>
@@ -574,15 +597,6 @@ export function PageFacturationClient({
             <p className="mt-3 text-xs leading-5 text-slate-500">
               Facture adaptée aux produits médicaux du catalogue, pas aux examens cliniques.
             </p>
-            <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={transferer}
-                onChange={(e) => setTransferer(e.target.checked)}
-                className="h-4 w-4 rounded border-bleu-hero text-bleu-hero"
-              />
-              Transférer après paiement
-            </label>
           </section>
         </aside>
       </div>

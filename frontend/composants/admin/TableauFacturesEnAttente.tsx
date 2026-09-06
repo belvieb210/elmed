@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formaterHeure, formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
@@ -15,11 +15,41 @@ export function TableauFacturesEnAttente() {
       .catch(() => setFactures([]));
   }, []);
 
+  const parClient = useMemo(() => {
+    const groupes = new Map<string, FactureAttenteAdmin & { nombreFactures: number }>();
+    for (const facture of factures) {
+      const actuel = groupes.get(facture.clientId);
+      if (!actuel) {
+        groupes.set(facture.clientId, { ...facture, nombreFactures: 1 });
+        continue;
+      }
+      const plusRecent = new Date(facture.dateCommande) > new Date(actuel.dateCommande);
+      groupes.set(facture.clientId, {
+        ...actuel,
+        id: plusRecent ? facture.id : actuel.id,
+        dateCommande: plusRecent ? facture.dateCommande : actuel.dateCommande,
+        provenance: plusRecent ? facture.provenance : actuel.provenance,
+        nombreArticles: actuel.nombreArticles + facture.nombreArticles,
+        montantTotal: actuel.montantTotal + facture.montantTotal,
+        montantPaye: actuel.montantPaye + facture.montantPaye,
+        resteAPayer: actuel.resteAPayer + facture.resteAPayer,
+        statutPaiement:
+          actuel.statutPaiement === "PARTIEL" || facture.statutPaiement === "PARTIEL" ? "PARTIEL" : "EN_ATTENTE",
+        libelleStatut:
+          actuel.statutPaiement === "PARTIEL" || facture.statutPaiement === "PARTIEL"
+            ? "Partiellement payée"
+            : "À facturer",
+        nombreFactures: actuel.nombreFactures + 1,
+      });
+    }
+    return Array.from(groupes.values());
+  }, [factures]);
+
   return (
     <section className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
       <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Clients en attente de paiement ({factures.length})
+          Clients en attente de paiement ({parClient.length})
         </h2>
         <Link href="/admin/commandes" className="text-sm font-medium text-violet-marque hover:underline">
           Voir tout
@@ -40,12 +70,14 @@ export function TableauFacturesEnAttente() {
             </tr>
           </thead>
           <tbody>
-            {factures.map((facture, index) => (
-              <tr key={facture.id} className="border-t border-bleu-hero">
+            {parClient.map((facture, index) => (
+              <tr key={facture.clientId} className="border-t border-bleu-hero">
                 <td className="px-4 py-3 text-slate-500">{index + 1}</td>
                 <td className="px-4 py-3">
                   <p className="font-semibold text-slate-800">{facture.nomClient}</p>
-                  <p className="text-[11px] uppercase tracking-wide text-sky-600">Client</p>
+                  <p className="text-[11px] uppercase tracking-wide text-sky-600">
+                    Client{facture.nombreFactures > 1 ? ` · ${facture.nombreFactures} factures` : ""}
+                  </p>
                 </td>
                 <td className="px-4 py-3 text-slate-500">{facture.provenance}</td>
                 <td className="px-4 py-3">{facture.nombreArticles}</td>
@@ -75,7 +107,7 @@ export function TableauFacturesEnAttente() {
           </tbody>
         </table>
       </div>
-      {factures.length === 0 && <p className="px-4 py-6 text-sm text-slate-400">Aucune facture en attente.</p>}
+      {parClient.length === 0 && <p className="px-4 py-6 text-sm text-slate-400">Aucune facture en attente.</p>}
     </section>
   );
 }
