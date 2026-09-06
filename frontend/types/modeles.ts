@@ -254,6 +254,7 @@ export interface ClientAdmin {
   nombreConversations?: number;
   initials?: string;
   numeroDossier?: string;
+  numeroClient?: string | null;
 }
 
 export interface FactureAttenteAdmin {

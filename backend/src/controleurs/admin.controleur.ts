@@ -323,6 +323,7 @@ export async function listerClientsAdmin(_requete: RequeteAuthentifiee, reponse:
       ville: client.ville,
       photoProfil: client.photoProfil,
       dateCreation: client.dateCreation,
+      numeroClient: client.numeroClient,
       nombreCommandes: client._count.commandes,
       nombreConversations: client._count.conversations,
     })),

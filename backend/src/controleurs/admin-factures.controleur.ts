@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { ModeFacture, ModePaiement, StatutPaiement, TypeDocument, TypeFacture } from "@prisma/client";
+import { ModeFacture, ModePaiement, Prisma, StatutPaiement, TypeDocument, TypeFacture } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { z } from "zod";
@@ -22,11 +22,13 @@ const modesFacture = [
 const schemaClient = z.object({
   prenom: z.string().trim().min(1, "Le prénom est requis."),
   nom: z.string().trim().min(1, "Le nom est requis."),
-  email: z.string().email("Email invalide."),
+  email: z.string().trim().email("Email invalide.").optional().or(z.literal("")),
   telephone: z.string().trim().optional(),
   nomSociete: z.string().trim().optional(),
   adresse: z.string().trim().optional(),
   ville: z.string().trim().optional(),
+  fiche: z.record(z.string(), z.unknown()).optional(),
+  photoProfil: z.string().optional(),
 });
 
 const schemaFacture = z.object({
@@ -68,8 +70,17 @@ function initials(prenom: string, nom: string) {
   return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
 }
 
-function numeroDossier(id: string) {
-  return `CLT-${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+function numeroDossier(id: string, numeroClient?: string | null) {
+  return numeroClient || `CLT-${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+}
+
+async function genererNumeroClient() {
+  const maintenant = new Date();
+  const prefixe = `${maintenant.getFullYear()}${String(maintenant.getMonth() + 1).padStart(2, "0")}${String(maintenant.getDate()).padStart(2, "0")}`;
+  const total = await baseDeDonnees.utilisateur.count({
+    where: { role: "CLIENT", numeroClient: { startsWith: prefixe } },
+  });
+  return `${prefixe}${String(total + 1).padStart(3, "0")}`;
 }
 
 async function genererNumeroCommande() {
@@ -110,6 +121,8 @@ function formaterClient(client: {
   photoProfil: string | null;
   dateCreation: Date;
   estInvite: boolean;
+  numeroClient?: string | null;
+  ficheClient?: unknown;
 }) {
   return {
     id: client.id,
@@ -124,7 +137,9 @@ function formaterClient(client: {
     photoProfil: client.photoProfil,
     dateCreation: client.dateCreation,
     initials: initials(client.prenom, client.nom),
-    numeroDossier: numeroDossier(client.id),
+    numeroDossier: numeroDossier(client.id, client.numeroClient),
+    numeroClient: client.numeroClient ?? null,
+    fiche: client.ficheClient ?? null,
   };
 }
 
@@ -147,7 +162,9 @@ export async function creerClientAdmin(requete: RequeteAuthentifiee, reponse: Re
   }
 
   const donnees = analyse.data;
-  const existant = await baseDeDonnees.utilisateur.findUnique({ where: { email: donnees.email } });
+  const numeroClient = await genererNumeroClient();
+  const email = donnees.email?.trim() || `client.${numeroClient}@clients.elmed.local`;
+  const existant = await baseDeDonnees.utilisateur.findUnique({ where: { email } });
   if (existant && !existant.estInvite) {
     reponse.status(409).json({ succes: false, message: "Un client existe déjà avec cet email." });
     return;
@@ -158,11 +175,14 @@ export async function creerClientAdmin(requete: RequeteAuthentifiee, reponse: Re
   const payload = {
     prenom: donnees.prenom,
     nom: donnees.nom,
-    email: donnees.email,
+    email,
     telephone: donnees.telephone || null,
     nomSociete: donnees.nomSociete || null,
     adresse: donnees.adresse || null,
     ville: donnees.ville || null,
+    photoProfil: donnees.photoProfil || null,
+    numeroClient,
+    ficheClient: (donnees.fiche as Prisma.InputJsonValue | undefined) ?? undefined,
     motDePasse: hash,
     role: "CLIENT" as const,
     estInvite: false,

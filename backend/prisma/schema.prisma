@@ -111,6 +111,8 @@ model Utilisateur {
   nomSociete    String?         @map("nom_societe")
   adresse       String?
   ville         String?
+  numeroClient  String?         @unique @map("numero_client")
+  ficheClient   Json?           @map("fiche_client")
   actif         Boolean         @default(true)
   estInvite     Boolean         @default(false) @map("est_invite")
   dateCreation  DateTime        @default(now()) @map("date_creation")

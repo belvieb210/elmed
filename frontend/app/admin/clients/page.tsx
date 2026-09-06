@@ -1,12 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { FormulaireNouveauClient } from "@/composants/admin/FormulaireNouveauClient";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { TableauFacturesEnAttente } from "@/composants/admin/TableauFacturesEnAttente";
-import { formaterDate } from "@/lib/formatage";
+import { formaterHeure } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { ClientAdmin } from "@/types/modeles";
 
@@ -15,18 +16,6 @@ export default function PageClientsAdmin() {
   const [clients, setClients] = useState<ClientAdmin[]>([]);
   const [recherche, setRecherche] = useState("");
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
-  const [enCours, setEnCours] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [motDePasseTemporaire, setMotDePasseTemporaire] = useState<string | null>(null);
-  const [formulaire, setFormulaire] = useState({
-    prenom: "",
-    nom: "",
-    email: "",
-    telephone: "",
-    nomSociete: "",
-    ville: "",
-    adresse: "",
-  });
 
   useEffect(() => {
     appelerApi<{ clients: ClientAdmin[] }>("/admin/clients")
@@ -38,35 +27,13 @@ export default function PageClientsAdmin() {
     const terme = recherche.trim().toLowerCase();
     if (!terme) return clients;
     return clients.filter((client) =>
-      [client.nomComplet, client.nomSociete, client.email, client.telephone, client.ville]
+      [client.nomComplet, client.nomSociete, client.email, client.telephone, client.ville, client.numeroClient]
         .filter(Boolean)
         .some((valeur) => String(valeur).toLowerCase().includes(terme)),
     );
   }, [clients, recherche]);
 
-  async function creerClient(evenement: FormEvent) {
-    evenement.preventDefault();
-    setEnCours(true);
-    setErreur(null);
-    try {
-      const donnees = await appelerApi<{ client: ClientAdmin; motDePasseTemporaire: string }>("/admin/clients", {
-        method: "POST",
-        body: JSON.stringify({
-          ...formulaire,
-          telephone: formulaire.telephone || undefined,
-          nomSociete: formulaire.nomSociete || undefined,
-          ville: formulaire.ville || undefined,
-          adresse: formulaire.adresse || undefined,
-        }),
-      });
-      setMotDePasseTemporaire(donnees.motDePasseTemporaire);
-      sessionStorage.setItem("mm_mdp_client", donnees.motDePasseTemporaire);
-      routeur.push(`/admin/clients/${donnees.client.id}`);
-    } catch (cause) {
-      setErreur(cause instanceof Error ? cause.message : "Création impossible.");
-      setEnCours(false);
-    }
-  }
+  const recents = clients.slice(0, 8);
 
   return (
     <MiseEnPageAdmin titre="Clients" sousTitre="Ajouter un client et établir sa facture">
@@ -79,7 +46,7 @@ export default function PageClientsAdmin() {
         />
         <button
           type="button"
-          onClick={() => setFormulaireOuvert((actuel) => !actuel)}
+          onClick={() => setFormulaireOuvert(true)}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-marque px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-fonce"
         >
           <Plus className="h-4 w-4" />
@@ -88,112 +55,118 @@ export default function PageClientsAdmin() {
       </div>
 
       {formulaireOuvert && (
-        <form onSubmit={creerClient} className="mb-5 rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Nouveau client</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Champ label="Prénom" value={formulaire.prenom} onChange={(valeur) => setFormulaire({ ...formulaire, prenom: valeur })} requis />
-            <Champ label="Nom" value={formulaire.nom} onChange={(valeur) => setFormulaire({ ...formulaire, nom: valeur })} requis />
-            <Champ label="Email" type="email" value={formulaire.email} onChange={(valeur) => setFormulaire({ ...formulaire, email: valeur })} requis />
-            <Champ label="Téléphone" value={formulaire.telephone} onChange={(valeur) => setFormulaire({ ...formulaire, telephone: valeur })} />
-            <Champ label="Société" value={formulaire.nomSociete} onChange={(valeur) => setFormulaire({ ...formulaire, nomSociete: valeur })} />
-            <Champ label="Ville" value={formulaire.ville} onChange={(valeur) => setFormulaire({ ...formulaire, ville: valeur })} />
-            <label className="block text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-3">
-              Adresse
-              <input
-                value={formulaire.adresse}
-                onChange={(e) => setFormulaire({ ...formulaire, adresse: e.target.value })}
-                className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
-              />
-            </label>
-          </div>
-          {erreur && <p className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">{erreur}</p>}
-          {motDePasseTemporaire && (
-            <p className="mt-3 text-sm text-slate-600">
-              Mot de passe temporaire : <strong>{motDePasseTemporaire}</strong>
-            </p>
-          )}
-          <div className="mt-4 flex justify-end">
-            <button
-              type="submit"
-              disabled={enCours}
-              className="rounded-xl bg-[#1e3a8a] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {enCours ? "Création..." : "Créer et facturer"}
-            </button>
-          </div>
-        </form>
+        <FormulaireNouveauClient
+          onAnnuler={() => setFormulaireOuvert(false)}
+          onCree={(client, motDePasse) => {
+            sessionStorage.setItem("mm_mdp_client", motDePasse);
+            routeur.push(`/admin/clients/${client.id}`);
+          }}
+        />
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {filtres.map((client) => (
-          <article key={client.id} className="rounded-2xl border border-bleu-hero bg-white p-4">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 place-items-center rounded-full bg-[#1e3a8a] text-sm font-semibold text-white">
-                {initials(client.nomComplet)}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-slate-800">{client.nomSociete || client.nomComplet}</p>
-                <p className="truncate text-xs text-slate-500">{client.email}</p>
-              </div>
+      {formulaireOuvert && (
+        <section className="mb-6 overflow-hidden rounded-2xl border border-bleu-hero bg-white">
+          <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Clients récemment enregistrés
+              </h2>
+              <p className="mt-1 text-xs text-slate-400">{recents.length} client(s) dans le registre</p>
             </div>
-            <dl className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-500">
-              <div>
-                <dt>Commandes</dt>
-                <dd className="text-sm font-semibold text-slate-800">{client.nombreCommandes ?? 0}</dd>
-              </div>
-              <div>
-                <dt>Inscrit le</dt>
-                <dd className="text-sm font-semibold text-slate-800">{formaterDate(client.dateCreation)}</dd>
-              </div>
-              {client.telephone && (
-                <div className="col-span-2">
-                  <dt>Téléphone</dt>
-                  <dd>{client.telephone}</dd>
+            <span className="relative grid h-9 w-9 place-items-center rounded-xl border border-bleu-hero text-slate-500">
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-violet-marque text-[10px] text-white">
+                0
+              </span>
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th className="px-4 py-3 font-medium">N° client</th>
+                  <th className="px-4 py-3 font-medium">Nom complet</th>
+                  <th className="px-4 py-3 font-medium">Téléphone</th>
+                  <th className="px-4 py-3 font-medium">Établissement</th>
+                  <th className="px-4 py-3 font-medium">Statut</th>
+                  <th className="px-4 py-3 font-medium">Heure</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recents.map((client) => (
+                  <tr key={client.id} className="border-t border-bleu-hero">
+                    <td className="px-4 py-3 text-slate-500">{client.numeroClient || "—"}</td>
+                    <td className="px-4 py-3 font-semibold uppercase text-slate-800">{client.nomComplet}</td>
+                    <td className="px-4 py-3 text-slate-500">{client.telephone || "—"}</td>
+                    <td className="px-4 py-3 text-slate-500">{client.nomSociete || "Client"}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                        Enregistré
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{formaterHeure(client.dateCreation)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/clients/${client.id}`}
+                          className="rounded-lg border border-bleu-hero p-1.5 text-slate-600"
+                          aria-label="Voir"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                        <Link
+                          href={`/admin/clients/${client.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-slate-600"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Facturer
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {recents.length === 0 && <p className="px-4 py-6 text-sm text-slate-400">Aucun client enregistré pour le moment.</p>}
+        </section>
+      )}
+
+      {!formulaireOuvert && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {filtres.map((client) => (
+              <article key={client.id} className="rounded-2xl border border-bleu-hero bg-white p-4">
+                <div className="flex items-center gap-3">
+                  {client.photoProfil ? (
+                    <img src={client.photoProfil} alt="" className="h-12 w-12 rounded-full object-cover" />
+                  ) : (
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-[#1e3a8a] text-sm font-semibold text-white">
+                      {initials(client.nomComplet)}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-800">{client.nomSociete || client.nomComplet}</p>
+                    <p className="truncate text-xs text-slate-500">{client.email}</p>
+                  </div>
                 </div>
-              )}
-            </dl>
-            <Link
-              href={`/admin/clients/${client.id}`}
-              className="mt-4 flex w-full items-center justify-center rounded-xl bg-violet-marque px-3 py-2 text-sm font-semibold text-white hover:bg-violet-fonce"
-            >
-              Établir une facture
-            </Link>
-          </article>
-        ))}
-      </div>
-      {filtres.length === 0 && <p className="mt-4 text-sm text-slate-400">Aucun client trouvé.</p>}
-
-      <div className="mt-8">
-        <TableauFacturesEnAttente />
-      </div>
+                <Link
+                  href={`/admin/clients/${client.id}`}
+                  className="mt-4 flex w-full items-center justify-center rounded-xl bg-violet-marque px-3 py-2 text-sm font-semibold text-white hover:bg-violet-fonce"
+                >
+                  Établir une facture
+                </Link>
+              </article>
+            ))}
+          </div>
+          {filtres.length === 0 && <p className="mt-4 text-sm text-slate-400">Aucun client trouvé.</p>}
+          <div className="mt-8">
+            <TableauFacturesEnAttente />
+          </div>
+        </>
+      )}
     </MiseEnPageAdmin>
-  );
-}
-
-function Champ({
-  label,
-  value,
-  onChange,
-  type = "text",
-  requis = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (valeur: string) => void;
-  type?: string;
-  requis?: boolean;
-}) {
-  return (
-    <label className="block text-sm font-medium text-slate-700">
-      {label}
-      <input
-        type={type}
-        value={value}
-        required={requis}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
-      />
-    </label>
   );
 }
 
