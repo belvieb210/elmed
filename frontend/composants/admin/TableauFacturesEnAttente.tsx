@@ -7,7 +7,13 @@ import { formaterHeure, formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { FactureAttenteAdmin } from "@/types/modeles";
 
-export function TableauFacturesEnAttente({ clientIdActif }: { clientIdActif?: string }) {
+export function TableauFacturesEnAttente({
+  clientIdActif,
+  rafraichir = 0,
+}: {
+  clientIdActif?: string;
+  rafraichir?: number;
+}) {
   const routeur = useRouter();
   const [factures, setFactures] = useState<FactureAttenteAdmin[]>([]);
 
@@ -15,7 +21,7 @@ export function TableauFacturesEnAttente({ clientIdActif }: { clientIdActif?: st
     appelerApi<{ factures: FactureAttenteAdmin[] }>("/admin/factures/attente")
       .then((donnees) => setFactures(donnees.factures))
       .catch(() => setFactures([]));
-  }, []);
+  }, [rafraichir]);
 
   const parClient = useMemo(() => {
     const groupes = new Map<string, FactureAttenteAdmin & { nombreFactures: number }>();
@@ -39,7 +45,7 @@ export function TableauFacturesEnAttente({ clientIdActif }: { clientIdActif?: st
           actuel.statutPaiement === "PARTIEL" || facture.statutPaiement === "PARTIEL" ? "PARTIEL" : "EN_ATTENTE",
         libelleStatut:
           actuel.statutPaiement === "PARTIEL" || facture.statutPaiement === "PARTIEL"
-            ? "Partiellement payée"
+            ? "Avance à solder"
             : "À facturer",
         nombreFactures: actuel.nombreFactures + 1,
       });
@@ -51,7 +57,7 @@ export function TableauFacturesEnAttente({ clientIdActif }: { clientIdActif?: st
     <section className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
       <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Clients en attente de paiement ({parClient.length})
+          Clients en attente de facture ({parClient.length})
         </h2>
         <Link href="/admin/commandes" className="text-sm font-medium text-violet-marque hover:underline">
           Voir tout
@@ -136,7 +142,9 @@ export function TableauFacturesEnAttente({ clientIdActif }: { clientIdActif?: st
           </tbody>
         </table>
       </div>
-      {parClient.length === 0 && <p className="px-4 py-6 text-sm text-slate-400">Aucune facture en attente.</p>}
+      {parClient.length === 0 && (
+        <p className="px-4 py-6 text-sm text-slate-400">Aucun client en attente de facture.</p>
+      )}
     </section>
   );
 }

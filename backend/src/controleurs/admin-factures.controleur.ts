@@ -297,20 +297,14 @@ export async function obtenirClientAdmin(requete: RequeteAuthentifiee, reponse: 
 
 export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, reponse: Response) {
   const commandes = await baseDeDonnees.commande.findMany({
-    where: {
-      statut: { notIn: ["ANNULEE", "REFUSEE"] },
-      OR: [
-        { paiements: { none: {} } },
-        { paiements: { some: { statut: { in: ["EN_ATTENTE", "PARTIEL"] } } } },
-      ],
-    },
+    where: { statut: { notIn: ["ANNULEE", "REFUSEE"] } },
     include: {
       client: true,
       lignes: true,
       paiements: { orderBy: { datePaiement: "desc" } },
     },
     orderBy: { dateCommande: "desc" },
-    take: 40,
+    take: 80,
   });
 
   reponse.json({
@@ -320,7 +314,10 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
         const paye = montantPayeCommande(commande.paiements);
         const total = Number(commande.montantTotal);
         const reste = arrondi(Math.max(0, total - paye));
-        if (reste <= 0 && commande.paiements.some((paiement) => paiement.statut === "PAYE")) return null;
+        const estPayee = reste <= 0.009;
+        const estAvance = reste > 0.009 && (commande.modeFacture === "AVANCE" || commande.paiements.some((paiement) => paiement.statut === "PARTIEL"));
+        const estAdminAFacturer = Boolean(commande.numeroRecu) && reste > 0.009 && !estAvance;
+        if (estPayee || (!estAvance && !estAdminAFacturer)) return null;
         return {
           id: commande.id,
           clientId: commande.clientId,
@@ -331,9 +328,9 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
           montantTotal: total,
           montantPaye: paye,
           resteAPayer: reste,
-          statutPaiement: paye > 0 ? "PARTIEL" : "EN_ATTENTE",
+          statutPaiement: estAvance ? "PARTIEL" : "EN_ATTENTE",
           modeFacture: commande.modeFacture,
-          libelleStatut: paye > 0 ? "Avance · solde à établir" : "À facturer",
+          libelleStatut: estAvance ? "Avance à solder" : "À facturer",
           dateCommande: commande.dateCommande,
         };
       })

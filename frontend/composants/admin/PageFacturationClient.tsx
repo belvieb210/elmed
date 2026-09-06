@@ -769,7 +769,7 @@ export function PageFacturationClient({
       </div>
 
       <div className="mt-6">
-        <TableauFacturesEnAttente key={cleAttente} clientIdActif={clientId} />
+        <TableauFacturesEnAttente key={cleAttente} clientIdActif={clientId} rafraichir={cleAttente} />
       </div>
     </MiseEnPageAdmin>
   );
