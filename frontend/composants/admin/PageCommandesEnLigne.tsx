@@ -213,7 +213,7 @@ export function PageCommandesEnLigne() {
   return (
     <MiseEnPageAdmin titre="Commandes" sousTitre="Ventes en ligne, paiement à la livraison ou au retrait">
       <div className="grid gap-4 xl:grid-cols-12">
-        <section className="overflow-hidden rounded-2xl border border-bleu-hero bg-white xl:col-span-7">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-bleu-hero bg-white xl:col-span-8">
           <div className="flex items-start justify-between gap-3 border-b border-bleu-hero px-4 py-3">
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -357,7 +357,7 @@ export function PageCommandesEnLigne() {
           />
         </section>
 
-        <aside className="space-y-4 xl:col-span-5">
+        <aside className="min-w-0 space-y-4 xl:col-span-4">
           {premiereSelection ? (
             <>
               <section className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">

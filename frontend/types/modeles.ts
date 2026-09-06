@@ -229,7 +229,7 @@ export interface TableauAdmin {
   ventes: Array<{ date: string; libelle: string; montant: number }>;
   activites: Array<{ id: string; type: string; titre: string; detail: string; date: string }>;
   repartition: { total: number; enAttente: number; validees: number; annulees: number };
-  badges: { commandesAujourdhui: number; messagesNonLus: number };
+  badges: { commandesAujourdhui: number; messagesNonLus: number; facturesEnAttente?: number };
 }
 
 export interface ConversationAdmin {
@@ -274,6 +274,23 @@ export interface FactureAvanceAdmin {
   resteAPayer: number;
   statutPaiement: string;
   modeFacture: string;
+}
+
+export interface FacturationAdmin {
+  id: string;
+  clientId: string;
+  numeroCommande: string;
+  numeroRecu?: string | null;
+  nomClient: string;
+  numeroClient?: string | null;
+  nombreArticles: number;
+  montantTotal: number;
+  montantPaye: number;
+  resteAPayer: number;
+  modeFacture: string;
+  statutPaiement: string;
+  libelleStatut: string;
+  dateCommande: string;
 }
 
 export interface FactureAttenteAdmin {

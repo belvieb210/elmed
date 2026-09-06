@@ -20,6 +20,7 @@ import {
   creerClientAdmin,
   enregistrerFactureAdmin,
   mettreAJourClientAdmin,
+  listerFacturationsAdmin,
   listerFacturesEnAttente,
   obtenirClientAdmin,
   obtenirFactureAdmin,
@@ -117,6 +118,7 @@ routeurPrincipal.post("/admin/clients", ...espaceAdmin, creerClientAdmin);
 routeurPrincipal.put("/admin/clients/:id", ...espaceAdmin, mettreAJourClientAdmin);
 routeurPrincipal.get("/admin/clients/:id", ...espaceAdmin, obtenirClientAdmin);
 routeurPrincipal.get("/admin/factures/attente", ...espaceAdmin, listerFacturesEnAttente);
+routeurPrincipal.get("/admin/facturations", ...espaceAdmin, listerFacturationsAdmin);
 routeurPrincipal.get("/admin/factures/:id", ...espaceAdmin, obtenirFactureAdmin);
 routeurPrincipal.get("/admin/factures/:id/pdf", ...espaceAdmin, telechargerFactureAdmin);
 routeurPrincipal.post("/admin/factures", ...espaceAdmin, enregistrerFactureAdmin);

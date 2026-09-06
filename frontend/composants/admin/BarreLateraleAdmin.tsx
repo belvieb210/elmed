@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  Receipt,
   LogOut,
   MessageCircle,
   Package,
@@ -21,6 +22,7 @@ import { useClient } from "@/store/contexteClient";
 const liens = [
   { href: "/admin", libelle: "Tableau de bord", icone: LayoutDashboard },
   { href: "/admin/clients", libelle: "Clients", icone: UserRound },
+  { href: "/admin/facturations", libelle: "Facturations", icone: Receipt, badge: "factures" as const },
   { href: "/admin/commandes", libelle: "Commandes", icone: ClipboardList, badge: "commandes" as const },
   { href: "/admin/messagerie", libelle: "Messagerie", icone: MessageCircle, badge: "messages" as const },
   { href: "/admin/produits", libelle: "Produits", icone: Package },
@@ -32,16 +34,19 @@ const liens = [
 export function BarreLateraleAdmin({
   commandesAujourdhui = 0,
   messagesNonLus = 0,
+  facturesEnAttente = 0,
 }: {
   commandesAujourdhui?: number;
   messagesNonLus?: number;
+  facturesEnAttente?: number;
 }) {
   const chemin = usePathname();
   const { utilisateur, menuMobileOuvert, definirMenuMobileOuvert, deconnecter } = useClient();
 
-  function valeurBadge(type?: "commandes" | "messages") {
+  function valeurBadge(type?: "commandes" | "messages" | "factures") {
     if (type === "commandes") return commandesAujourdhui;
     if (type === "messages") return messagesNonLus;
+    if (type === "factures") return facturesEnAttente;
     return 0;
   }
 

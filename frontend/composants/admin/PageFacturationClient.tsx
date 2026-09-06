@@ -113,7 +113,11 @@ export function PageFacturationClient({
   const soldeAEncaisser = Math.max(0, Number((totalAPayer - montantDejaAvance).toFixed(2)));
   const resteAPayer =
     modeFacture === "SOLDE" ? Math.max(0, soldeAEncaisser - montantPaye) : Math.max(0, totalAPayer - montantPaye);
-  const peutImprimer = statutEncaissement === "PARTIEL" || statutEncaissement === "PAYE";
+  const nombreArticles = lignes.reduce((somme, ligne) => somme + ligne.quantite, 0);
+  const peutImprimer =
+    (modeFacture === "AVANCE" || statutEncaissement === "PARTIEL" || montantDejaAvance > 0) &&
+    (statutEncaissement === "PARTIEL" || (modeFacture === "AVANCE" && montantPaye > 0)) &&
+    resteAPayer > 0;
 
   function appliquerFacture(facture: FactureChargee, modeForce?: ModeFacture) {
     const mode = modeForce ?? facture.modeFacture;
@@ -769,7 +773,17 @@ export function PageFacturationClient({
       </div>
 
       <div className="mt-6">
-        <TableauFacturesEnAttente key={cleAttente} clientIdActif={clientId} rafraichir={cleAttente} />
+        <TableauFacturesEnAttente
+          key={cleAttente}
+          clientIdActif={clientId}
+          rafraichir={cleAttente}
+          brouillon={{
+            nombreArticles,
+            montantTotal: totalAPayer,
+            montantPaye: modeFacture === "SOLDE" ? montantDejaAvance : montantPaye,
+            resteAPayer: modeFacture === "SOLDE" ? soldeAEncaisser : resteAPayer,
+          }}
+        />
       </div>
     </MiseEnPageAdmin>
   );

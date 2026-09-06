@@ -72,16 +72,42 @@ function formaterCommandeResume(commande: {
 
 export async function obtenirBadgesAdmin(_requete: RequeteAuthentifiee, reponse: Response) {
   const aujourdHui = debutJour();
-  const [commandesAujourdhui, messagesNonLus] = await Promise.all([
+  const [commandesAujourdhui, messagesNonLus, clientsSansFacture, avancesEnCours] = await Promise.all([
     baseDeDonnees.commande.count({ where: { dateCommande: { gte: aujourdHui } } }),
     baseDeDonnees.message.count({
       where: { lu: false, auteur: { role: "CLIENT" } },
+    }),
+    baseDeDonnees.utilisateur.count({
+      where: {
+        role: "CLIENT",
+        estInvite: false,
+        commandes: {
+          none: {
+            statut: { notIn: ["ANNULEE", "REFUSEE"] },
+            OR: [
+              { numeroRecu: { not: null } },
+              { modeFacture: "AVANCE" },
+              { paiements: { some: { statut: "PARTIEL" } } },
+            ],
+          },
+        },
+      },
+    }),
+    baseDeDonnees.commande.count({
+      where: {
+        statut: { notIn: ["ANNULEE", "REFUSEE"] },
+        OR: [{ modeFacture: "AVANCE" }, { paiements: { some: { statut: "PARTIEL" } } }],
+      },
     }),
   ]);
 
   reponse.json({
     succes: true,
-    badges: { commandesAujourdhui, messagesNonLus },
+    badges: {
+      commandesAujourdhui,
+      messagesNonLus,
+      facturesEnAttente: clientsSansFacture + avancesEnCours,
+    },
   });
 }
 

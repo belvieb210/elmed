@@ -383,6 +383,51 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
   });
 }
 
+export async function listerFacturationsAdmin(_requete: RequeteAuthentifiee, reponse: Response) {
+  const commandes = await baseDeDonnees.commande.findMany({
+    where: {
+      statut: { notIn: ["ANNULEE", "REFUSEE"] },
+      numeroRecu: { not: null },
+    },
+    include: {
+      client: true,
+      lignes: true,
+      paiements: { orderBy: { datePaiement: "desc" } },
+    },
+    orderBy: { dateCommande: "desc" },
+  });
+
+  reponse.json({
+    succes: true,
+    factures: commandes.map((commande) => {
+      const paye = montantPayeCommande(commande.paiements);
+      const total = Number(commande.montantTotal);
+      const reste = arrondi(Math.max(0, total - paye));
+      const estAvance =
+        reste > 0.009 &&
+        (commande.modeFacture === "AVANCE" || commande.paiements.some((paiement) => paiement.statut === "PARTIEL"));
+      return {
+        id: commande.id,
+        clientId: commande.clientId,
+        numeroCommande: commande.numeroCommande,
+        numeroRecu: commande.numeroRecu,
+        nomClient: nomClient(commande.client),
+        numeroClient:
+          commande.client.numeroClient ||
+          `CLT-${commande.client.id.replaceAll("-", "").slice(0, 8).toUpperCase()}`,
+        nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
+        montantTotal: total,
+        montantPaye: paye,
+        resteAPayer: reste,
+        modeFacture: commande.modeFacture,
+        statutPaiement: reste <= 0.009 ? "PAYE" : estAvance ? "PARTIEL" : "EN_ATTENTE",
+        libelleStatut: reste <= 0.009 ? "Payée" : estAvance ? "Avance à solder" : "À facturer",
+        dateCommande: commande.dateCommande,
+      };
+    }),
+  });
+}
+
 export async function obtenirFactureAdmin(requete: RequeteAuthentifiee, reponse: Response) {
   const commande = await baseDeDonnees.commande.findUnique({
     where: { id: identifiantRoute(requete.params.id) },

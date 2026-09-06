@@ -11,9 +11,16 @@ import type { FactureAttenteAdmin } from "@/types/modeles";
 export function TableauFacturesEnAttente({
   clientIdActif,
   rafraichir = 0,
+  brouillon,
 }: {
   clientIdActif?: string;
   rafraichir?: number;
+  brouillon?: {
+    nombreArticles: number;
+    montantTotal: number;
+    montantPaye: number;
+    resteAPayer: number;
+  };
 }) {
   const routeur = useRouter();
   const [factures, setFactures] = useState<FactureAttenteAdmin[]>([]);
@@ -67,7 +74,7 @@ export function TableauFacturesEnAttente({
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           Clients en attente de facture ({parClient.length})
         </h2>
-        <Link href="/admin/commandes" className="text-sm font-medium text-violet-marque hover:underline">
+        <Link href="/admin/facturations" className="text-sm font-medium text-violet-marque hover:underline">
           Voir tout
         </Link>
       </div>
@@ -92,6 +99,12 @@ export function TableauFacturesEnAttente({
                 : `/admin/clients/${facture.clientId}`;
               const selectionne = facture.clientId === clientIdActif;
               const sansFacture = !facture.id;
+              const nombreArticles =
+                selectionne && brouillon ? brouillon.nombreArticles : facture.nombreArticles;
+              const montantTotal = selectionne && brouillon ? brouillon.montantTotal : facture.montantTotal;
+              const montantPaye = selectionne && brouillon ? brouillon.montantPaye : facture.montantPaye;
+              const resteAPayer = selectionne && brouillon ? brouillon.resteAPayer : facture.resteAPayer;
+              const afficherMontants = nombreArticles > 0 || montantTotal > 0;
               return (
                 <tr
                   key={facture.clientId}
@@ -121,12 +134,12 @@ export function TableauFacturesEnAttente({
                     </p>
                   </td>
                   <td className="hidden px-4 py-3 text-slate-500 md:table-cell">{facture.provenance}</td>
-                  <td className="hidden px-4 py-3 sm:table-cell">{sansFacture ? "—" : facture.nombreArticles}</td>
+                  <td className="hidden px-4 py-3 sm:table-cell">{afficherMontants ? nombreArticles : "—"}</td>
                   <td className="px-4 py-3">
-                    <p className="font-medium">{sansFacture ? "—" : formaterMontant(facture.montantTotal)}</p>
-                    {facture.montantPaye > 0 && (
+                    <p className="font-medium">{afficherMontants ? formaterMontant(montantTotal) : "—"}</p>
+                    {montantPaye > 0 && (
                       <p className="text-[11px] text-slate-500">
-                        Payé {formaterMontant(facture.montantPaye)} · Reste {formaterMontant(facture.resteAPayer)}
+                        Payé {formaterMontant(montantPaye)} · Reste {formaterMontant(resteAPayer)}
                       </p>
                     )}
                   </td>

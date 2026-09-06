@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { BarreLateraleAdmin } from "@/composants/admin/BarreLateraleAdmin";
 import { appelerApi } from "@/lib/api";
 import { formaterDateCourte } from "@/lib/formatage";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
 
 export function MiseEnPageAdmin({
@@ -18,13 +19,29 @@ export function MiseEnPageAdmin({
   children: ReactNode;
 }) {
   const { chargement, definirMenuMobileOuvert } = useClient();
-  const [badges, setBadges] = useState({ commandesAujourdhui: 0, messagesNonLus: 0 });
+  const [badges, setBadges] = useState({ commandesAujourdhui: 0, messagesNonLus: 0, facturesEnAttente: 0 });
 
-  useEffect(() => {
-    appelerApi<{ badges: { commandesAujourdhui: number; messagesNonLus: number } }>("/admin/badges")
-      .then((donnees) => setBadges(donnees.badges))
+  const chargerBadges = useCallback(() => {
+    appelerApi<{ badges: { commandesAujourdhui: number; messagesNonLus: number; facturesEnAttente?: number } }>(
+      "/admin/badges",
+    )
+      .then((donnees) =>
+        setBadges({
+          commandesAujourdhui: donnees.badges.commandesAujourdhui,
+          messagesNonLus: donnees.badges.messagesNonLus,
+          facturesEnAttente: donnees.badges.facturesEnAttente ?? 0,
+        }),
+      )
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    chargerBadges();
+  }, [chargerBadges]);
+
+  useEvenementTempsReel("commande", chargerBadges);
+  useEvenementTempsReel("client", chargerBadges);
+  useEvenementTempsReel("message", chargerBadges);
 
   if (chargement) {
     return (
@@ -39,6 +56,7 @@ export function MiseEnPageAdmin({
       <BarreLateraleAdmin
         commandesAujourdhui={badges.commandesAujourdhui}
         messagesNonLus={badges.messagesNonLus}
+        facturesEnAttente={badges.facturesEnAttente}
       />
       <div className="min-w-0 lg:pl-[280px]">
         <header className="fixed inset-x-0 top-0 z-40 h-[var(--hauteur-en-tete)] border-b-2 border-bleu-hero bg-white px-3 pt-[env(safe-area-inset-top)] sm:px-5 lg:left-[280px] lg:px-6">
