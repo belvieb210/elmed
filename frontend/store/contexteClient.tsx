@@ -2,8 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { appelerApi, URL_API } from "@/lib/api";
-import { diffuserEvenementTempsReel, type TypeEvenementTempsReel } from "@/lib/temps-reel";
+import { appelerApi } from "@/lib/api";
+import { connecterSocketTempsReel } from "@/lib/socket";
+import { diffuserEvenementTempsReel } from "@/lib/temps-reel";
 import type {
   BadgesNavigation,
   Panier,
@@ -134,21 +135,14 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!utilisateur) return;
 
-    const flux = new EventSource(`${URL_API}/temps-reel`, { withCredentials: true });
-    const types: TypeEvenementTempsReel[] = ["panier", "message", "notification", "commande"];
-
-    for (const type of types) {
-      flux.addEventListener(type, () => {
-        diffuserEvenementTempsReel({ type });
-        if (type === "panier") {
-          void chargerPanier();
-        } else {
-          void chargerTableauDeBord();
-        }
-      });
-    }
-
-    return () => flux.close();
+    return connecterSocketTempsReel((type) => {
+      diffuserEvenementTempsReel({ type });
+      if (type === "panier") {
+        void chargerPanier();
+      } else {
+        void chargerTableauDeBord();
+      }
+    });
   }, [utilisateur, chargerPanier, chargerTableauDeBord]);
 
   const valeur = useMemo(

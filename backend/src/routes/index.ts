@@ -7,7 +7,7 @@ import {
   mettreAJourProfil,
   obtenirProfil,
 } from "../controleurs/authentification.controleur";
-import { limiteConnexion } from "../middlewares/securite";
+import { limiteConnexion, limitePaiement } from "../middlewares/securite";
 import { obtenirTableauDeBord } from "../controleurs/accueil.controleur";
 import { listerCategories, listerProduits, obtenirProduit } from "../controleurs/produits.controleur";
 import {
@@ -25,7 +25,6 @@ import {
   telechargerFactureCommande,
 } from "../controleurs/commandes.controleur";
 import { confirmerPaiementEnLigne, obtenirConfigurationPaiement } from "../controleurs/paiements.controleur";
-import { ouvrirFluxTempsReel } from "../controleurs/temps-reel.controleur";
 import { envoyerMessage, obtenirConversation } from "../controleurs/messages.controleur";
 import {
   listerNotifications,
@@ -65,8 +64,7 @@ routeurPrincipal.get("/commandes/:id", obtenirCommande);
 routeurPrincipal.post("/commandes", creerCommandeDepuisPanier);
 
 routeurPrincipal.get("/paiements/configuration", obtenirConfigurationPaiement);
-routeurPrincipal.post("/paiements/confirmer", confirmerPaiementEnLigne);
-routeurPrincipal.get("/temps-reel", ouvrirFluxTempsReel);
+routeurPrincipal.post("/paiements/confirmer", limitePaiement, confirmerPaiementEnLigne);
 
 routeurPrincipal.get("/messagerie", obtenirConversation);
 routeurPrincipal.post("/messagerie", envoyerMessage);
