@@ -3,6 +3,7 @@ import { TypeMessage } from "@prisma/client";
 import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
+import { emettreTempsReelPlusieurs } from "../temps-reel/diffuseur";
 
 type FicheProduitMessage = {
   produitId: string;
@@ -172,6 +173,16 @@ export async function envoyerMessage(requete: RequeteAuthentifiee, reponse: Resp
     },
     include: { auteur: true },
   });
+
+  const equipe = await baseDeDonnees.utilisateur.findMany({
+    where: { role: { not: "CLIENT" } },
+    select: { id: true },
+  });
+  emettreTempsReelPlusieurs(
+    [conversation.clientId, ...equipe.map((membre) => membre.id)],
+    "message",
+    { conversationId: conversation.id },
+  );
 
   reponse.status(201).json({
     succes: true,

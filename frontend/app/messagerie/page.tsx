@@ -1,12 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Send } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { appelerApi } from "@/lib/api";
 import { formaterHeure, formaterMontant } from "@/lib/formatage";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
 import type { FicheProduitMessage, MessageChat } from "@/types/modeles";
 
@@ -26,16 +27,17 @@ export default function PageMessagerie() {
   const [contenu, setContenu] = useState("");
   const listeRef = useRef<HTMLDivElement>(null);
 
-  async function charger() {
+  const charger = useCallback(async () => {
     const donnees = await appelerApi<{ conversation: { messages: MessageChat[] } }>("/messagerie");
     setMessages(donnees.conversation.messages);
     await chargerTableauDeBord();
-  }
+  }, [chargerTableauDeBord]);
 
   useEffect(() => {
-    charger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void charger();
+  }, [charger]);
+
+  useEvenementTempsReel("message", charger);
 
   useEffect(() => {
     listeRef.current?.scrollTo({ top: listeRef.current.scrollHeight });

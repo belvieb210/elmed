@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { appelerApi } from "@/lib/api";
 import { formaterDate } from "@/lib/formatage";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
 import type { NotificationClient } from "@/types/modeles";
 
@@ -14,14 +15,16 @@ export default function PageNotifications() {
   const { chargerTableauDeBord } = useClient();
   const [notifications, setNotifications] = useState<NotificationClient[]>([]);
 
-  async function charger() {
+  const charger = useCallback(async () => {
     const donnees = await appelerApi<{ notifications: NotificationClient[] }>("/notifications");
     setNotifications(donnees.notifications);
-  }
+  }, []);
 
   useEffect(() => {
-    charger();
-  }, []);
+    void charger();
+  }, [charger]);
+
+  useEvenementTempsReel("notification", charger);
 
   async function toutLire() {
     await appelerApi("/notifications/toutes", { method: "PATCH" });

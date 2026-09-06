@@ -25,6 +25,7 @@ import {
   telechargerFactureCommande,
 } from "../controleurs/commandes.controleur";
 import { confirmerPaiementEnLigne, obtenirConfigurationPaiement } from "../controleurs/paiements.controleur";
+import { ouvrirFluxTempsReel } from "../controleurs/temps-reel.controleur";
 import { envoyerMessage, obtenirConversation } from "../controleurs/messages.controleur";
 import {
   listerNotifications,
@@ -65,6 +66,7 @@ routeurPrincipal.post("/commandes", creerCommandeDepuisPanier);
 
 routeurPrincipal.get("/paiements/configuration", obtenirConfigurationPaiement);
 routeurPrincipal.post("/paiements/confirmer", confirmerPaiementEnLigne);
+routeurPrincipal.get("/temps-reel", ouvrirFluxTempsReel);
 
 routeurPrincipal.get("/messagerie", obtenirConversation);
 routeurPrincipal.post("/messagerie", envoyerMessage);

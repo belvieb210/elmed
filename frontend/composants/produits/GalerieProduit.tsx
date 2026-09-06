@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Expand, Heart, Play } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Heart, Play } from "lucide-react";
 import type { MediaProduit } from "@/types/modeles";
 
 function mediasDepuisImages(images: string[]): MediaProduit[] {
@@ -28,7 +28,6 @@ export function GalerieProduit({
 
   const [indexActif, setIndexActif] = useState(0);
   const [debutVignettes, setDebutVignettes] = useState(0);
-  const [zoomOuvert, setZoomOuvert] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const visible = 4;
   const mediaActif = liste[indexActif];
@@ -38,7 +37,6 @@ export function GalerieProduit({
   useEffect(() => {
     setIndexActif(0);
     setDebutVignettes(0);
-    setZoomOuvert(false);
   }, [nomProduit, liste.length]);
 
   useEffect(() => {
@@ -136,16 +134,6 @@ export function GalerieProduit({
           >
             <Heart className="h-4 w-4" />
           </button>
-          {!estVideo && (
-            <button
-              type="button"
-              onClick={() => setZoomOuvert(true)}
-              className="grid h-9 w-9 place-items-center rounded-full bg-white/90 text-slate-600 shadow-sm"
-              aria-label="Agrandir"
-            >
-              <Expand className="h-4 w-4" />
-            </button>
-          )}
         </div>
         {liste.length > 1 && (
           <>
@@ -180,15 +168,6 @@ export function GalerieProduit({
         ))}
       </div>
 
-      {zoomOuvert && !estVideo && (
-        <button
-          type="button"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4"
-          onClick={() => setZoomOuvert(false)}
-        >
-          <img src={mediaActif.url} alt={nomProduit} className="max-h-[90vh] max-w-full object-contain" />
-        </button>
-      )}
     </div>
   );
 }

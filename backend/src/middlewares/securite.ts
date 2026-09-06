@@ -6,6 +6,7 @@ export const limiteGenerale = rateLimit({
   limit: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (requete) => requete.path.includes("/temps-reel"),
   message: { succes: false, message: "Trop de requêtes. Réessayez plus tard." },
 });
 

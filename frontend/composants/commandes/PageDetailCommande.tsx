@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -29,6 +29,7 @@ import {
   libelleDetailStatut,
 } from "@/composants/commandes/suivi";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { formaterDate, formaterDateHeure, formaterHeure, formaterMontant } from "@/lib/formatage";
 import type { DetailCommande } from "@/types/modeles";
 
@@ -40,11 +41,17 @@ export function PageDetailCommande() {
   const suiviRef = useRef<HTMLElement>(null);
   const articlesRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
+  const charger = useCallback(() => {
     appelerApi<{ commande: DetailCommande }>(`/commandes/${params.id}`).then((donnees) => {
       setCommande(donnees.commande);
     });
   }, [params.id]);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
+
+  useEvenementTempsReel("commande", charger);
 
   async function copierNumero() {
     if (!commande) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
@@ -12,6 +12,7 @@ import {
   type OngletCommandes,
 } from "@/composants/commandes/suivi";
 import { appelerApi } from "@/lib/api";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import type { CommandeResume } from "@/types/modeles";
 
 const parPage = 5;
@@ -29,7 +30,7 @@ function ListeCommandes() {
     setOnglet(ongletDepuisStatutUrl(statutUrl));
   }, [statutUrl]);
 
-  useEffect(() => {
+  const charger = useCallback(() => {
     appelerApi<{ commandes: CommandeResume[] }>("/commandes")
       .then((donnees) => setCommandes(donnees.commandes))
       .catch(async () => {
@@ -37,6 +38,12 @@ function ListeCommandes() {
         setCommandes(tableauDeBordDemo.dernieresCommandes);
       });
   }, []);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
+
+  useEvenementTempsReel("commande", charger);
 
   const compteurs = useMemo(
     () => ({

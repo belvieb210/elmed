@@ -1,5 +1,6 @@
 import { ModePaiement, StatutPaiement } from "@prisma/client";
 import { baseDeDonnees } from "../config/baseDeDonnees";
+import { emettreTempsReel } from "../temps-reel/diffuseur";
 
 async function genererNumeroCommande() {
   const annee = new Date().getFullYear();
@@ -72,6 +73,9 @@ export async function enregistrerCommandeDepuisPanier(params: {
       },
     });
 
+    emettreTempsReel(params.clientId, "commande", { commandeId: creee.id });
+    emettreTempsReel(params.clientId, "notification");
+    emettreTempsReel(params.clientId, "panier");
     return creee;
   });
 }

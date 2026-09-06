@@ -3,6 +3,7 @@ import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
+import { emettreTempsReel } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
 
 const inclusionProduit = {
@@ -168,6 +169,7 @@ export async function ajouterAuPanier(requete: RequeteAuthentifiee, reponse: Res
     include: { produit: true },
   });
 
+  emettreTempsReel(requete.utilisateurId, "panier");
   reponse.json({
     succes: true,
     message: "Produit ajouté au panier.",
@@ -188,6 +190,7 @@ export async function modifierQuantitePanier(requete: RequeteAuthentifiee, repon
     await baseDeDonnees.lignePanier.deleteMany({
       where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
     });
+    emettreTempsReel(requete.utilisateurId, "panier");
     reponse.json({ succes: true, message: "Article retiré du panier." });
     return;
   }
@@ -198,6 +201,7 @@ export async function modifierQuantitePanier(requete: RequeteAuthentifiee, repon
     include: inclusionProduit,
   });
 
+  emettreTempsReel(requete.utilisateurId, "panier");
   reponse.json({ succes: true, article: formaterLigne(ligne) });
 }
 
@@ -205,6 +209,7 @@ export async function viderPanier(requete: RequeteAuthentifiee, reponse: Respons
   await baseDeDonnees.lignePanier.deleteMany({
     where: { clientId: requete.utilisateurId },
   });
+  emettreTempsReel(requete.utilisateurId, "panier");
   reponse.json({ succes: true, message: "Panier vidé." });
 }
 
@@ -212,5 +217,6 @@ export async function retirerDuPanier(requete: RequeteAuthentifiee, reponse: Res
   await baseDeDonnees.lignePanier.deleteMany({
     where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
   });
+  emettreTempsReel(requete.utilisateurId, "panier");
   reponse.json({ succes: true, message: "Article retiré du panier." });
 }

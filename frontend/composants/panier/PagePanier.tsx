@@ -12,14 +12,11 @@ import {
   Navigation,
   Plus,
   Trash2,
-  X,
 } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
-import { ApercuProforma } from "@/composants/documents/ApercuProforma";
-import { ParcoursPaiement } from "@/composants/paiement/ParcoursPaiement";
 import { formaterMontant } from "@/lib/formatage";
-import { appelerApi, ouvrirPdf } from "@/lib/api";
+import { appelerApi } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
 import type { ArticlePanier, EntrepotResume } from "@/types/modeles";
 
@@ -50,13 +47,10 @@ function classeCategorie(slug?: string) {
 
 export function PagePanier() {
   const routeur = useRouter();
-  const { panier, utilisateur, chargerPanier, chargerTableauDeBord } = useClient();
+  const { panier, chargerPanier, chargerTableauDeBord } = useClient();
   const [selection, setSelection] = useState<string[]>([]);
   const [modePaiement, setModePaiement] = useState("CARTE_BANCAIRE");
   const [enCours, setEnCours] = useState(false);
-  const [proformaOuverte, setProformaOuverte] = useState(false);
-  const [paiementOuvert, setPaiementOuvert] = useState(false);
-  const [pdfEnCours, setPdfEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,7 +69,6 @@ export function PagePanier() {
   );
   const sousTotal = articlesSelectionnes.reduce((somme, article) => somme + article.sousTotal, 0);
   const entrepot = panier?.entrepot ?? entrepotParDefaut;
-  const nomClient = [utilisateur?.nomSociete, utilisateur?.nomComplet].filter(Boolean).join(" — ") || "Client";
   const carteUrl =
     entrepot.latitude && entrepot.longitude
       ? `https://www.google.com/maps?q=${entrepot.latitude},${entrepot.longitude}`
@@ -109,7 +102,7 @@ export function PagePanier() {
   async function envoyerCommande() {
     if (articles.length === 0) return;
     if (modePaiement === "CARTE_BANCAIRE") {
-      setPaiementOuvert(true);
+      routeur.push("/panier/paiement");
       return;
     }
     setEnCours(true);
@@ -126,17 +119,6 @@ export function PagePanier() {
       setMessage(err instanceof Error ? err.message : "Envoi impossible.");
     } finally {
       setEnCours(false);
-    }
-  }
-
-  async function ouvrirPdfProforma() {
-    setPdfEnCours(true);
-    try {
-      await ouvrirPdf("/panier/proforma");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Impossible d'ouvrir la proforma.");
-    } finally {
-      setPdfEnCours(false);
     }
   }
 
@@ -219,14 +201,13 @@ export function PagePanier() {
                 Continuer mes achats
               </Link>
               <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setProformaOuverte(true)}
+                <Link
+                  href="/panier/proforma"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   <FileText className="h-4 w-4" />
                   Facture proforma
-                </button>
+                </Link>
                 <button
                   type="button"
                   onClick={envoyerCommande}
@@ -328,48 +309,6 @@ export function PagePanier() {
         </div>
       )}
 
-      <ParcoursPaiement
-        ouvert={paiementOuvert}
-        montantCommande={sousTotal}
-        utilisateur={utilisateur}
-        onFermer={() => setPaiementOuvert(false)}
-        onSucces={() => {
-          void Promise.all([chargerPanier(), chargerTableauDeBord()]);
-        }}
-      />
-
-      {proformaOuverte && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-2 sm:p-4">
-          <div className="mx-auto max-w-4xl rounded-2xl bg-white p-3 shadow-xl sm:p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">Facture proforma</h2>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={ouvrirPdfProforma}
-                  disabled={pdfEnCours}
-                  className="rounded-xl bg-violet-marque px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-60 sm:px-3 sm:text-sm"
-                >
-                  {pdfEnCours ? "PDF..." : "Télécharger le PDF"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProformaOuverte(false)}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-slate-100"
-                  aria-label="Fermer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <ApercuProforma
-              articles={articlesSelectionnes.length > 0 ? articlesSelectionnes : articles}
-              montantTotal={sousTotal}
-              nomClient={nomClient}
-            />
-          </div>
-        </div>
-      )}
       <BandeauMessagerie />
     </MiseEnPageClient>
   );

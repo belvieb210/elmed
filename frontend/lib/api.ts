@@ -1,4 +1,4 @@
-const URL_API =
+export const URL_API =
   process.env.NEXT_PUBLIC_URL_API ??
   (process.env.NODE_ENV === "production" ? "/api" : "http://localhost:4000/api");
 

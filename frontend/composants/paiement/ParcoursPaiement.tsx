@@ -104,13 +104,11 @@ function BoutonPayer({
 }
 
 export function ParcoursPaiement({
-  ouvert,
   montantCommande,
   utilisateur,
   onFermer,
   onSucces,
 }: {
-  ouvert: boolean;
   montantCommande: number;
   utilisateur: Utilisateur | null;
   onFermer: () => void;
@@ -142,13 +140,9 @@ export function ParcoursPaiement({
     .join(", ");
 
   useEffect(() => {
-    if (!ouvert) return;
     const lues = lireCartesEnregistrees();
     setCartes(lues);
     setCarteId(lues[0]?.id ?? "");
-    setEtape("accueil");
-    setErreur(null);
-    setResultat(null);
     setPrenoms(utilisateur?.prenom ?? "");
     setNom(utilisateur?.nom ?? "");
     setTelephone(utilisateur?.telephone ?? "");
@@ -156,15 +150,13 @@ export function ParcoursPaiement({
     appelerApi<{ configuration: { mode: string } }>("/paiements/configuration")
       .then((donnees) => setSimulation(donnees.configuration.mode !== "FLEXPAIE"))
       .catch(() => setSimulation(true));
-  }, [ouvert, utilisateur, adresseLivraison]);
+  }, [utilisateur, adresseLivraison]);
 
   const titre = useMemo(() => {
     if (etape === "resultat") return "Résultat du paiement";
     if (etape === "cartes" || etape === "nouvelle-carte") return "Sélectionner une carte";
     return "Paiement initial";
   }, [etape]);
-
-  if (!ouvert) return null;
 
   async function payer(canal: Canal, extras?: { telephone?: string; carte?: CarteEnregistree }) {
     setEnCours(true);
@@ -246,11 +238,10 @@ export function ParcoursPaiement({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/55 sm:items-center sm:p-4">
-      <div className="flex h-[100dvh] w-full max-w-md flex-col bg-white sm:h-[min(860px,96dvh)] sm:rounded-3xl sm:shadow-2xl">
+    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col rounded-3xl border border-slate-100 bg-white shadow-sm">
         <header className="flex items-center justify-between px-4 py-3">
           {etape === "accueil" ? (
-            <button type="button" onClick={onFermer} className="grid h-9 w-9 place-items-center" aria-label="Fermer">
+            <button type="button" onClick={onFermer} className="grid h-9 w-9 place-items-center" aria-label="Retour au panier">
               <X className="h-5 w-5 text-slate-700" />
             </button>
           ) : etape === "resultat" ? (
@@ -368,7 +359,6 @@ export function ParcoursPaiement({
 
           {erreur && <p className="mt-3 text-center text-sm text-red-600">{erreur}</p>}
         </div>
-      </div>
     </div>
   );
 }
