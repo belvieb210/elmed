@@ -1,5 +1,27 @@
 export const etapesSuivi = ["Reçue", "Préparation", "Expédiée", "Livrée"] as const;
 
+export const etapesDetail = [
+  { id: "recue", libelle: "Commande reçue" },
+  { id: "preparation", libelle: "En préparation" },
+  { id: "pret", libelle: "Prête au retrait" },
+  { id: "retiree", libelle: "Retirée" },
+  { id: "livree", libelle: "Livrée" },
+] as const;
+
+export function indexEtapeDetail(statut: string) {
+  if (["ANNULEE", "REFUSEE"].includes(statut)) return -1;
+  if (["LIVREE", "CLOTUREE"].includes(statut)) return 4;
+  if (["EXPEDIEE", "EN_ROUTE"].includes(statut)) return 3;
+  if (statut === "PRET_RETRAIT") return 2;
+  if (["EN_PREPARATION", "VALIDEE"].includes(statut)) return 1;
+  return 0;
+}
+
+export function libelleDetailStatut(statut: string) {
+  if (statut === "PRET_RETRAIT") return "Prête au retrait";
+  return libelleAffichageStatut(statut);
+}
+
 export type OngletCommandes = "toutes" | "en_cours" | "livrees" | "annulees";
 
 const statutsAnnules = ["ANNULEE", "REFUSEE"];

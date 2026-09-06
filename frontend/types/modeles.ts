@@ -64,6 +64,36 @@ export interface PaiementResume {
   libelleMode: string;
   statut: string;
   libelleStatut: string;
+  montant?: number;
+  datePaiement?: string | null;
+  libelleLivraison?: string;
+}
+
+export interface LigneCommande {
+  id: string;
+  nomProduit: string;
+  image: string | null;
+  sku?: string;
+  numeroLot?: string | null;
+  quantite: number;
+  prixUnitaire: number;
+  sousTotal: number;
+}
+
+export interface DetailCommande extends CommandeResume {
+  dateMaj?: string;
+  notes?: string | null;
+  client?: {
+    nomComplet: string;
+    prenom: string;
+    nom: string;
+    email?: string;
+    telephone?: string | null;
+    photoProfil?: string | null;
+    nomSociete?: string | null;
+  };
+  entrepot?: EntrepotResume | null;
+  lignes: LigneCommande[];
 }
 
 export interface CommandeResume {

@@ -6,14 +6,22 @@ import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { identifiantRoute } from "../utils/identifiant";
 
 function libelleModePaiement(mode: string) {
-  if (mode.startsWith("MOBILE_MONEY")) return "Mobile Money";
   const libelles: Record<string, string> = {
-    CARTE_BANCAIRE: "Carte bancaire",
+    MOBILE_MONEY_MPESA: "Mobile Money - M-Pesa",
+    MOBILE_MONEY_AIRTEL: "Mobile Money - Airtel Money",
+    MOBILE_MONEY_ORANGE: "Mobile Money - Orange Money",
+    MOBILE_MONEY_AFRIMONEY: "Mobile Money - AfriMoney",
+    CARTE_BANCAIRE: "Paiement en ligne",
     VIREMENT: "Virement",
     PAIEMENT_RETRAIT: "Paiement au retrait",
     PAIEMENT_LIVRAISON: "Paiement à la livraison",
   };
   return libelles[mode] ?? "Paiement";
+}
+
+function libelleLivraison(mode?: string) {
+  if (mode === "PAIEMENT_LIVRAISON") return "Livraison à domicile";
+  return "Retrait en entrepôt";
 }
 
 function libelleStatutPaiement(statut: string) {
@@ -94,26 +102,91 @@ export async function listerCommandes(requete: RequeteAuthentifiee, reponse: Res
 }
 
 export async function obtenirCommande(requete: RequeteAuthentifiee, reponse: Response) {
-  const commande = await baseDeDonnees.commande.findFirst({
-    where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
-    include: { lignes: { include: { produit: true } }, documents: true, paiements: true },
-  });
+  const [commande, entrepot] = await Promise.all([
+    baseDeDonnees.commande.findFirst({
+      where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
+      include: {
+        client: true,
+        lignes: {
+          include: {
+            produit: {
+              include: { lots: { orderBy: { dateExpiration: "asc" }, take: 1 } },
+            },
+          },
+          orderBy: { id: "asc" },
+        },
+        paiements: { orderBy: { datePaiement: "desc" } },
+      },
+    }),
+    baseDeDonnees.entrepot.findFirst({ orderBy: { nom: "asc" } }),
+  ]);
 
   if (!commande) {
     reponse.status(404).json({ succes: false, message: "Commande introuvable." });
     return;
   }
 
+  const paiement = commande.paiements[0];
+  const nombreArticles = commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0);
+
   reponse.json({
     succes: true,
     commande: {
-      ...commande,
+      id: commande.id,
+      numeroCommande: commande.numeroCommande,
       montantTotal: Number(commande.montantTotal),
+      statut: commande.statut,
       libelleStatut: libelleStatut(commande.statut),
+      dateCommande: commande.dateCommande,
+      dateMaj: commande.dateMaj,
+      notes: commande.notes,
+      nombreProduits: commande.lignes.length,
+      nombreArticles,
+      client: {
+        nomComplet: `${commande.client.prenom} ${commande.client.nom}`.trim(),
+        prenom: commande.client.prenom,
+        nom: commande.client.nom,
+        email: commande.client.email,
+        telephone: commande.client.telephone,
+        photoProfil: commande.client.photoProfil,
+        nomSociete: commande.client.nomSociete,
+      },
+      paiement: paiement
+        ? {
+            mode: paiement.modePaiement,
+            libelleMode: libelleModePaiement(paiement.modePaiement),
+            statut: paiement.statut,
+            libelleStatut: libelleStatutPaiement(paiement.statut),
+            montant: Number(paiement.montant),
+            datePaiement: paiement.datePaiement,
+            libelleLivraison: libelleLivraison(paiement.modePaiement),
+          }
+        : {
+            mode: "PAIEMENT_RETRAIT",
+            libelleMode: "Paiement à la commande",
+            statut: "EN_ATTENTE",
+            libelleStatut: "En attente",
+            montant: Number(commande.montantTotal),
+            datePaiement: null,
+            libelleLivraison: "Retrait en entrepôt",
+          },
+      entrepot: entrepot
+        ? {
+            nom: entrepot.nom,
+            adresse: entrepot.adresse,
+            ville: entrepot.ville,
+            telephone: entrepot.telephone,
+            latitude: entrepot.latitude,
+            longitude: entrepot.longitude,
+            heures: entrepot.heures,
+          }
+        : null,
       lignes: commande.lignes.map((ligne) => ({
         id: ligne.id,
         nomProduit: ligne.produit.nom,
         image: ligne.produit.image,
+        sku: ligne.produit.sku,
+        numeroLot: ligne.produit.lots[0]?.numeroLot ?? null,
         quantite: ligne.quantite,
         prixUnitaire: Number(ligne.prixUnitaire),
         sousTotal: Number(ligne.prixUnitaire) * ligne.quantite,
