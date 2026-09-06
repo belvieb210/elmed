@@ -20,9 +20,9 @@ import { useClient } from "@/store/contexteClient";
 
 const liens = [
   { href: "/admin", libelle: "Tableau de bord", icone: LayoutDashboard },
+  { href: "/admin/clients", libelle: "Clients", icone: UserRound },
   { href: "/admin/commandes", libelle: "Commandes", icone: ClipboardList, badge: "commandes" as const },
   { href: "/admin/messagerie", libelle: "Messagerie", icone: MessageCircle, badge: "messages" as const },
-  { href: "/admin/clients", libelle: "Clients", icone: UserRound },
   { href: "/admin/produits", libelle: "Produits", icone: Package },
   { href: "/admin/documents", libelle: "Documents", icone: FileText },
   { href: "/admin/utilisateurs", libelle: "Utilisateurs", icone: Users },

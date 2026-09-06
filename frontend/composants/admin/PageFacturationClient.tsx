@@ -1,0 +1,637 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Check, FlaskConical, Package, Printer, Search, Trash2 } from "lucide-react";
+import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
+import { TableauFacturesEnAttente } from "@/composants/admin/TableauFacturesEnAttente";
+import { appelerApi, ouvrirPdf } from "@/lib/api";
+import { formaterDate, formaterMontant } from "@/lib/formatage";
+import type { ClientAdmin, ProduitAdmin } from "@/types/modeles";
+
+type ModeFacture = "CASH" | "AVANCE" | "SOLDE" | "PRISE_EN_CHARGE" | "ABONNE" | "CONVENTIONNE";
+type TypeFacture = "STANDARD" | "GROS";
+type ModePaiement = "ESPECES" | "CARTE_BANCAIRE" | "MOBILE_MONEY_MPESA" | "ASSURANCE" | "VIREMENT";
+
+type LigneFacture = {
+  produitId: string;
+  nom: string;
+  sku: string;
+  quantite: number;
+  prixUnitaire: number;
+};
+
+const modesFacture: Array<{ id: ModeFacture; titre: string; texte: string }> = [
+  { id: "CASH", titre: "Cash", texte: "Paiement complet immédiat" },
+  { id: "AVANCE", titre: "Avance", texte: "Paiement partiel, solde à payer" },
+  { id: "SOLDE", titre: "Solde", texte: "Disponible après une avance" },
+  { id: "PRISE_EN_CHARGE", titre: "Prise en charge", texte: "Facturé à un tiers payant" },
+  { id: "ABONNE", titre: "Abonné", texte: "Client abonné, règlement différé" },
+  { id: "CONVENTIONNE", titre: "Conventionné", texte: "Tarif établissement conventionné" },
+];
+
+const moyensPaiement: Array<{ id: ModePaiement; libelle: string }> = [
+  { id: "ESPECES", libelle: "Espèces" },
+  { id: "CARTE_BANCAIRE", libelle: "Carte bancaire" },
+  { id: "MOBILE_MONEY_MPESA", libelle: "Mobile Money" },
+  { id: "ASSURANCE", libelle: "Assurance" },
+  { id: "VIREMENT", libelle: "Virement bancaire" },
+];
+
+const mois = [
+  "Janvier",
+  "Février",
+  "Mars",
+  "Avril",
+  "Mai",
+  "Juin",
+  "Juillet",
+  "Août",
+  "Septembre",
+  "Octobre",
+  "Novembre",
+  "Décembre",
+];
+
+export function PageFacturationClient({
+  clientId,
+  commandeId,
+}: {
+  clientId: string;
+  commandeId: string | null;
+}) {
+  const routeur = useRouter();
+  const aujourdHui = new Date();
+  const [client, setClient] = useState<ClientAdmin | null>(null);
+  const [produits, setProduits] = useState<ProduitAdmin[]>([]);
+  const [peutSolde, setPeutSolde] = useState(false);
+  const [lignes, setLignes] = useState<LigneFacture[]>([]);
+  const [commandeCourante, setCommandeCourante] = useState<string | null>(commandeId);
+  const [rechercheProduit, setRechercheProduit] = useState("");
+  const [modeFacture, setModeFacture] = useState<ModeFacture>("CASH");
+  const [typeFacture, setTypeFacture] = useState<TypeFacture>("STANDARD");
+  const [modePaiement, setModePaiement] = useState<ModePaiement>("ESPECES");
+  const [remise, setRemise] = useState(0);
+  const [fraisDivers, setFraisDivers] = useState(0);
+  const [montantPaye, setMontantPaye] = useState(0);
+  const [numeroRecu, setNumeroRecu] = useState(`REC${aujourdHui.getFullYear()}`);
+  const [notes, setNotes] = useState("");
+  const [jour, setJour] = useState(String(aujourdHui.getDate()));
+  const [moisPaiement, setMoisPaiement] = useState(String(aujourdHui.getMonth() + 1));
+  const [annee, setAnnee] = useState(String(aujourdHui.getFullYear()));
+  const [transferer, setTransferer] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [motDePasseTemporaire, setMotDePasseTemporaire] = useState<string | null>(null);
+
+  const totalProduits = useMemo(
+    () => lignes.reduce((somme, ligne) => somme + ligne.prixUnitaire * ligne.quantite, 0),
+    [lignes],
+  );
+  const sousTotal = Math.max(0, totalProduits - remise);
+  const totalAPayer = Math.max(0, sousTotal + fraisDivers);
+  const resteAPayer = Math.max(0, totalAPayer - montantPaye);
+
+  useEffect(() => {
+    const temporaire = sessionStorage.getItem("mm_mdp_client");
+    if (temporaire) {
+      setMotDePasseTemporaire(temporaire);
+      sessionStorage.removeItem("mm_mdp_client");
+    }
+
+    appelerApi<{
+      client: ClientAdmin;
+      peutSolde: boolean;
+    }>(`/admin/clients/${clientId}`)
+      .then((donnees) => {
+        setClient(donnees.client);
+        setPeutSolde(donnees.peutSolde);
+      })
+      .catch(() => setClient(null));
+
+    appelerApi<{ produits: ProduitAdmin[] }>("/admin/produits")
+      .then((donnees) => setProduits(donnees.produits))
+      .catch(() => setProduits([]));
+  }, [clientId]);
+
+  useEffect(() => {
+    if (!commandeId) return;
+    appelerApi<{
+      facture: {
+        id: string;
+        lignes: LigneFacture[];
+        modeFacture: ModeFacture;
+        typeFacture: TypeFacture;
+        remise: number;
+        fraisDivers: number;
+        numeroRecu: string | null;
+        notes: string | null;
+        montantPaye: number;
+        modePaiement: ModePaiement;
+      };
+    }>(`/admin/factures/${commandeId}`).then((donnees) => {
+      setCommandeCourante(donnees.facture.id);
+      setLignes(donnees.facture.lignes);
+      setModeFacture(donnees.facture.modeFacture);
+      setTypeFacture(donnees.facture.typeFacture);
+      setRemise(donnees.facture.remise);
+      setFraisDivers(donnees.facture.fraisDivers);
+      setNumeroRecu(donnees.facture.numeroRecu ?? numeroRecu);
+      setNotes(donnees.facture.notes ?? "");
+      setMontantPaye(donnees.facture.montantPaye);
+      setModePaiement(donnees.facture.modePaiement);
+    }).catch(() => undefined);
+  }, [commandeId]);
+
+  useEffect(() => {
+    if (modeFacture === "CASH") setMontantPaye(Number(totalAPayer.toFixed(2)));
+    if (modeFacture === "SOLDE" && !peutSolde) setModeFacture("CASH");
+  }, [modeFacture, totalAPayer, peutSolde]);
+
+  const suggestions = produits.filter((produit) => {
+    if (!rechercheProduit.trim()) return false;
+    const terme = rechercheProduit.toLowerCase();
+    return (
+      produit.disponible &&
+      !lignes.some((ligne) => ligne.produitId === produit.id) &&
+      (produit.nom.toLowerCase().includes(terme) || produit.sku.toLowerCase().includes(terme))
+    );
+  }).slice(0, 8);
+
+  function ajouterProduit(produit: ProduitAdmin) {
+    setLignes((actuelles) => [
+      ...actuelles,
+      {
+        produitId: produit.id,
+        nom: produit.nom,
+        sku: produit.sku,
+        quantite: 1,
+        prixUnitaire: produit.prix,
+      },
+    ]);
+    setRechercheProduit("");
+  }
+
+  async function enregistrer(valider: boolean) {
+    if (lignes.length === 0) {
+      setErreur("Ajoutez au moins un produit médical.");
+      return null;
+    }
+    setEnCours(true);
+    setErreur(null);
+    setMessage(null);
+    try {
+      const donnees = await appelerApi<{ commandeId: string; numeroCommande: string; numeroRecu: string | null }>(
+        "/admin/factures",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            clientId,
+            commandeId: commandeCourante || undefined,
+            lignes: lignes.map((ligne) => ({
+              produitId: ligne.produitId,
+              quantite: ligne.quantite,
+              prixUnitaire: ligne.prixUnitaire,
+            })),
+            modeFacture,
+            typeFacture,
+            modePaiement,
+            remise,
+            fraisDivers,
+            montantPaye,
+            numeroRecu,
+            notes,
+            valider,
+            transferer,
+          }),
+        },
+      );
+      setCommandeCourante(donnees.commandeId);
+      setNumeroRecu(donnees.numeroRecu ?? donnees.numeroCommande);
+      setMessage(
+        valider
+          ? `Facture ${donnees.numeroCommande} validée et encaissée.`
+          : `Facture ${donnees.numeroCommande} enregistrée.`,
+      );
+      return donnees.commandeId;
+    } catch (cause) {
+      setErreur(cause instanceof Error ? cause.message : "Enregistrement impossible.");
+      return null;
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  async function imprimer(type: "proforma" | "facture") {
+    const id = commandeCourante ?? (await enregistrer(false));
+    if (!id) return;
+    await ouvrirPdf(`/admin/factures/${id}/pdf?type=${type}`);
+  }
+
+  if (!client) {
+    return (
+      <MiseEnPageAdmin titre="Facture client">
+        <p className="text-sm text-slate-500">Chargement du client...</p>
+      </MiseEnPageAdmin>
+    );
+  }
+
+  const statutPaiement =
+    montantPaye <= 0 ? "En attente de paiement" : resteAPayer > 0 ? "Paiement partiel" : "Payée";
+
+  return (
+    <MiseEnPageAdmin titre="Facturation" sousTitre={`${client.nomSociete || client.nomComplet} · produits médicaux`}>
+      <Link href="/admin/clients" className="mb-4 inline-flex text-sm font-medium text-violet-marque hover:underline">
+        ← Retour à la liste
+      </Link>
+
+      <article className="mb-4 rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#1e3a8a] text-lg font-semibold text-white">
+              {client.initials || client.nomComplet.slice(0, 2).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold uppercase tracking-wide text-slate-900">
+                  {client.nomComplet}
+                </h2>
+                <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase text-sky-700">
+                  Client
+                </span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                  {statutPaiement}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-500">
+                Dossier {client.numeroDossier} · {client.email}
+                {client.telephone ? ` · ${client.telephone}` : ""}
+                {client.ville ? ` · ${client.ville}` : ""}
+              </p>
+              {client.nomSociete && <p className="text-sm text-slate-500">Société : {client.nomSociete}</p>}
+              <p className="mt-1 text-xs text-slate-400">Client depuis le {formaterDate(client.dateCreation)}</p>
+              {motDePasseTemporaire && (
+                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Mot de passe temporaire à transmettre : <strong>{motDePasseTemporaire}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+          <Link
+            href="/admin/commandes"
+            className="shrink-0 rounded-xl border border-bleu-hero px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Voir les commandes
+          </Link>
+        </div>
+      </article>
+
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="space-y-4 xl:col-span-8">
+          <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Produits médicaux à facturer
+            </h3>
+            <div className="relative mt-3">
+              <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <input
+                value={rechercheProduit}
+                onChange={(e) => setRechercheProduit(e.target.value)}
+                placeholder="Rechercher un produit (nom ou SKU)"
+                className="w-full rounded-xl border border-bleu-hero py-2.5 pl-9 pr-3 text-sm outline-none"
+              />
+              {suggestions.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-bleu-hero bg-white shadow-lg">
+                  {suggestions.map((produit) => (
+                    <button
+                      key={produit.id}
+                      type="button"
+                      onClick={() => ajouterProduit(produit)}
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                    >
+                      <span>
+                        <span className="font-medium text-slate-800">{produit.nom}</span>
+                        <span className="ml-2 text-xs text-slate-400">{produit.sku}</span>
+                      </span>
+                      <span className="text-xs font-semibold">{formaterMontant(produit.prix)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-wide text-slate-400">
+                  <tr>
+                    <th className="py-2 pr-3 font-medium">N°</th>
+                    <th className="py-2 pr-3 font-medium">Produit</th>
+                    <th className="py-2 pr-3 font-medium">Prix unit.</th>
+                    <th className="py-2 pr-3 font-medium">Qté</th>
+                    <th className="py-2 pr-3 font-medium">Montant</th>
+                    <th className="py-2 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {lignes.map((ligne, index) => (
+                    <tr key={ligne.produitId} className="border-t border-bleu-hero">
+                      <td className="py-2 pr-3 text-slate-400">{index + 1}</td>
+                      <td className="py-2 pr-3">
+                        <p className="font-medium text-slate-800">{ligne.nom}</p>
+                        <p className="text-xs text-slate-400">{ligne.sku}</p>
+                      </td>
+                      <td className="py-2 pr-3">{formaterMontant(ligne.prixUnitaire)}</td>
+                      <td className="py-2 pr-3">
+                        <input
+                          type="number"
+                          min={1}
+                          value={ligne.quantite}
+                          onChange={(e) =>
+                            setLignes((actuelles) =>
+                              actuelles.map((item) =>
+                                item.produitId === ligne.produitId
+                                  ? { ...item, quantite: Math.max(1, Number(e.target.value) || 1) }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="w-16 rounded-lg border border-bleu-hero px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="py-2 pr-3 font-semibold">
+                        {formaterMontant(ligne.prixUnitaire * ligne.quantite)}
+                      </td>
+                      <td className="py-2">
+                        <button
+                          type="button"
+                          onClick={() => setLignes((actuelles) => actuelles.filter((item) => item.produitId !== ligne.produitId))}
+                          className="text-red-500 hover:text-red-700"
+                          aria-label="Retirer le produit"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-400">
+                {lignes.length === 0 ? "Aucun produit ajouté." : `${lignes.length} produit(s) sélectionné(s)`}
+              </p>
+              <p className="text-sm font-semibold text-slate-800">Total produits {formaterMontant(totalProduits)}</p>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Mode de facture</h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {modesFacture.map((mode) => {
+                const actif = modeFacture === mode.id;
+                const bloque = mode.id === "SOLDE" && !peutSolde;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    disabled={bloque}
+                    onClick={() => setModeFacture(mode.id)}
+                    className={`rounded-xl border px-3 py-3 text-left ${
+                      actif ? "border-2 border-bleu-hero bg-sky-50" : "border-bleu-hero bg-white"
+                    } ${bloque ? "opacity-50" : ""}`}
+                  >
+                    <span className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">{mode.titre}</span>
+                      {actif && (
+                        <span className="grid h-5 w-5 place-items-center rounded-full bg-bleu-hero text-white">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500">{mode.texte}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Informations de paiement
+            </h3>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <label className="text-sm font-medium text-slate-700">
+                Montant à payer
+                <input readOnly value={formaterMontant(totalAPayer)} className="mt-1.5 w-full rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm" />
+              </label>
+              <label className="text-sm font-medium text-slate-700">
+                Montant payé *
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={montantPaye}
+                  onChange={(e) => setMontantPaye(Number(e.target.value) || 0)}
+                  className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm"
+                />
+              </label>
+              <label className="text-sm font-medium text-slate-700">
+                Monnaie
+                <select className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm" defaultValue="USD">
+                  <option value="USD">USD</option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-3">
+              <p className="text-sm font-medium text-slate-700">Date paiement</p>
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                <input value={jour} onChange={(e) => setJour(e.target.value)} className="rounded-xl border border-bleu-hero px-3 py-2.5 text-sm" />
+                <select value={moisPaiement} onChange={(e) => setMoisPaiement(e.target.value)} className="rounded-xl border border-bleu-hero px-3 py-2.5 text-sm">
+                  {mois.map((nom, index) => (
+                    <option key={nom} value={String(index + 1)}>
+                      {nom}
+                    </option>
+                  ))}
+                </select>
+                <input value={annee} onChange={(e) => setAnnee(e.target.value)} className="rounded-xl border border-bleu-hero px-3 py-2.5 text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              <label className="text-sm font-medium text-slate-700">
+                N° Reçu *
+                <input
+                  value={numeroRecu}
+                  onChange={(e) => setNumeroRecu(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm"
+                />
+              </label>
+              <label className="text-sm font-medium text-slate-700">
+                Notes (optionnel)
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm"
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <aside className="space-y-4 xl:col-span-4">
+          <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Résumé de la facture</h3>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-slate-500">Total produits</dt>
+                <dd className="font-medium">{formaterMontant(totalProduits)}</dd>
+              </div>
+              <label className="flex items-center justify-between gap-3">
+                <span className="text-slate-500">Remise</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={remise}
+                  onChange={(e) => setRemise(Number(e.target.value) || 0)}
+                  className="w-28 rounded-lg border border-bleu-hero px-2 py-1.5 text-right text-sm"
+                />
+              </label>
+              <div className="flex justify-between">
+                <dt className="text-slate-500">Sous-total</dt>
+                <dd className="font-medium">{formaterMontant(sousTotal)}</dd>
+              </div>
+              <label className="flex items-center justify-between gap-3">
+                <span className="text-slate-500">Frais divers</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={fraisDivers}
+                  onChange={(e) => setFraisDivers(Number(e.target.value) || 0)}
+                  className="w-28 rounded-lg border border-bleu-hero px-2 py-1.5 text-right text-sm"
+                />
+              </label>
+            </dl>
+            <div className="mt-4 border-t border-bleu-hero pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Total à payer</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{formaterMontant(totalAPayer)}</p>
+              <p className="mt-2 text-sm text-slate-500">Montant payé {formaterMontant(montantPaye)}</p>
+              <p className={`text-sm font-semibold ${resteAPayer > 0 ? "text-orange-600" : "text-emerald-600"}`}>
+                Reste à payer {formaterMontant(resteAPayer)}
+              </p>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Moyens de paiement</h3>
+            <div className="mt-3 space-y-2">
+              {moyensPaiement.map((moyen) => {
+                const actif = modePaiement === moyen.id;
+                return (
+                  <button
+                    key={moyen.id}
+                    type="button"
+                    onClick={() => setModePaiement(moyen.id)}
+                    className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm ${
+                      actif ? "border-emerald-500 bg-emerald-50 font-semibold text-emerald-800" : "border-bleu-hero"
+                    }`}
+                  >
+                    {moyen.libelle}
+                    <span className={`h-4 w-4 rounded-full border ${actif ? "border-emerald-600 bg-emerald-600" : "border-slate-300"}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Type de facture</h3>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setTypeFacture("STANDARD")}
+                className={`rounded-xl border p-3 text-center ${
+                  typeFacture === "STANDARD" ? "border-2 border-bleu-hero bg-sky-50" : "border-bleu-hero"
+                }`}
+              >
+                <FlaskConical className="mx-auto h-5 w-5 text-bleu-hero" />
+                <span className="mt-2 block text-xs font-semibold">Facture standard</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTypeFacture("GROS")}
+                className={`rounded-xl border p-3 text-center ${
+                  typeFacture === "GROS" ? "border-2 border-bleu-hero bg-sky-50" : "border-bleu-hero"
+                }`}
+              >
+                <Package className="mx-auto h-5 w-5 text-bleu-hero" />
+                <span className="mt-2 block text-xs font-semibold">Facture gros</span>
+              </button>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Facture adaptée aux produits médicaux du catalogue, pas aux examens cliniques.
+            </p>
+            <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={transferer}
+                onChange={(e) => setTransferer(e.target.checked)}
+                className="h-4 w-4 rounded border-bleu-hero text-bleu-hero"
+              />
+              Transférer après paiement
+            </label>
+          </section>
+        </aside>
+      </div>
+
+      {erreur && <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">{erreur}</p>}
+      {message && <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</p>}
+
+      <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-bleu-hero bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => routeur.push("/admin/clients")}
+            className="rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            disabled={enCours}
+            onClick={() => void imprimer("proforma")}
+            className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimer proforma
+          </button>
+          <button
+            type="button"
+            disabled={enCours}
+            onClick={() => void imprimer("facture")}
+            className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimer facture
+          </button>
+        </div>
+        <button
+          type="button"
+          disabled={enCours}
+          onClick={() => void enregistrer(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1e3a8a] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          <Check className="h-4 w-4" />
+          Valider et encaisser
+        </button>
+      </div>
+
+      <div className="mt-6">
+        <TableauFacturesEnAttente />
+      </div>
+    </MiseEnPageAdmin>
+  );
+}

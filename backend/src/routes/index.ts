@@ -17,6 +17,14 @@ import {
   obtenirTableauAdmin,
 } from "../controleurs/admin.controleur";
 import {
+  creerClientAdmin,
+  enregistrerFactureAdmin,
+  listerFacturesEnAttente,
+  obtenirClientAdmin,
+  obtenirFactureAdmin,
+  telechargerFactureAdmin,
+} from "../controleurs/admin-factures.controleur";
+import {
   listerConversationsAdmin,
   obtenirConversationAdmin,
   repondreConversationAdmin,
@@ -104,6 +112,12 @@ routeurPrincipal.get("/admin/commandes", ...espaceAdmin, listerCommandesAdmin);
 routeurPrincipal.get("/admin/commandes/:id", ...espaceAdmin, obtenirCommandeAdmin);
 routeurPrincipal.patch("/admin/commandes/:id", ...espaceAdmin, mettreAJourStatutCommande);
 routeurPrincipal.get("/admin/clients", ...espaceAdmin, listerClientsAdmin);
+routeurPrincipal.post("/admin/clients", ...espaceAdmin, creerClientAdmin);
+routeurPrincipal.get("/admin/clients/:id", ...espaceAdmin, obtenirClientAdmin);
+routeurPrincipal.get("/admin/factures/attente", ...espaceAdmin, listerFacturesEnAttente);
+routeurPrincipal.get("/admin/factures/:id", ...espaceAdmin, obtenirFactureAdmin);
+routeurPrincipal.get("/admin/factures/:id/pdf", ...espaceAdmin, telechargerFactureAdmin);
+routeurPrincipal.post("/admin/factures", ...espaceAdmin, enregistrerFactureAdmin);
 routeurPrincipal.get("/admin/conversations", ...espaceAdmin, listerConversationsAdmin);
 routeurPrincipal.get("/admin/conversations/:id", ...espaceAdmin, obtenirConversationAdmin);
 routeurPrincipal.post("/admin/conversations/:id", ...espaceAdmin, repondreConversationAdmin);

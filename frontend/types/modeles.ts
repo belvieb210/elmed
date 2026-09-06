@@ -240,13 +240,44 @@ export interface ConversationAdmin {
 
 export interface ClientAdmin {
   id: string;
+  prenom?: string;
+  nom?: string;
   nomComplet: string;
   email: string;
   telephone: string | null;
   nomSociete: string | null;
+  adresse?: string | null;
   ville: string | null;
   photoProfil: string | null;
   dateCreation: string;
-  nombreCommandes: number;
-  nombreConversations: number;
+  nombreCommandes?: number;
+  nombreConversations?: number;
+  initials?: string;
+  numeroDossier?: string;
+}
+
+export interface FactureAttenteAdmin {
+  id: string;
+  clientId: string;
+  numeroCommande: string;
+  nomClient: string;
+  provenance: string;
+  nombreArticles: number;
+  montantTotal: number;
+  montantPaye: number;
+  resteAPayer: number;
+  statutPaiement: string;
+  libelleStatut: string;
+  dateCommande: string;
+}
+
+export interface ProduitAdmin {
+  id: string;
+  nom: string;
+  sku: string;
+  prix: number;
+  image: string | null;
+  quantiteStock: number;
+  disponible: boolean;
+  nomCategorie: string;
 }

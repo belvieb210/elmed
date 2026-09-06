@@ -50,6 +50,22 @@ enum ModePaiement {
   VIREMENT
   PAIEMENT_RETRAIT
   PAIEMENT_LIVRAISON
+  ESPECES
+  ASSURANCE
+}
+
+enum ModeFacture {
+  CASH
+  AVANCE
+  SOLDE
+  PRISE_EN_CHARGE
+  ABONNE
+  CONVENTIONNE
+}
+
+enum TypeFacture {
+  STANDARD
+  GROS
 }
 
 enum TypeMessage {
@@ -219,6 +235,12 @@ model Commande {
   statut          StatutCommande @default(EN_ATTENTE)
   montantTotal    Decimal        @db.Decimal(12, 2) @map("montant_total")
   notes           String?
+  modeFacture     ModeFacture    @default(CASH) @map("mode_facture")
+  typeFacture     TypeFacture    @default(STANDARD) @map("type_facture")
+  remise          Decimal        @default(0) @db.Decimal(12, 2)
+  fraisDivers     Decimal        @default(0) @db.Decimal(12, 2) @map("frais_divers")
+  numeroRecu      String?        @map("numero_recu")
+  monnaie         String         @default("USD")
   dateCommande    DateTime       @default(now()) @map("date_commande")
   dateMaj         DateTime       @updatedAt @map("date_maj")
 

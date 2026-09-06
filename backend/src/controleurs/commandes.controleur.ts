@@ -16,6 +16,8 @@ export function libelleModePaiement(mode: string) {
     VIREMENT: "Virement",
     PAIEMENT_RETRAIT: "Paiement au retrait",
     PAIEMENT_LIVRAISON: "Paiement à la livraison",
+    ESPECES: "Espèces",
+    ASSURANCE: "Assurance",
   };
   return libelles[mode] ?? "Paiement";
 }

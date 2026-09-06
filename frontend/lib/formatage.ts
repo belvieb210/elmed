@@ -66,6 +66,18 @@ export function formaterDateCourte(date = new Date()) {
   }).format(date);
 }
 
+export function libelleModeFacture(mode?: string) {
+  const libelles: Record<string, string> = {
+    CASH: "Cash",
+    AVANCE: "Avance",
+    SOLDE: "Solde",
+    PRISE_EN_CHARGE: "Prise en charge",
+    ABONNE: "Abonné",
+    CONVENTIONNE: "Conventionné",
+  };
+  return libelles[mode ?? ""] ?? mode ?? "Cash";
+}
+
 export function libelleRole(role?: string) {
   const libelles: Record<string, string> = {
     CLIENT: "Client",
