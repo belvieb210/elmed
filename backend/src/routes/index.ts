@@ -15,6 +15,7 @@ import {
   modifierQuantitePanier,
   obtenirPanier,
   retirerDuPanier,
+  telechargerProformaPanier,
 } from "../controleurs/panier.controleur";
 import {
   creerCommandeDepuisPanier,
@@ -48,6 +49,7 @@ routeurPrincipal.put("/profil/mot-de-passe", changerMotDePasse);
 routeurPrincipal.get("/accueil", obtenirTableauDeBord);
 
 routeurPrincipal.get("/panier", obtenirPanier);
+routeurPrincipal.get("/panier/proforma", telechargerProformaPanier);
 routeurPrincipal.post("/panier", ajouterAuPanier);
 routeurPrincipal.patch("/panier/:id", modifierQuantitePanier);
 routeurPrincipal.delete("/panier/:id", retirerDuPanier);

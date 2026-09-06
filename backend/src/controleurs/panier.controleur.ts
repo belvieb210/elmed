@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
+import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { identifiantRoute } from "../utils/identifiant";
 
@@ -20,6 +21,64 @@ function formaterLigne(ligne: {
     prixUnitaire,
     sousTotal: prixUnitaire * ligne.quantite,
   };
+}
+
+function dateProforma() {
+  const texte = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+  return texte.replace(/^(\d+\s)([a-z])/, (_tout, prefixe: string, lettre: string) => `${prefixe}${lettre.toUpperCase()}`);
+}
+
+function numeroProforma() {
+  const maintenant = new Date();
+  const annee = maintenant.getFullYear();
+  const mois = String(maintenant.getMonth() + 1).padStart(2, "0");
+  const jour = String(maintenant.getDate()).padStart(2, "0");
+  return `PRO-${annee}${mois}${jour}`;
+}
+
+export async function telechargerProformaPanier(requete: RequeteAuthentifiee, reponse: Response) {
+  const clientId = requete.utilisateurId!;
+  const [lignes, client] = await Promise.all([
+    baseDeDonnees.lignePanier.findMany({
+      where: { clientId },
+      include: { produit: true },
+      orderBy: { id: "asc" },
+    }),
+    baseDeDonnees.utilisateur.findUnique({ where: { id: clientId } }),
+  ]);
+
+  if (lignes.length === 0) {
+    reponse.status(400).json({ succes: false, message: "Votre panier est vide." });
+    return;
+  }
+
+  const articles = lignes.map(formaterLigne);
+  const montantTotal = articles.reduce((somme, article) => somme + article.sousTotal, 0);
+  const nomClient = [client?.nomSociete, `${client?.prenom ?? ""} ${client?.nom ?? ""}`.trim()]
+    .filter(Boolean)
+    .join(" — ");
+  const numero = numeroProforma();
+
+  const pdf = await genererProformaPdf({
+    numero,
+    dateTexte: dateProforma(),
+    nomClient: nomClient || "Client",
+    lignes: articles.map((article) => ({
+      quantite: article.quantite,
+      designation: article.nomProduit,
+      prixUnitaire: article.prixUnitaire,
+      prixTotal: article.sousTotal,
+    })),
+    montantTotal,
+  });
+
+  reponse.setHeader("Content-Type", "application/pdf");
+  reponse.setHeader("Content-Disposition", `inline; filename="proforma-ELMED-${numero}.pdf"`);
+  reponse.send(pdf);
 }
 
 export async function obtenirPanier(requete: RequeteAuthentifiee, reponse: Response) {

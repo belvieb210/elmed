@@ -25,3 +25,18 @@ export async function appelerApi<T>(chemin: string, options: RequestInit = {}): 
 
   return donnees as T;
 }
+
+export async function ouvrirPdf(chemin: string) {
+  const reponse = await fetch(`${URL_API}${chemin}`, {
+    credentials: "include",
+  });
+
+  if (!reponse.ok) {
+    const donnees = await reponse.json().catch(() => ({ message: "Téléchargement impossible." }));
+    throw new Error(donnees.message ?? "Téléchargement impossible.");
+  }
+
+  const blob = await reponse.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+}

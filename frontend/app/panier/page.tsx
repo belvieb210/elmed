@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { FileDown, Minus, Plus, Trash2 } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
+import { ApercuProforma } from "@/composants/documents/ApercuProforma";
 import { formaterMontant } from "@/lib/formatage";
-import { appelerApi } from "@/lib/api";
+import { appelerApi, ouvrirPdf } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
 
 export default function PagePanier() {
   const routeur = useRouter();
-  const { panier, chargerPanier, chargerTableauDeBord } = useClient();
+  const { panier, utilisateur, chargerPanier, chargerTableauDeBord } = useClient();
   const [notes, setNotes] = useState("");
   const [enCours, setEnCours] = useState(false);
+  const [proformaEnCours, setProformaEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,6 +29,18 @@ export default function PagePanier() {
       body: JSON.stringify({ quantite }),
     });
     await Promise.all([chargerPanier(), chargerTableauDeBord()]);
+  }
+
+  async function voirProforma() {
+    setProformaEnCours(true);
+    setMessage(null);
+    try {
+      await ouvrirPdf("/panier/proforma");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Impossible d'ouvrir la proforma.");
+    } finally {
+      setProformaEnCours(false);
+    }
   }
 
   async function envoyerCommande() {
@@ -56,6 +70,7 @@ export default function PagePanier() {
           Votre panier est vide.
         </div>
       ) : (
+        <>
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="space-y-3 lg:col-span-2">
             {panier.articles.map((article) => (
@@ -113,15 +128,36 @@ export default function PagePanier() {
             />
             <button
               type="button"
+              onClick={voirProforma}
+              disabled={proformaEnCours}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-900 bg-white py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60"
+            >
+              <FileDown className="h-4 w-4" />
+              {proformaEnCours ? "Préparation..." : "Voir la facture proforma (PDF)"}
+            </button>
+            <button
+              type="button"
               onClick={envoyerCommande}
               disabled={enCours}
-              className="mt-4 w-full rounded-xl bg-violet-marque py-3 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60"
+              className="mt-3 w-full rounded-xl bg-violet-marque py-3 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60"
             >
               {enCours ? "Envoi..." : "Envoyer la commande"}
             </button>
             {message && <p className="mt-3 text-sm text-slate-600">{message}</p>}
           </aside>
         </div>
+
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold text-slate-900">Facture proforma</h2>
+          <ApercuProforma
+            articles={panier.articles}
+            montantTotal={panier.montantTotal}
+            nomClient={
+              [utilisateur?.nomSociete, utilisateur?.nomComplet].filter(Boolean).join(" — ") || "Client"
+            }
+          />
+        </div>
+        </>
       )}
       <BandeauMessagerie />
     </MiseEnPageClient>
