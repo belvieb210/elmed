@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formaterHeure, formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { FactureAttenteAdmin } from "@/types/modeles";
 
 export function TableauFacturesEnAttente() {
+  const routeur = useRouter();
   const [factures, setFactures] = useState<FactureAttenteAdmin[]>([]);
 
   useEffect(() => {
@@ -70,40 +72,56 @@ export function TableauFacturesEnAttente() {
             </tr>
           </thead>
           <tbody>
-            {parClient.map((facture, index) => (
-              <tr key={facture.clientId} className="border-t border-bleu-hero">
-                <td className="px-4 py-3 text-slate-500">{index + 1}</td>
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-slate-800">{facture.nomClient}</p>
-                  <p className="text-[11px] uppercase tracking-wide text-sky-600">
-                    Client{facture.nombreFactures > 1 ? ` · ${facture.nombreFactures} factures` : ""}
-                  </p>
-                </td>
-                <td className="px-4 py-3 text-slate-500">{facture.provenance}</td>
-                <td className="px-4 py-3">{facture.nombreArticles}</td>
-                <td className="px-4 py-3 font-medium">{formaterMontant(facture.montantTotal)}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                      facture.statutPaiement === "PARTIEL"
-                        ? "bg-orange-100 text-orange-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {facture.libelleStatut}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-500">{formaterHeure(facture.dateCommande)}</td>
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/clients/${facture.clientId}?commande=${facture.id}`}
-                    className="rounded-lg border border-bleu-hero px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Ouvrir
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {parClient.map((facture, index) => {
+              const href = `/admin/clients/${facture.clientId}?commande=${facture.id}`;
+              return (
+                <tr
+                  key={facture.clientId}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => routeur.push(href)}
+                  onKeyDown={(evenement) => {
+                    if (evenement.key === "Enter" || evenement.key === " ") {
+                      evenement.preventDefault();
+                      routeur.push(href);
+                    }
+                  }}
+                  className="cursor-pointer border-t border-bleu-hero hover:bg-sky-50"
+                >
+                  <td className="px-4 py-3 text-slate-500">{index + 1}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-slate-800">{facture.nomClient}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-sky-600">
+                      Client{facture.nombreFactures > 1 ? ` · ${facture.nombreFactures} factures` : ""}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{facture.provenance}</td>
+                  <td className="px-4 py-3">{facture.nombreArticles}</td>
+                  <td className="px-4 py-3 font-medium">{formaterMontant(facture.montantTotal)}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                        facture.statutPaiement === "PARTIEL"
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {facture.libelleStatut}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{formaterHeure(facture.dateCommande)}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={href}
+                      onClick={(evenement) => evenement.stopPropagation()}
+                      className="rounded-lg border border-bleu-hero px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
+                    >
+                      Ouvrir
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
