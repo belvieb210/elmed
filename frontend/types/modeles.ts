@@ -189,6 +189,7 @@ export interface TableauDeBord {
 
 export interface CommandeAdmin {
   id: string;
+  clientId?: string;
   numeroCommande: string;
   montantTotal: number;
   statut: string;

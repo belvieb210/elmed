@@ -249,6 +249,7 @@ export async function listerCommandesAdmin(_requete: RequeteAuthentifiee, repons
       const paiement = commande.paiements[0];
       return {
         ...formaterCommandeResume(commande),
+        clientId: commande.clientId,
         nomClient: commande.client.estInvite
           ? "Client invité"
           : `${commande.client.prenom} ${commande.client.nom}`.trim(),
