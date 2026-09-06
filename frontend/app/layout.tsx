@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { CoquilleApplication } from "@/composants/client/CoquilleApplication";
 import { FournisseurClient } from "@/store/contexteClient";
 import "./globals.css";
 
@@ -16,7 +17,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body className="antialiased">
-        <FournisseurClient>{children}</FournisseurClient>
+        <FournisseurClient>
+          <CoquilleApplication>{children}</CoquilleApplication>
+        </FournisseurClient>
       </body>
     </html>
   );

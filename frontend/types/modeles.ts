@@ -186,3 +186,67 @@ export interface TableauDeBord {
   dernieresCommandes: CommandeResume[];
   badges: BadgesNavigation;
 }
+
+export interface CommandeAdmin {
+  id: string;
+  numeroCommande: string;
+  montantTotal: number;
+  statut: string;
+  libelleStatut: string;
+  dateCommande: string;
+  nomClient: string;
+  nombreArticles?: number;
+  image?: string | null;
+  paiement?: {
+    mode: string;
+    libelleMode: string;
+    statut: string;
+    libelleStatut: string;
+  } | null;
+}
+
+export interface TableauAdmin {
+  statistiques: {
+    commandesAujourdhui: number;
+    clientsTotal: number;
+    messagesNonLus: number;
+    chiffreAffaires: number;
+  };
+  commandesRecentes: CommandeAdmin[];
+  messages: Array<{
+    conversationId: string;
+    nomClient: string;
+    photoProfil: string | null;
+    extrait: string;
+    date: string;
+    nonLus: number;
+  }>;
+  ventes: Array<{ date: string; libelle: string; montant: number }>;
+  activites: Array<{ id: string; type: string; titre: string; detail: string; date: string }>;
+  repartition: { total: number; enAttente: number; validees: number; annulees: number };
+  badges: { commandesAujourdhui: number; messagesNonLus: number };
+}
+
+export interface ConversationAdmin {
+  id: string;
+  clientId: string;
+  nomClient: string;
+  photoProfil: string | null;
+  numeroCommande: string | null;
+  extrait: string;
+  date: string;
+  nonLus: number;
+}
+
+export interface ClientAdmin {
+  id: string;
+  nomComplet: string;
+  email: string;
+  telephone: string | null;
+  nomSociete: string | null;
+  ville: string | null;
+  photoProfil: string | null;
+  dateCreation: string;
+  nombreCommandes: number;
+  nombreConversations: number;
+}

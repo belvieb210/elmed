@@ -49,3 +49,10 @@ body {
 .carte-douce {
   box-shadow: 0 8px 24px rgba(31, 41, 55, 0.04);
 }
+
+@media (max-width: 1023px) {
+  .tiroir-mobile {
+    border-top-right-radius: 2rem;
+    border-bottom-right-radius: 2rem;
+  }
+}

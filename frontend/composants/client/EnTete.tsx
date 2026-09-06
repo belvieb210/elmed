@@ -20,11 +20,11 @@ export function EnTete() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur sm:px-4 lg:px-6">
+    <header className="sticky top-0 z-30 border-b-2 border-bleu-hero bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur sm:px-4 lg:px-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
-          className="rounded-xl border border-slate-200 p-2 text-slate-600 lg:hidden"
+          className="rounded-xl border border-bleu-hero p-2 text-bleu-hero lg:hidden"
           onClick={() => definirMenuMobileOuvert(true)}
           aria-label="Ouvrir le menu"
         >
@@ -32,7 +32,7 @@ export function EnTete() {
         </button>
 
         <form onSubmit={soumettreRecherche} className="masque-recherche flex min-w-0 flex-1 items-center">
-          <div className="flex w-full items-center overflow-hidden rounded-full border border-slate-200 bg-white">
+          <div className="flex w-full items-center overflow-hidden rounded-full border border-bleu-hero bg-white">
             <Search className="ml-4 hidden h-4 w-4 text-slate-400 sm:block" />
             <input
               value={texteRecherche}

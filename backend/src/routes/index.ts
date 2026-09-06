@@ -1,6 +1,26 @@
 import { Router } from "express";
 import { assurerClientOuInvite } from "../authentification/invite";
-import { middlewareAuthentificationSouple, middlewareCompteReel } from "../middlewares/authentification";
+import {
+  middlewareAuthentificationSouple,
+  middlewareCompteReel,
+  middlewarePersonnel,
+} from "../middlewares/authentification";
+import {
+  listerClientsAdmin,
+  listerCommandesAdmin,
+  listerDocumentsAdmin,
+  listerProduitsAdmin,
+  listerUtilisateursAdmin,
+  mettreAJourStatutCommande,
+  obtenirBadgesAdmin,
+  obtenirCommandeAdmin,
+  obtenirTableauAdmin,
+} from "../controleurs/admin.controleur";
+import {
+  listerConversationsAdmin,
+  obtenirConversationAdmin,
+  repondreConversationAdmin,
+} from "../controleurs/admin-messagerie.controleur";
 import {
   changerMotDePasse,
   connecterClient,
@@ -38,6 +58,7 @@ export const routeurPrincipal = Router();
 
 const sessionInvite = [middlewareAuthentificationSouple, assurerClientOuInvite];
 const compteClient = [middlewareAuthentificationSouple, middlewareCompteReel];
+const espaceAdmin = [middlewareAuthentificationSouple, middlewarePersonnel];
 
 routeurPrincipal.get("/sante", (_requete, reponse) => {
   reponse.json({ succes: true, service: "MateMedical API", statut: "ok" });
@@ -76,3 +97,16 @@ routeurPrincipal.post("/messagerie", ...sessionInvite, envoyerMessage);
 routeurPrincipal.get("/notifications", ...compteClient, listerNotifications);
 routeurPrincipal.patch("/notifications/toutes", ...compteClient, marquerToutesLues);
 routeurPrincipal.patch("/notifications/:id", ...compteClient, marquerNotificationLue);
+
+routeurPrincipal.get("/admin/badges", ...espaceAdmin, obtenirBadgesAdmin);
+routeurPrincipal.get("/admin/tableau", ...espaceAdmin, obtenirTableauAdmin);
+routeurPrincipal.get("/admin/commandes", ...espaceAdmin, listerCommandesAdmin);
+routeurPrincipal.get("/admin/commandes/:id", ...espaceAdmin, obtenirCommandeAdmin);
+routeurPrincipal.patch("/admin/commandes/:id", ...espaceAdmin, mettreAJourStatutCommande);
+routeurPrincipal.get("/admin/clients", ...espaceAdmin, listerClientsAdmin);
+routeurPrincipal.get("/admin/conversations", ...espaceAdmin, listerConversationsAdmin);
+routeurPrincipal.get("/admin/conversations/:id", ...espaceAdmin, obtenirConversationAdmin);
+routeurPrincipal.post("/admin/conversations/:id", ...espaceAdmin, repondreConversationAdmin);
+routeurPrincipal.get("/admin/documents", ...espaceAdmin, listerDocumentsAdmin);
+routeurPrincipal.get("/admin/utilisateurs", ...espaceAdmin, listerUtilisateursAdmin);
+routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdmin);

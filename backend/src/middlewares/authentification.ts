@@ -79,6 +79,20 @@ export async function middlewareAuthentificationSouple(
   suivant();
 }
 
+const rolesPersonnel = new Set([
+  "SUPER_ADMIN",
+  "DIRECTEUR",
+  "COMMERCIAL",
+  "COMPTABLE",
+  "MAGASINIER",
+  "SUPPORT",
+  "LIVREUR",
+]);
+
+export function estRolePersonnel(role?: string) {
+  return Boolean(role && rolesPersonnel.has(role));
+}
+
 export function middlewareCompteReel(
   requete: RequeteAuthentifiee,
   reponse: Response,
@@ -88,6 +102,21 @@ export function middlewareCompteReel(
     reponse.status(403).json({
       succes: false,
       message: "Un compte client est requis pour accéder à cet espace.",
+    });
+    return;
+  }
+  suivant();
+}
+
+export function middlewarePersonnel(
+  requete: RequeteAuthentifiee,
+  reponse: Response,
+  suivant: NextFunction,
+) {
+  if (!requete.utilisateurId || requete.estInvite || !estRolePersonnel(requete.roleUtilisateur)) {
+    reponse.status(403).json({
+      succes: false,
+      message: "Accès réservé à l'équipe MateMedical.",
     });
     return;
   }

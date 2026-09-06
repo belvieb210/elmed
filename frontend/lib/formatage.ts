@@ -45,6 +45,41 @@ export function libelleStatutCommande(statut: string) {
   return libelles[statut] ?? statut;
 }
 
+export function formaterRelatif(dateIso: string) {
+  const delta = Date.now() - new Date(dateIso).getTime();
+  const minutes = Math.max(0, Math.floor(delta / 60000));
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const heures = Math.floor(minutes / 60);
+  if (heures < 24) return `il y a ${heures} h`;
+  const jours = Math.floor(heures / 24);
+  if (jours === 1) return "hier";
+  if (jours < 7) return `il y a ${jours} j`;
+  return formaterDate(dateIso);
+}
+
+export function formaterDateCourte(date = new Date()) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+export function libelleRole(role?: string) {
+  const libelles: Record<string, string> = {
+    CLIENT: "Client",
+    SUPER_ADMIN: "Super Admin",
+    DIRECTEUR: "Directeur",
+    COMMERCIAL: "Commercial",
+    COMPTABLE: "Comptable",
+    MAGASINIER: "Magasinier",
+    SUPPORT: "Support",
+    LIVREUR: "Livreur",
+  };
+  return libelles[role ?? ""] ?? role ?? "Équipe";
+}
+
 export function classeStatut(statut: string) {
   if (statut === "REFUSEE" || statut === "ANNULEE" || statut === "ECHEC") {
     return "bg-red-100 text-red-700";

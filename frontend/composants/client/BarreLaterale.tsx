@@ -55,9 +55,9 @@ export function BarreLaterale() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(270px,86vw)] flex-col border-r border-slate-100 bg-white px-4 py-5 pt-[max(1.25rem,env(safe-area-inset-top))] transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(300px,86vw)] flex-col overflow-hidden border-2 border-bleu-hero bg-white px-4 py-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[8px_0_32px_rgba(79,116,255,0.16)] transition-transform duration-200 lg:w-[270px] lg:border-y-0 lg:border-l-0 lg:border-r-2 lg:shadow-none ${
           menuMobileOuvert ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } rounded-r-[2rem] lg:translate-x-0 lg:rounded-none`}
       >
         <div className="mb-6 flex items-center justify-between px-1">
           <LogoMateMedical />
@@ -97,7 +97,7 @@ export function BarreLaterale() {
               <Link
                 key={lien.href}
                 href={lien.href === "/messagerie" ? lienMessagerie(compteReel) : lienProtege(lien.href, compteReel)}
-                className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                className={`flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition ${
                   actif
                     ? "bg-violet-clair text-violet-marque"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
 import { MiseEnPageAuth } from "@/composants/auth/MiseEnPageAuth";
 import { lienInscription, normaliserSuivant } from "@/lib/compte";
+import { estPersonnel } from "@/lib/roles";
 import { useClient } from "@/store/contexteClient";
 
 function FormulaireConnexion() {
@@ -23,8 +24,8 @@ function FormulaireConnexion() {
     setEnCours(true);
     setErreur(null);
     try {
-      await connecter(email, motDePasse);
-      routeur.push(suivant);
+      const utilisateur = await connecter(email, motDePasse);
+      routeur.push(estPersonnel(utilisateur.role) ? "/admin" : suivant);
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Connexion impossible.");
     } finally {
