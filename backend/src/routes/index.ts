@@ -70,8 +70,8 @@ routeurPrincipal.get("/profil", ...compteClient, obtenirProfil);
 routeurPrincipal.put("/profil", ...compteClient, mettreAJourProfil);
 routeurPrincipal.put("/profil/mot-de-passe", ...compteClient, changerMotDePasse);
 
-routeurPrincipal.get("/messagerie", ...compteClient, obtenirConversation);
-routeurPrincipal.post("/messagerie", ...compteClient, envoyerMessage);
+routeurPrincipal.get("/messagerie", ...sessionInvite, obtenirConversation);
+routeurPrincipal.post("/messagerie", ...sessionInvite, envoyerMessage);
 
 routeurPrincipal.get("/notifications", ...compteClient, listerNotifications);
 routeurPrincipal.patch("/notifications/toutes", ...compteClient, marquerToutesLues);

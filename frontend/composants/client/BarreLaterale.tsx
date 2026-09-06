@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { LogoMateMedical } from "@/composants/LogoMateMedical";
-import { lienConnexion, lienInscription, lienProtege } from "@/lib/compte";
+import { lienConnexion, lienInscription, lienMessagerie, lienProtege } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
 const liens = [
@@ -96,7 +96,7 @@ export function BarreLaterale() {
             return (
               <Link
                 key={lien.href}
-                href={lienProtege(lien.href, compteReel)}
+                href={lien.href === "/messagerie" ? lienMessagerie(compteReel) : lienProtege(lien.href, compteReel)}
                 className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   actif
                     ? "bg-violet-clair text-violet-marque"
@@ -135,7 +135,7 @@ export function BarreLaterale() {
             <>
               <p className="text-sm font-semibold text-slate-800">Suivi et messagerie</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Commandez sans compte. Connectez-vous pour l&apos;historique et le chat.
+                Discutez d&apos;un produit depuis sa fiche. Un compte sert à retrouver toutes les conversations.
               </p>
               <div className="mt-3 space-y-2">
                 <Link

@@ -78,7 +78,35 @@ export async function fusionnerCompteInvite(inviteId: string | undefined, client
     }
     await transaction.lignePanier.deleteMany({ where: { clientId: inviteId } });
     await transaction.commande.updateMany({ where: { clientId: inviteId }, data: { clientId } });
-    await transaction.conversation.updateMany({ where: { clientId: inviteId }, data: { clientId } });
+
+    const conversationsInvite = await transaction.conversation.findMany({ where: { clientId: inviteId } });
+    for (const conversationInvite of conversationsInvite) {
+      const conversationCible = conversationInvite.commandeId
+        ? await transaction.conversation.findFirst({
+            where: { clientId, commandeId: conversationInvite.commandeId },
+          })
+        : await transaction.conversation.findFirst({
+            where: { clientId, commandeId: null },
+          });
+
+      if (conversationCible) {
+        await transaction.message.updateMany({
+          where: { conversationId: conversationInvite.id },
+          data: { conversationId: conversationCible.id },
+        });
+        await transaction.conversation.delete({ where: { id: conversationInvite.id } });
+      } else {
+        await transaction.conversation.update({
+          where: { id: conversationInvite.id },
+          data: { clientId },
+        });
+      }
+    }
+
+    await transaction.message.updateMany({
+      where: { auteurId: inviteId },
+      data: { auteurId: clientId },
+    });
     await transaction.notification.updateMany({ where: { utilisateurId: inviteId }, data: { utilisateurId: clientId } });
     await transaction.utilisateur.delete({ where: { id: inviteId } }).catch(() => undefined);
   });

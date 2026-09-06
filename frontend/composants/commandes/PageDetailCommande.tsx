@@ -29,7 +29,7 @@ import {
   libelleDetailStatut,
 } from "@/composants/commandes/suivi";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
-import { lienProtege } from "@/lib/compte";
+import { lienMessagerie, lienProtege } from "@/lib/compte";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { formaterDate, formaterDateHeure, formaterHeure, formaterMontant } from "@/lib/formatage";
 import { useClient } from "@/store/contexteClient";
@@ -437,7 +437,7 @@ export function PageDetailCommande() {
               Suivre la commande
             </button>
             <Link
-              href={lienProtege("/messagerie", compteReel)}
+              href={lienMessagerie(compteReel)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <Headset className="h-4 w-4" />

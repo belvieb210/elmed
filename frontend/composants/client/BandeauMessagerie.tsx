@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { lienConnexion } from "@/lib/compte";
+import { lienMessagerie } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
 export function BandeauMessagerie() {
@@ -12,13 +12,13 @@ export function BandeauMessagerie() {
       <p className="text-sm text-slate-600">
         {compteReel
           ? "Des questions ? Notre équipe est disponible pour vous aider."
-          : "La messagerie est réservée aux comptes clients. Vous pouvez commander sans vous inscrire."}
+          : "Discutez d’un produit via « Discuter ici ». Pour voir toutes vos conversations, connectez-vous."}
       </p>
       <Link
-        href={compteReel ? "/messagerie" : lienConnexion("/messagerie")}
+        href={lienMessagerie(compteReel)}
         className="inline-flex items-center justify-center rounded-xl bg-violet-marque px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-fonce"
       >
-        {compteReel ? "Ouvrir la messagerie" : "Se connecter pour discuter"}
+        {compteReel ? "Ouvrir la messagerie" : "Se connecter pour l’historique"}
       </Link>
     </div>
   );

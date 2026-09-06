@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { LockKeyhole } from "lucide-react";
 import { lienConnexion, lienInscription } from "@/lib/compte";
@@ -12,13 +13,13 @@ export function BarriereCompte({
 }: {
   titre: string;
   description: string;
-  children: React.ReactNode;
+  children?: ReactNode;
 }) {
   const { compteReel, chargement } = useClient();
   const chemin = typeof window === "undefined" ? "/" : window.location.pathname;
 
   if (chargement) return null;
-  if (compteReel) return children;
+  if (compteReel && children) return children;
 
   return (
     <div className="mx-auto max-w-xl rounded-3xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">

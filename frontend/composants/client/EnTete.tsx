@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, MessageCircle, Search, ShoppingCart } from "lucide-react";
-import { lienConnexion, lienInscription } from "@/lib/compte";
+import { lienConnexion, lienInscription, lienMessagerie } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
 export function EnTete() {
@@ -64,7 +64,7 @@ export function EnTete() {
         </Link>
 
         <Link
-          href={compteReel ? "/messagerie" : lienConnexion("/messagerie")}
+          href={lienMessagerie(compteReel)}
           className="relative rounded-full p-2 text-slate-600 hover:bg-slate-50"
           aria-label="Messages"
         >

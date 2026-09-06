@@ -3,7 +3,6 @@ export const pagesAuthentification = ["/connexion", "/inscription"];
 export function estPageCompte(chemin: string) {
   return (
     chemin === "/commandes" ||
-    chemin === "/messagerie" ||
     chemin === "/notifications" ||
     chemin === "/profil" ||
     chemin === "/parametres"
@@ -32,4 +31,8 @@ export function lienInscription(suivant?: string) {
 
 export function lienProtege(href: string, compteReel: boolean) {
   return compteReel || !estPageCompte(href) ? href : lienConnexion(href);
+}
+
+export function lienMessagerie(compteReel: boolean) {
+  return compteReel ? "/messagerie" : lienConnexion("/messagerie");
 }

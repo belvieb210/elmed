@@ -3,8 +3,6 @@
 import { useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { appelerApi } from "@/lib/api";
-import { lienConnexion } from "@/lib/compte";
-import { useClient } from "@/store/contexteClient";
 
 export function BoutonDiscuterProduit({
   produitId,
@@ -14,16 +12,11 @@ export function BoutonDiscuterProduit({
   variante?: "carte" | "fiche";
 }) {
   const routeur = useRouter();
-  const { compteReel } = useClient();
   const [enCours, setEnCours] = useState(false);
 
   async function ouvrirDiscussion(evenement: MouseEvent) {
     evenement.preventDefault();
     evenement.stopPropagation();
-    if (!compteReel) {
-      routeur.push(lienConnexion("/messagerie"));
-      return;
-    }
     if (enCours) return;
     setEnCours(true);
     try {
@@ -31,9 +24,9 @@ export function BoutonDiscuterProduit({
         method: "POST",
         body: JSON.stringify({ produitId }),
       });
-      routeur.push("/messagerie");
+      routeur.push(`/messagerie?produit=${encodeURIComponent(produitId)}`);
     } catch {
-      routeur.push(lienConnexion("/messagerie"));
+      routeur.push(`/messagerie?produit=${encodeURIComponent(produitId)}`);
     } finally {
       setEnCours(false);
     }

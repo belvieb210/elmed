@@ -163,7 +163,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
   }, [chemin]);
 
   useEffect(() => {
-    if (!compteReel) return;
+    if (!compteReel && chemin !== "/messagerie") return;
 
     return connecterSocketTempsReel((type) => {
       diffuserEvenementTempsReel({ type });
@@ -173,7 +173,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
         void chargerTableauDeBord();
       }
     });
-  }, [compteReel, chargerPanier, chargerTableauDeBord]);
+  }, [compteReel, chemin, chargerPanier, chargerTableauDeBord]);
 
   const valeur = useMemo(
     () => ({

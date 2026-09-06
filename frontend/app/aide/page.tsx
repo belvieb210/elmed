@@ -17,9 +17,10 @@ export default function PageAide() {
         <article className="rounded-2xl border border-slate-100 bg-white p-6">
           <h2 className="font-semibold text-slate-800">Entrepôt Central Kinshasa</h2>
           <p className="mt-2 text-sm text-slate-500">Avenue des Poids Lourds, Kinshasa</p>
-          <Link href="/messagerie" className="mt-4 inline-block text-sm font-medium text-violet-marque">
-            Écrire au support
-          </Link>
+          <p className="mt-4 text-sm text-slate-500">
+            Pour une question sur un produit, utilisez « Discuter ici » sur sa fiche. L’historique complet des
+            conversations nécessite un compte.
+          </p>
         </article>
       </div>
       <BandeauMessagerie />
