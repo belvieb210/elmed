@@ -22,6 +22,7 @@ import {
   Smartphone,
   X,
 } from "lucide-react";
+import { EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { ArticlePanier, EntrepotResume, Utilisateur } from "@/types/modeles";
@@ -43,8 +44,7 @@ type Etape =
   | "flexpaie"
   | "cartes"
   | "nouvelle-carte"
-  | "virement"
-  | "resultat";
+  | "virement";
 
 type Canal = "FLEXPAIE" | "CARTE" | "VIREMENT";
 
@@ -118,7 +118,7 @@ export function ParcoursPaiement({
   entrepot?: EntrepotResume | null;
   utilisateur: Utilisateur | null;
   onFermer: () => void;
-  onSucces: () => void;
+  onSucces: (commande: ReponsePaiement["commande"]) => void;
 }) {
   const [etape, setEtape] = useState<Etape>("accueil");
   const [cartes, setCartes] = useState<CarteEnregistree[]>([]);
@@ -134,7 +134,6 @@ export function ParcoursPaiement({
   const [adresseFacture, setAdresseFacture] = useState("");
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [resultat, setResultat] = useState<ReponsePaiement | null>(null);
   const [simulation, setSimulation] = useState(true);
 
   const tauxFrais = 0.03;
@@ -159,9 +158,8 @@ export function ParcoursPaiement({
   }, [utilisateur, adresseLivraison]);
 
   const titre = useMemo(() => {
-    if (etape === "resultat") return "Résultat du paiement";
     if (etape === "cartes" || etape === "nouvelle-carte") return "Sélectionner une carte";
-    return "Paiement initial";
+    return "Paiement";
   }, [etape]);
 
   async function payer(canal: Canal, extras?: { telephone?: string; carte?: CarteEnregistree }) {
@@ -177,9 +175,7 @@ export function ParcoursPaiement({
           derniersChiffres: extras?.carte?.derniers,
         }),
       });
-      setResultat(reponse);
-      setEtape("resultat");
-      onSucces();
+      onSucces(reponse.commande);
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Paiement impossible.");
     } finally {
@@ -277,8 +273,6 @@ export function ParcoursPaiement({
             >
               <X className="h-5 w-5 text-slate-700" />
             </button>
-          ) : etape === "resultat" ? (
-            <span className="w-10" />
           ) : (
             <button
               type="button"
@@ -303,27 +297,11 @@ export function ParcoursPaiement({
         </Link>
       </header>
 
-      <ol className="mb-5 flex flex-wrap items-center gap-2 text-sm">
-        {["Panier", "Paiement", "Confirmation"].map((nom, index) => {
-          const actif = etape === "resultat" ? index <= 2 : index <= 1;
-          const courant = etape === "resultat" ? index === 2 : index === 1;
-          return (
-            <li key={nom} className="flex items-center gap-2">
-              <span
-                className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${
-                  courant ? "bg-orange-paiement text-white" : actif ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"
-                }`}
-              >
-                {index + 1}
-              </span>
-              <span className={courant ? "font-medium text-slate-900" : "text-slate-400"}>{nom}</span>
-              {index < 2 && <span className="text-slate-300">—</span>}
-            </li>
-          );
-        })}
-      </ol>
+      <div className="mb-5">
+        <EtapesParcoursCommande etapeCourante={2} />
+      </div>
 
-      {simulation && etape !== "resultat" && (
+      {simulation && (
         <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800">
           Mode simulation — aucun débit réel tant que l&apos;API n&apos;est pas branchée
         </p>
@@ -416,8 +394,6 @@ export function ParcoursPaiement({
             <EcranVirement total={total} enCours={enCours} onPayer={() => void payer("VIREMENT")} />
           )}
 
-          {etape === "resultat" && resultat && <EcranResultat resultat={resultat} total={total} />}
-
           {erreur && <p className="mt-4 text-sm font-medium text-red-600">{erreur}</p>}
         </section>
 
@@ -428,9 +404,7 @@ export function ParcoursPaiement({
           montantCommande={montantCommande}
           frais={frais}
           total={total}
-          etape={etape}
           enCours={enCours}
-          payee={etape === "resultat"}
           onPayer={payerSelonEtape}
         />
       </div>
@@ -862,36 +836,6 @@ function EcranVirement({
   );
 }
 
-function EcranResultat({ resultat, total }: { resultat: ReponsePaiement; total: number }) {
-  return (
-    <div className="flex flex-1 flex-col items-center px-2 pt-8 text-center">
-      <span className="grid h-20 w-20 place-items-center rounded-full bg-emerald-500 text-white">
-        <Check className="h-10 w-10" strokeWidth={3} />
-      </span>
-      <p className="mt-6 text-base font-semibold text-slate-900">
-        Votre paiement de {formaterMontant(total)} a été traité avec succès.
-      </p>
-      <p className="mt-2 text-sm text-slate-500">
-        Commande {resultat.commande.numeroCommande}. Veuillez patienter et vérifier le statut de la commande
-        environ 1-2 hours plus tard.
-      </p>
-      <Link
-        href={`/commandes/${resultat.commande.id}`}
-        className={`mt-8 inline-flex w-full items-center justify-center rounded-full ${orange} py-3.5 text-sm font-bold text-white`}
-      >
-        Afficher les détails de la commande
-      </Link>
-      {resultat.simulation && (
-        <p className="mt-8 border-t border-slate-100 pt-6 text-sm text-slate-600">
-          <span className="font-semibold text-orange-paiement">ELMED Club</span>
-          <br />
-          Félicitations ! Vous gagnerez des points dès que votre commande sera complète.
-        </p>
-      )}
-    </div>
-  );
-}
-
 function ResumeMontant({
   montantCommande,
   frais,
@@ -981,9 +925,7 @@ function PanneauResume({
   montantCommande,
   frais,
   total,
-  etape,
   enCours,
-  payee,
   onPayer,
 }: {
   articles: ArticlePanier[];
@@ -992,9 +934,7 @@ function PanneauResume({
   montantCommande: number;
   frais: number;
   total: number;
-  etape: Etape;
   enCours: boolean;
-  payee: boolean;
   onPayer: () => void;
 }) {
   const nombreArticles = articles.reduce((somme, article) => somme + article.quantite, 0);
@@ -1056,22 +996,15 @@ function PanneauResume({
           </span>
         </div>
 
-        {etape !== "resultat" && (
-          <button
-            type="button"
-            onClick={onPayer}
-            disabled={enCours}
-            className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl ${orange} py-3 text-sm font-bold text-white disabled:opacity-60`}
-          >
-            <ShieldCheck className="h-4 w-4" />
-            {enCours ? "Traitement..." : "Payer maintenant"}
-          </button>
-        )}
-        {payee && (
-          <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-center text-sm font-semibold text-emerald-700">
-            Paiement confirmé
-          </p>
-        )}
+        <button
+          type="button"
+          onClick={onPayer}
+          disabled={enCours}
+          className={`mt-4 flex w-full items-center justify-center gap-2 rounded-xl ${orange} py-3 text-sm font-bold text-white disabled:opacity-60`}
+        >
+          <ShieldCheck className="h-4 w-4" />
+          {enCours ? "Traitement..." : "Payer maintenant"}
+        </button>
       </article>
 
       <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">

@@ -15,12 +15,11 @@ import {
 } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
+import { EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
 import type { ArticlePanier, EntrepotResume } from "@/types/modeles";
-
-const etapesPanier = ["Panier", "Paiement", "Confirmation", "Livraison"];
 
 const modesPaiement = [
   { id: "CARTE_BANCAIRE", libelle: "Paiement en ligne" },
@@ -108,13 +107,16 @@ export function PagePanier() {
     setEnCours(true);
     setMessage(null);
     try {
-      const resultat = await appelerApi<{ message: string }>("/commandes", {
+      const resultat = await appelerApi<{
+        message: string;
+        commande: { id: string };
+      }>("/commandes", {
         method: "POST",
         body: JSON.stringify({ modePaiement }),
       });
       setMessage(resultat.message);
       await Promise.all([chargerPanier(), chargerTableauDeBord()]);
-      routeur.push("/commandes");
+      routeur.push(`/panier/livraison?commande=${resultat.commande.id}`);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Envoi impossible.");
     } finally {
@@ -126,21 +128,9 @@ export function PagePanier() {
     <MiseEnPageClient>
       <div className="mb-5">
         <h1 className="text-2xl font-semibold text-slate-900">Mon panier</h1>
-        <ol className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-          {etapesPanier.map((etape, index) => (
-            <li key={etape} className="flex items-center gap-2">
-              <span
-                className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${
-                  index === 0 ? "bg-violet-marque text-white" : "bg-slate-200 text-slate-500"
-                }`}
-              >
-                {index + 1}
-              </span>
-              <span className={index === 0 ? "font-medium text-violet-marque" : "text-slate-400"}>{etape}</span>
-              {index < etapesPanier.length - 1 && <span className="text-slate-300">—</span>}
-            </li>
-          ))}
-        </ol>
+        <div className="mt-3">
+          <EtapesParcoursCommande etapeCourante={1} />
+        </div>
       </div>
 
       {!panier || articles.length === 0 ? (

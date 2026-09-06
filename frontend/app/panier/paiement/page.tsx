@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { ParcoursPaiement } from "@/composants/paiement/ParcoursPaiement";
@@ -9,6 +9,7 @@ import { useClient } from "@/store/contexteClient";
 export default function RoutePaiement() {
   const routeur = useRouter();
   const { panier, utilisateur, chargerPanier, chargerTableauDeBord } = useClient();
+  const [paiementReussi, setPaiementReussi] = useState(false);
 
   useEffect(() => {
     void chargerPanier();
@@ -17,10 +18,11 @@ export default function RoutePaiement() {
   const montant = panier?.montantTotal ?? 0;
 
   useEffect(() => {
+    if (paiementReussi) return;
     if (panier && panier.articles.length === 0) {
       routeur.replace("/panier");
     }
-  }, [panier, routeur]);
+  }, [panier, routeur, paiementReussi]);
 
   return (
     <MiseEnPageClient>
@@ -30,8 +32,10 @@ export default function RoutePaiement() {
         entrepot={panier?.entrepot}
         utilisateur={utilisateur}
         onFermer={() => routeur.push("/panier")}
-        onSucces={() => {
-          void Promise.all([chargerPanier(), chargerTableauDeBord()]);
+        onSucces={(commande) => {
+          setPaiementReussi(true);
+          void chargerTableauDeBord();
+          routeur.push(`/panier/livraison?commande=${commande.id}`);
         }}
       />
     </MiseEnPageClient>
