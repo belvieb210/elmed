@@ -69,7 +69,8 @@ export default function PageClientsAdmin() {
   const recents = useMemo(() => {
     const fusion = [...recentsSession, ...clients.filter((client) => !recentsSession.some((item) => item.id === client.id))];
     return fusion
-      .filter((client) => correspondFiltres(client, filtresAppliques, recentsSession.some((item) => item.id === client.id)))
+      .filter(clientEnAttenteDeFacture)
+      .filter((client) => correspondFiltres(client, filtresAppliques))
       .slice(0, 12);
   }, [clients, recentsSession, filtresAppliques]);
 
@@ -98,9 +99,10 @@ export default function PageClientsAdmin() {
             }}
             onCree={(client, motDePasse) => {
               sessionStorage.setItem("mm_mdp_client", motDePasse);
-              ajouterRecent(client);
-              setClients((actuels) => [client, ...actuels.filter((item) => item.id !== client.id)]);
-              afficherClient(client);
+              const nouveau = { ...client, statutFacture: "A_FACTURER" as const, montantPaye: 0, resteAPayer: 0 };
+              ajouterRecent(nouveau);
+              setClients((actuels) => [nouveau, ...actuels.filter((item) => item.id !== client.id)]);
+              afficherClient(nouveau);
             }}
             onModifie={(client) => {
               setClients((actuels) => actuels.map((item) => (item.id === client.id ? { ...item, ...client } : item)));
@@ -138,7 +140,9 @@ export default function PageClientsAdmin() {
             <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               Clients récemment enregistrés
             </h2>
-            <p className="mt-1 text-xs text-slate-400">{recents.length} client(s) dans le registre</p>
+            <p className="mt-1 text-xs text-slate-400">
+              {recents.length} client(s) à facturer ou à solder
+            </p>
           </div>
           <button
             type="button"
@@ -181,8 +185,8 @@ export default function PageClientsAdmin() {
             </thead>
             <tbody>
               {recents.map((client) => {
-                const selectionne = recentsSession.some((item) => item.id === client.id);
                 const affiche = clientAfficheId === client.id;
+                const avance = client.statutFacture === "AVANCE";
                 return (
                   <tr
                     key={client.id}
@@ -196,10 +200,10 @@ export default function PageClientsAdmin() {
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          selectionne || affiche ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"
+                          avance ? "bg-orange-100 text-orange-800" : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        {affiche ? "Affiché" : selectionne ? "Sélectionné" : "Enregistré"}
+                        {avance ? "Avance à solder" : "À facturer"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-500">{formaterHeure(client.dateCreation)}</td>
@@ -247,7 +251,9 @@ export default function PageClientsAdmin() {
           </table>
         </div>
         {recents.length === 0 && (
-          <p className="px-4 py-6 text-sm text-slate-400">Aucun client ne correspond à ces filtres.</p>
+          <p className="px-4 py-6 text-sm text-slate-400">
+            Aucun client en attente de facture ou de solde.
+          </p>
         )}
       </section>
     </MiseEnPageAdmin>
@@ -273,7 +279,12 @@ function apercuDepuisClient(client: ClientAdmin): ApercuClient {
   };
 }
 
-function correspondFiltres(client: ClientAdmin, filtres: FiltresClients, selectionne: boolean) {
+function clientEnAttenteDeFacture(client: ClientAdmin) {
+  const statut = client.statutFacture ?? "A_FACTURER";
+  return statut === "A_FACTURER" || statut === "AVANCE";
+}
+
+function correspondFiltres(client: ClientAdmin, filtres: FiltresClients) {
   const nom = (client.nom ?? client.nomComplet.split(" ").slice(-1)[0] ?? "").toLowerCase();
   const prenom = (client.prenom ?? client.nomComplet.split(" ")[0] ?? "").toLowerCase();
   if (filtres.nom && !nom.includes(filtres.nom.trim().toLowerCase())) return false;
@@ -291,7 +302,7 @@ function correspondFiltres(client: ClientAdmin, filtres: FiltresClients, selecti
   const date = new Date(client.dateCreation);
   if (filtres.du && date < new Date(`${filtres.du}T00:00:00`)) return false;
   if (filtres.au && date > new Date(`${filtres.au}T23:59:59`)) return false;
-  if (filtres.statut === "Sélectionné" && !selectionne) return false;
-  if (filtres.statut === "Enregistré" && selectionne) return false;
+  if (filtres.statut === "À facturer" && client.statutFacture === "AVANCE") return false;
+  if (filtres.statut === "Avance à solder" && client.statutFacture !== "AVANCE") return false;
   return true;
 }

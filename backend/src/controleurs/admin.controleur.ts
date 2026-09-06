@@ -303,34 +303,84 @@ export async function mettreAJourStatutCommande(requete: RequeteAuthentifiee, re
   reponse.json({ succes: true, commande: formaterCommandeResume(commande) });
 }
 
+function montantPayeCommandes(
+  paiements: Array<{ montant: { toString(): string }; statut: string }>,
+) {
+  return paiements
+    .filter((paiement) => paiement.statut === "PAYE" || paiement.statut === "PARTIEL")
+    .reduce((somme, paiement) => somme + Number(paiement.montant), 0);
+}
+
+function statutFactureClient(
+  commandes: Array<{
+    montantTotal: { toString(): string };
+    modeFacture: string;
+    paiements: Array<{ montant: { toString(): string }; statut: string }>;
+  }>,
+) {
+  if (commandes.length === 0) {
+    return { statutFacture: "A_FACTURER" as const, montantPaye: 0, resteAPayer: 0 };
+  }
+
+  let montantPaye = 0;
+  let resteAPayer = 0;
+  let aUneAvance = false;
+
+  for (const commande of commandes) {
+    const paye = Math.round(montantPayeCommandes(commande.paiements) * 100) / 100;
+    const reste = Math.round(Math.max(0, Number(commande.montantTotal) - paye) * 100) / 100;
+    montantPaye += paye;
+    resteAPayer += reste;
+    if (reste > 0 && (commande.modeFacture === "AVANCE" || commande.paiements.some((paiement) => paiement.statut === "PARTIEL"))) {
+      aUneAvance = true;
+    }
+  }
+
+  if (aUneAvance) {
+    return { statutFacture: "AVANCE" as const, montantPaye, resteAPayer };
+  }
+
+  return { statutFacture: "SOLDEE" as const, montantPaye, resteAPayer: 0 };
+}
+
 export async function listerClientsAdmin(_requete: RequeteAuthentifiee, reponse: Response) {
   const clients = await baseDeDonnees.utilisateur.findMany({
     where: { role: "CLIENT", estInvite: false },
     include: {
-      _count: { select: { commandes: true, conversations: true } },
+      commandes: {
+        where: { statut: { notIn: ["ANNULEE", "REFUSEE"] } },
+        include: { paiements: true },
+      },
+      _count: { select: { conversations: true } },
     },
     orderBy: { dateCreation: "desc" },
   });
 
   reponse.json({
     succes: true,
-    clients: clients.map((client) => ({
-      id: client.id,
-      prenom: client.prenom,
-      nom: client.nom,
-      nomComplet: `${client.prenom} ${client.nom}`,
-      email: client.email,
-      telephone: client.telephone,
-      nomSociete: client.nomSociete,
-      ville: client.ville,
-      photoProfil: client.photoProfil,
-      dateCreation: client.dateCreation,
-      numeroClient: client.numeroClient,
-      adresse: client.adresse,
-      fiche: client.ficheClient,
-      nombreCommandes: client._count.commandes,
-      nombreConversations: client._count.conversations,
-    })),
+    clients: clients.map((client) => {
+      const facture = statutFactureClient(client.commandes);
+      return {
+        id: client.id,
+        prenom: client.prenom,
+        nom: client.nom,
+        nomComplet: `${client.prenom} ${client.nom}`,
+        email: client.email,
+        telephone: client.telephone,
+        nomSociete: client.nomSociete,
+        ville: client.ville,
+        photoProfil: client.photoProfil,
+        dateCreation: client.dateCreation,
+        numeroClient: client.numeroClient,
+        adresse: client.adresse,
+        fiche: client.ficheClient,
+        nombreCommandes: client.commandes.length,
+        nombreConversations: client._count.conversations,
+        statutFacture: facture.statutFacture,
+        montantPaye: facture.montantPaye,
+        resteAPayer: facture.resteAPayer,
+      };
+    }),
   });
 }
 

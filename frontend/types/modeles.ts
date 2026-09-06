@@ -256,6 +256,9 @@ export interface ClientAdmin {
   numeroDossier?: string;
   numeroClient?: string | null;
   fiche?: Record<string, unknown> | null;
+  statutFacture?: "A_FACTURER" | "AVANCE" | "SOLDEE";
+  montantPaye?: number;
+  resteAPayer?: number;
 }
 
 export interface FactureAvanceAdmin {

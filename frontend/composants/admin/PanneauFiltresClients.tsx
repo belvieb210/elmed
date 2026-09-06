@@ -99,8 +99,8 @@ export function PanneauFiltresClients({
           <span className={label}>Statut</span>
           <select value={filtres.statut} onChange={(e) => champTexte("statut", e.target.value)} className={champ}>
             <option>Tous</option>
-            <option>Enregistré</option>
-            <option>Sélectionné</option>
+            <option>À facturer</option>
+            <option>Avance à solder</option>
           </select>
         </label>
       </div>
