@@ -585,7 +585,7 @@ function EcranCartes({
       <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-3">
         <p className="text-xl font-bold text-slate-900">{formaterMontant(total)}</p>
         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-          <Lock className="h-3.5 w-3.5" /> FC
+          <Lock className="h-3.5 w-3.5" /> USD
         </span>
       </div>
       <button
@@ -814,7 +814,7 @@ function EcranVirement({
         <p className="font-semibold text-slate-800">Coordonnées bancaires ELMED</p>
         <p>Banque : Rawbank — Gombe</p>
         <p>Titulaire : ELMED SARL</p>
-        <p>Compte CDF : 00011 25100 123456789</p>
+        <p>Compte USD : 00011 25100 123456789</p>
         <p>SWIFT : RAWBCDKI</p>
         <p className="text-xs text-slate-500">Indiquez le numéro de commande dans le motif du virement.</p>
       </div>
@@ -853,7 +853,7 @@ function ResumeMontant({
           <Globe className="h-3.5 w-3.5" /> RD Congo
         </span>
         <span className="inline-flex items-center gap-1">
-          <Lock className="h-3.5 w-3.5" /> FC
+          <Lock className="h-3.5 w-3.5" /> USD
         </span>
       </div>
     </>
@@ -963,7 +963,7 @@ function PanneauResume({
           </div>
           <div className="flex justify-between text-slate-600">
             <dt>Livraison</dt>
-            <dd>0 FC</dd>
+            <dd>{formaterMontant(0)}</dd>
           </div>
           <div className="flex justify-between text-slate-600">
             <dt className="inline-flex items-center gap-1">
@@ -979,7 +979,7 @@ function PanneauResume({
             <p className="text-xl font-bold text-slate-900">{formaterMontant(total)}</p>
           </div>
           <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-            <Lock className="h-3.5 w-3.5" /> FC
+            <Lock className="h-3.5 w-3.5" /> USD
           </span>
         </div>
 
@@ -1026,7 +1026,7 @@ function PanneauResume({
           Paiement chiffré · PCI DSS
         </p>
         <p className="mt-2">Les fonds sont transmis à ELMED. Le numéro de carte complet n&apos;est jamais enregistré.</p>
-        <p className="mt-1">Pays : RD Congo · Devise : FC</p>
+        <p className="mt-1">Pays : RD Congo · Devise : USD</p>
       </article>
     </aside>
   );

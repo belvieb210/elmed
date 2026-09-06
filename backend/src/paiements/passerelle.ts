@@ -22,7 +22,7 @@ export function configurationPasserelle() {
   return {
     mode,
     flexpaieConfigure: Boolean(process.env.FLEXPAIE_JETON && process.env.FLEXPAIE_MARCHAND),
-    devise: "FC",
+    devise: "USD",
     pays: "RD Congo",
     tauxFrais: 0.03,
   };
@@ -45,8 +45,8 @@ async function appelerFlexPaie(params: { montant: number; telephone?: string; re
       type: 1,
       reference: params.reference,
       phone: params.telephone,
-      amount: String(Math.round(params.montant)),
-      currency: "CDF",
+      amount: params.montant.toFixed(2),
+      currency: "USD",
       callbackUrl: rappel,
     }),
   });

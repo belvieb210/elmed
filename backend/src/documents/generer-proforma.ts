@@ -21,7 +21,10 @@ export type DonneesProforma = {
 };
 
 function formaterMontant(montant: number) {
-  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(montant);
+  return `${new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(montant)} $`;
 }
 
 function dessinerMicroscope(doc: PDFKit.PDFDocument, x: number, y: number) {

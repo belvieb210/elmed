@@ -1,5 +1,8 @@
 export function formaterMontant(montant: number) {
-  return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(montant)} FC`;
+  return `${new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(montant)} $`;
 }
 
 export function formaterDate(dateIso: string) {
