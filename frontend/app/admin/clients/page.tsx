@@ -15,6 +15,7 @@ import {
 import { PanneauLateralClient, type ApercuClient } from "@/composants/admin/PanneauLateralClient";
 import { formaterDateHeure, formaterHeure } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
 import type { ClientAdmin } from "@/types/modeles";
 
@@ -60,11 +61,18 @@ export default function PageClientsAdmin() {
     setApercu(apercuDepuisClient(client));
   }
 
-  useEffect(() => {
+  const chargerClients = useCallback(() => {
     appelerApi<{ clients: ClientAdmin[] }>("/admin/clients")
       .then((donnees) => setClients(donnees.clients))
       .catch(() => setClients([]));
   }, []);
+
+  useEffect(() => {
+    chargerClients();
+  }, [chargerClients]);
+
+  useEvenementTempsReel("client", chargerClients);
+  useEvenementTempsReel("commande", chargerClients);
 
   const recents = useMemo(() => {
     const fusion = [...recentsSession, ...clients.filter((client) => !recentsSession.some((item) => item.id === client.id))];
@@ -177,9 +185,9 @@ export default function PageClientsAdmin() {
                 <th className="px-4 py-3 font-medium">N° client</th>
                 <th className="px-4 py-3 font-medium">Nom complet</th>
                 <th className="px-4 py-3 font-medium">Téléphone</th>
-                <th className="px-4 py-3 font-medium">Établissement</th>
+                <th className="hidden px-4 py-3 font-medium md:table-cell">Établissement</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
-                <th className="px-4 py-3 font-medium">Heure</th>
+                <th className="hidden px-4 py-3 font-medium sm:table-cell">Heure</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
@@ -196,7 +204,7 @@ export default function PageClientsAdmin() {
                     <td className="px-4 py-3 text-slate-500">{client.numeroClient || "—"}</td>
                     <td className="px-4 py-3 font-semibold uppercase text-slate-800">{client.nomComplet}</td>
                     <td className="px-4 py-3 text-slate-500">{client.telephone || "—"}</td>
-                    <td className="px-4 py-3 text-slate-500">{client.nomSociete || "Client"}</td>
+                    <td className="hidden px-4 py-3 text-slate-500 md:table-cell">{client.nomSociete || "Client"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -206,9 +214,9 @@ export default function PageClientsAdmin() {
                         {avance ? "Avance à solder" : "À facturer"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{formaterHeure(client.dateCreation)}</td>
+                    <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{formaterHeure(client.dateCreation)}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -237,7 +245,7 @@ export default function PageClientsAdmin() {
                         <Link
                           href={`/admin/clients/${client.id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-slate-600"
+                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           Facturer

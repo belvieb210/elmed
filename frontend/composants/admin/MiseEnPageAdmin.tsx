@@ -63,7 +63,7 @@ export function MiseEnPageAdmin({
           </div>
         </header>
         <div className="h-[var(--hauteur-en-tete)]" aria-hidden />
-        <main className="px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 lg:px-6">
+        <main className="min-w-0 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 lg:px-6">
           {children}
         </main>
       </div>

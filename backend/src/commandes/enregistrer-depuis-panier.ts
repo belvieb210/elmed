@@ -1,6 +1,6 @@
 import { ModePaiement, StatutPaiement } from "@prisma/client";
 import { baseDeDonnees } from "../config/baseDeDonnees";
-import { emettreTempsReel } from "../temps-reel/diffuseur";
+import { emettreTempsReel, emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 
 async function genererNumeroCommande() {
   const annee = new Date().getFullYear();
@@ -76,6 +76,7 @@ export async function enregistrerCommandeDepuisPanier(params: {
     emettreTempsReel(params.clientId, "commande", { commandeId: creee.id });
     emettreTempsReel(params.clientId, "notification");
     emettreTempsReel(params.clientId, "panier");
+    emettreTempsReelEquipe("commande", { commandeId: creee.id, clientId: params.clientId });
     return creee;
   });
 }
@@ -158,5 +159,6 @@ export async function encaisserCommandeExistante(params: {
 
   emettreTempsReel(params.clientId, "commande", { commandeId: commande.id });
   emettreTempsReel(params.clientId, "notification");
+  emettreTempsReelEquipe("commande", { commandeId: commande.id, clientId: params.clientId });
   return miseAJour;
 }

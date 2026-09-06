@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ClipboardList, MessageCircle, TrendingUp, Users } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { classeStatut, formaterMontant, formaterRelatif, libelleStatutCommande } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
 import type { TableauAdmin } from "@/types/modeles";
 
@@ -13,11 +14,19 @@ export function PageTableauDeBordAdmin() {
   const { utilisateur } = useClient();
   const [tableau, setTableau] = useState<TableauAdmin | null>(null);
 
-  useEffect(() => {
+  const charger = useCallback(() => {
     appelerApi<{ tableau: TableauAdmin }>("/admin/tableau")
       .then((donnees) => setTableau(donnees.tableau))
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
+
+  useEvenementTempsReel("commande", charger);
+  useEvenementTempsReel("client", charger);
+  useEvenementTempsReel("message", charger);
 
   const prenom = utilisateur?.prenom ?? "l'équipe";
 

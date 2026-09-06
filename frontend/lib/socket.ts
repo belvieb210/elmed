@@ -33,7 +33,7 @@ export function connecterSocketTempsReel(
   surEvenement: (type: TypeEvenementTempsReel) => void,
 ) {
   const flux = obtenirSocket();
-  const types: TypeEvenementTempsReel[] = ["panier", "message", "notification", "commande"];
+  const types: TypeEvenementTempsReel[] = ["panier", "message", "notification", "commande", "client"];
 
   for (const type of types) {
     flux.off(type);

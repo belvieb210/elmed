@@ -4,6 +4,7 @@ import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { libelleModePaiement, libelleStatutPaiement } from "./commandes.controleur";
+import { emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
 
 function debutJour(date = new Date()) {
@@ -318,6 +319,7 @@ export async function mettreAJourStatutCommande(requete: RequeteAuthentifiee, re
     include: { client: true, paiements: { orderBy: { datePaiement: "desc" }, take: 1 } },
   });
 
+  emettreTempsReelEquipe("commande", { commandeId: commande.id });
   reponse.json({ succes: true, commande: formaterCommandeResume(commande) });
 }
 

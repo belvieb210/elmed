@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formaterHeure, formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import type { FactureAttenteAdmin } from "@/types/modeles";
 
 export function TableauFacturesEnAttente({
@@ -17,11 +18,18 @@ export function TableauFacturesEnAttente({
   const routeur = useRouter();
   const [factures, setFactures] = useState<FactureAttenteAdmin[]>([]);
 
-  useEffect(() => {
+  const charger = useCallback(() => {
     appelerApi<{ factures: FactureAttenteAdmin[] }>("/admin/factures/attente")
       .then((donnees) => setFactures(donnees.factures))
       .catch(() => setFactures([]));
-  }, [rafraichir]);
+  }, []);
+
+  useEffect(() => {
+    charger();
+  }, [charger, rafraichir]);
+
+  useEvenementTempsReel("client", charger);
+  useEvenementTempsReel("commande", charger);
 
   const parClient = useMemo(() => {
     const groupes = new Map<string, FactureAttenteAdmin & { nombreFactures: number }>();
@@ -69,11 +77,11 @@ export function TableauFacturesEnAttente({
             <tr>
               <th className="px-4 py-3 font-medium">N°</th>
               <th className="px-4 py-3 font-medium">Client</th>
-              <th className="px-4 py-3 font-medium">Provenance</th>
-              <th className="px-4 py-3 font-medium">Produits</th>
+              <th className="hidden px-4 py-3 font-medium md:table-cell">Provenance</th>
+              <th className="hidden px-4 py-3 font-medium sm:table-cell">Produits</th>
               <th className="px-4 py-3 font-medium">Montant</th>
               <th className="px-4 py-3 font-medium">Statut</th>
-              <th className="px-4 py-3 font-medium">Heure</th>
+              <th className="hidden px-4 py-3 font-medium sm:table-cell">Heure</th>
               <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
@@ -112,8 +120,8 @@ export function TableauFacturesEnAttente({
                           : ""}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{facture.provenance}</td>
-                  <td className="px-4 py-3">{sansFacture ? "—" : facture.nombreArticles}</td>
+                  <td className="hidden px-4 py-3 text-slate-500 md:table-cell">{facture.provenance}</td>
+                  <td className="hidden px-4 py-3 sm:table-cell">{sansFacture ? "—" : facture.nombreArticles}</td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{sansFacture ? "—" : formaterMontant(facture.montantTotal)}</p>
                     {facture.montantPaye > 0 && (
@@ -133,7 +141,7 @@ export function TableauFacturesEnAttente({
                       {facture.libelleStatut}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{formaterHeure(facture.dateCommande)}</td>
+                  <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{formaterHeure(facture.dateCommande)}</td>
                   <td className="px-4 py-3">
                     <Link
                       href={href}

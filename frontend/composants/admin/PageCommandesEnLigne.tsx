@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, FileText, Pill } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { chargerUrlPdf, ouvrirPdf, appelerApi } from "@/lib/api";
 import { classeStatut, formaterHeure, formaterMontant } from "@/lib/formatage";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import type { CommandeAdmin } from "@/types/modeles";
 
 function libelleStatutVente(commande: CommandeAdmin) {
@@ -21,15 +22,17 @@ export function PageCommandesEnLigne() {
   const [urlFacture, setUrlFacture] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
 
-  async function charger() {
+  const charger = useCallback(async () => {
     const donnees = await appelerApi<{ commandes: CommandeAdmin[] }>("/admin/commandes");
     setCommandes(donnees.commandes);
     setSelectionId((actuel) => actuel ?? donnees.commandes[0]?.id ?? null);
-  }
+  }, []);
 
   useEffect(() => {
     void charger().catch(() => setCommandes([]));
-  }, []);
+  }, [charger]);
+
+  useEvenementTempsReel("commande", charger);
 
   const selection = useMemo(
     () => commandes.find((commande) => commande.id === selectionId) ?? null,
@@ -92,8 +95,8 @@ export function PageCommandesEnLigne() {
                   <th className="px-4 py-3 font-medium">N°</th>
                   <th className="px-4 py-3 font-medium">N° vente</th>
                   <th className="px-4 py-3 font-medium">Client</th>
-                  <th className="px-4 py-3 font-medium">N° client</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
+                  <th className="hidden px-4 py-3 font-medium md:table-cell">N° client</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">Type</th>
                   <th className="px-4 py-3 font-medium">Montant</th>
                   <th className="px-4 py-3 font-medium">Heure paiement</th>
                   <th className="px-4 py-3 font-medium">Statut</th>
@@ -113,8 +116,8 @@ export function PageCommandesEnLigne() {
                       <td className="px-4 py-3 text-slate-500">{index + 1}</td>
                       <td className="px-4 py-3 font-semibold text-violet-marque">{commande.numeroCommande}</td>
                       <td className="px-4 py-3 font-medium text-slate-800">{commande.nomClient}</td>
-                      <td className="px-4 py-3 text-slate-500">{commande.numeroClient || "—"}</td>
-                      <td className="px-4 py-3">
+                      <td className="hidden px-4 py-3 text-slate-500 md:table-cell">{commande.numeroClient || "—"}</td>
+                      <td className="hidden px-4 py-3 lg:table-cell">
                         <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-[11px] font-semibold text-violet-marque">
                           Client
                         </span>
@@ -161,9 +164,9 @@ export function PageCommandesEnLigne() {
                 </div>
                 <div className="bg-slate-700 p-3">
                   {urlFacture ? (
-                    <iframe title={`Facture ${selection.numeroCommande}`} src={urlFacture} className="h-[520px] w-full rounded-lg bg-white" />
+                    <iframe title={`Facture ${selection.numeroCommande}`} src={urlFacture} className="h-[280px] w-full rounded-lg bg-white sm:h-[420px] xl:h-[520px]" />
                   ) : (
-                    <div className="grid h-[520px] place-items-center rounded-lg bg-slate-800 text-sm text-slate-300">
+                    <div className="grid h-[280px] place-items-center rounded-lg bg-slate-800 text-sm text-slate-300 sm:h-[420px] xl:h-[520px]">
                       Chargement de la facture...
                     </div>
                   )}

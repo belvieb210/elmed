@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export type TypeEvenementTempsReel = "panier" | "message" | "notification" | "commande";
+export type TypeEvenementTempsReel = "panier" | "message" | "notification" | "commande" | "client";
 
 export const NOM_EVENEMENT_TEMPS_REEL = "elmed-temps-reel";
 

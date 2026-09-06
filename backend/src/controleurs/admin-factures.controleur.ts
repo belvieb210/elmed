@@ -6,7 +6,7 @@ import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
-import { emettreTempsReel } from "../temps-reel/diffuseur";
+import { emettreTempsReel, emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
 import { libelleModePaiement, libelleStatutPaiement } from "./commandes.controleur";
 
@@ -192,6 +192,8 @@ export async function creerClientAdmin(requete: RequeteAuthentifiee, reponse: Re
     ? await baseDeDonnees.utilisateur.update({ where: { id: existant.id }, data: payload })
     : await baseDeDonnees.utilisateur.create({ data: payload });
 
+  emettreTempsReelEquipe("client", { clientId: client.id });
+
   reponse.json({
     succes: true,
     client: formaterClient(client),
@@ -242,6 +244,7 @@ export async function mettreAJourClientAdmin(requete: RequeteAuthentifiee, repon
     },
   });
 
+  emettreTempsReelEquipe("client", { clientId: misAJour.id });
   reponse.json({ succes: true, client: formaterClient(misAJour) });
 }
 
@@ -625,6 +628,8 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
 
   emettreTempsReel(client.id, "commande", { commandeId: commande.id });
   emettreTempsReel(client.id, "notification");
+  emettreTempsReelEquipe("commande", { commandeId: commande.id, clientId: client.id });
+  emettreTempsReelEquipe("client", { clientId: client.id });
 
   reponse.json({
     succes: true,
