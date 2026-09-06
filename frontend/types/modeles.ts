@@ -255,6 +255,7 @@ export interface ClientAdmin {
   initials?: string;
   numeroDossier?: string;
   numeroClient?: string | null;
+  fiche?: Record<string, unknown> | null;
 }
 
 export interface FactureAttenteAdmin {

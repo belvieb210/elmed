@@ -326,6 +326,8 @@ export async function listerClientsAdmin(_requete: RequeteAuthentifiee, reponse:
       photoProfil: client.photoProfil,
       dateCreation: client.dateCreation,
       numeroClient: client.numeroClient,
+      adresse: client.adresse,
+      fiche: client.ficheClient,
       nombreCommandes: client._count.commandes,
       nombreConversations: client._count.conversations,
     })),

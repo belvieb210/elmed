@@ -14,6 +14,8 @@ export type ApercuClient = {
   photo: string | null;
   numeroClient: string;
   dateEnregistrement: string;
+  email?: string;
+  ville?: string;
 };
 
 export function PanneauLateralClient({
@@ -42,7 +44,9 @@ export function PanneauLateralClient({
     { label: "Âge", valeur: apercu.age ? `${apercu.age} ans${apercu.sexe ? ` / ${apercu.sexe.toUpperCase()}` : ""}` : apercu.sexe || "—" },
     { label: "Post-nom", valeur: apercu.postNom || "—" },
     { label: "Téléphone", valeur: apercu.telephone || "—" },
+    { label: "Email", valeur: apercu.email || "—" },
     { label: "Établissement", valeur: apercu.nomSociete || "—" },
+    { label: "Ville", valeur: apercu.ville || "—" },
     { label: "N° client", valeur: apercu.numeroClient || "—" },
     { label: "Enregistrement", valeur: apercu.dateEnregistrement || "—" },
     { label: "Enregistré par", valeur: enregistrePar },

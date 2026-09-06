@@ -13,7 +13,7 @@ import {
   type FiltresClients,
 } from "@/composants/admin/PanneauFiltresClients";
 import { PanneauLateralClient, type ApercuClient } from "@/composants/admin/PanneauLateralClient";
-import { formaterHeure } from "@/lib/formatage";
+import { formaterDateHeure, formaterHeure } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
 import type { ClientAdmin } from "@/types/modeles";
@@ -29,6 +29,8 @@ const apercuVide: ApercuClient = {
   photo: null,
   numeroClient: "",
   dateEnregistrement: "",
+  email: "",
+  ville: "",
 };
 
 export default function PageClientsAdmin() {
@@ -40,12 +42,18 @@ export default function PageClientsAdmin() {
   const [filtresAppliques, setFiltresAppliques] = useState<FiltresClients>(filtresVides);
   const [recentsSession, setRecentsSession] = useState<ClientAdmin[]>([]);
   const [apercu, setApercu] = useState<ApercuClient>(apercuVide);
+  const [clientAfficheId, setClientAfficheId] = useState<string | null>(null);
   const [parcoursForce, setParcoursForce] = useState<"Ancien client" | null>(null);
   const [cleFormulaire, setCleFormulaire] = useState(0);
 
   const enregistrerApercu = useCallback((suivant: ApercuClient) => {
-    setApercu(suivant);
+    setApercu((actuel) => (actuel.id ? actuel : suivant));
   }, []);
+
+  function afficherClient(client: ClientAdmin) {
+    setClientAfficheId(client.id);
+    setApercu(apercuDepuisClient(client));
+  }
 
   useEffect(() => {
     appelerApi<{ clients: ClientAdmin[] }>("/admin/clients")
@@ -78,14 +86,19 @@ export default function PageClientsAdmin() {
             onAnnuler={() => {
               setCleFormulaire((actuel) => actuel + 1);
               setApercu(apercuVide);
+              setClientAfficheId(null);
               setParcoursForce(null);
             }}
             onCree={(client, motDePasse) => {
               sessionStorage.setItem("mm_mdp_client", motDePasse);
               ajouterRecent(client);
               setClients((actuels) => [client, ...actuels.filter((item) => item.id !== client.id)]);
+              afficherClient(client);
             }}
-            onSelectionnerAncien={ajouterRecent}
+            onSelectionnerAncien={(client) => {
+              ajouterRecent(client);
+              afficherClient(client);
+            }}
           />
         </div>
         <div className="xl:col-span-4">
@@ -154,8 +167,13 @@ export default function PageClientsAdmin() {
             <tbody>
               {recents.map((client) => {
                 const selectionne = recentsSession.some((item) => item.id === client.id);
+                const affiche = clientAfficheId === client.id;
                 return (
-                  <tr key={client.id} className="border-t border-bleu-hero">
+                  <tr
+                    key={client.id}
+                    onClick={() => afficherClient(client)}
+                    className={`cursor-pointer border-t border-bleu-hero ${affiche ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                  >
                     <td className="px-4 py-3 text-slate-500">{client.numeroClient || "—"}</td>
                     <td className="px-4 py-3 font-semibold uppercase text-slate-800">{client.nomComplet}</td>
                     <td className="px-4 py-3 text-slate-500">{client.telephone || "—"}</td>
@@ -163,24 +181,29 @@ export default function PageClientsAdmin() {
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          selectionne ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"
+                          selectionne || affiche ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        {selectionne ? "Sélectionné" : "Enregistré"}
+                        {affiche ? "Affiché" : selectionne ? "Sélectionné" : "Enregistré"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-500">{formaterHeure(client.dateCreation)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Link
-                          href={`/admin/clients/${client.id}`}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            afficherClient(client);
+                          }}
                           className="rounded-lg border border-bleu-hero p-1.5 text-slate-600"
-                          aria-label="Voir"
+                          aria-label="Voir le résumé"
                         >
                           <Eye className="h-4 w-4" />
-                        </Link>
+                        </button>
                         <Link
                           href={`/admin/clients/${client.id}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-slate-600"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -200,6 +223,25 @@ export default function PageClientsAdmin() {
       </section>
     </MiseEnPageAdmin>
   );
+}
+
+function apercuDepuisClient(client: ClientAdmin): ApercuClient {
+  const fiche = client.fiche ?? {};
+  return {
+    id: client.id,
+    nom: client.nom ?? client.nomComplet,
+    prenom: client.prenom ?? "",
+    postNom: String(fiche.postNom ?? ""),
+    sexe: String(fiche.sexe ?? ""),
+    age: String(fiche.age ?? ""),
+    telephone: client.telephone ?? "",
+    nomSociete: client.nomSociete ?? "",
+    photo: client.photoProfil,
+    numeroClient: client.numeroClient ?? client.numeroDossier ?? "",
+    dateEnregistrement: formaterDateHeure(client.dateCreation),
+    email: client.email,
+    ville: client.ville ?? "",
+  };
 }
 
 function correspondFiltres(client: ClientAdmin, filtres: FiltresClients, selectionne: boolean) {
