@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { CarteProduit } from "@/composants/client/CarteProduit";
+import { BoutonDiscuterProduit } from "@/composants/produits/BoutonDiscuterProduit";
 import { GalerieProduit } from "@/composants/produits/GalerieProduit";
 import { appelerApi } from "@/lib/api";
 import { formaterMontant } from "@/lib/formatage";
@@ -113,6 +114,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
                 +
               </button>
             </div>
+            <BoutonDiscuterProduit produitId={produit.id} />
             <button
               type="button"
               onClick={ajouter}

@@ -3,6 +3,7 @@
 import { useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
+import { BoutonDiscuterProduit } from "@/composants/produits/BoutonDiscuterProduit";
 import { formaterMontant } from "@/lib/formatage";
 import { useClient } from "@/store/contexteClient";
 import type { Produit } from "@/types/modeles";
@@ -40,8 +41,11 @@ export function CarteProduit({ produit }: { produit: Produit }) {
             {produit.nom}
           </h3>
         </Link>
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-slate-900">{formaterMontant(produit.prix)}</p>
+        <div className="mt-3 flex items-center gap-2">
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+            {formaterMontant(produit.prix)}
+          </p>
+          <BoutonDiscuterProduit produitId={produit.id} variante="carte" />
           <button
             type="button"
             onClick={ajouter}

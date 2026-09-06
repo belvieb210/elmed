@@ -59,6 +59,7 @@ enum TypeMessage {
   AUDIO
   VIDEO
   DOCUMENT
+  PRODUIT
 }
 
 enum TypeNotification {

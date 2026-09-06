@@ -86,6 +86,14 @@ export interface Panier {
   nombreArticles: number;
 }
 
+export interface FicheProduitMessage {
+  produitId: string;
+  nom: string;
+  prix: number;
+  image: string | null;
+  sku: string;
+}
+
 export interface MessageChat {
   id: string;
   contenu: string;
@@ -95,6 +103,7 @@ export interface MessageChat {
   dateEnvoi: string;
   estMoi: boolean;
   nomAuteur: string;
+  ficheProduit?: FicheProduitMessage;
 }
 
 export interface NotificationClient {

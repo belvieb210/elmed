@@ -1,18 +1,30 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Send } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { appelerApi } from "@/lib/api";
-import { formaterHeure } from "@/lib/formatage";
+import { formaterHeure, formaterMontant } from "@/lib/formatage";
 import { useClient } from "@/store/contexteClient";
-import type { MessageChat } from "@/types/modeles";
+import type { FicheProduitMessage, MessageChat } from "@/types/modeles";
+
+function ficheDuMessage(message: MessageChat): FicheProduitMessage | null {
+  if (message.ficheProduit) return message.ficheProduit;
+  if (message.typeMessage !== "PRODUIT") return null;
+  try {
+    return JSON.parse(message.contenu) as FicheProduitMessage;
+  } catch {
+    return null;
+  }
+}
 
 export default function PageMessagerie() {
   const { chargerTableauDeBord } = useClient();
   const [messages, setMessages] = useState<MessageChat[]>([]);
   const [contenu, setContenu] = useState("");
+  const listeRef = useRef<HTMLDivElement>(null);
 
   async function charger() {
     const donnees = await appelerApi<{ conversation: { messages: MessageChat[] } }>("/messagerie");
@@ -24,6 +36,10 @@ export default function PageMessagerie() {
     charger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    listeRef.current?.scrollTo({ top: listeRef.current.scrollHeight });
+  }, [messages.length]);
 
   async function envoyer(evenement: FormEvent) {
     evenement.preventDefault();
@@ -40,27 +56,51 @@ export default function PageMessagerie() {
     <MiseEnPageClient>
       <EnTetePage titre="Messagerie" description="Échanges directs avec l'équipe MateMedical." />
       <div className="flex h-[68vh] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white">
-        <div className="flex-1 space-y-3 overflow-y-auto p-4">
-          {messages.map((message) => (
-            <div key={message.id} className={`flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                  message.estMoi ? "bg-violet-marque text-white" : "bg-slate-100 text-slate-800"
-                }`}
-              >
-                <p>{message.contenu}</p>
-                <p className={`mt-1 text-[10px] ${message.estMoi ? "text-white/70" : "text-slate-400"}`}>
-                  {formaterHeure(message.dateEnvoi)}
-                </p>
+        <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
+          {messages.map((message) => {
+            const fiche = ficheDuMessage(message);
+            return (
+              <div key={message.id} className={`flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
+                {fiche ? (
+                  <div className="max-w-[80%]">
+                    <Link
+                      href={`/produits/${fiche.produitId}`}
+                      className="block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                    >
+                      {fiche.image && (
+                        <img src={fiche.image} alt={fiche.nom} className="h-36 w-full object-cover" />
+                      )}
+                      <div className="p-3">
+                        <p className="line-clamp-2 text-sm font-semibold text-slate-900">{fiche.nom}</p>
+                        <p className="mt-1 text-base font-bold text-slate-900">{formaterMontant(fiche.prix)}</p>
+                        <p className="mt-1 text-xs text-slate-500">SKU : {fiche.sku}</p>
+                      </div>
+                    </Link>
+                    <p className={`mt-1 text-[10px] ${message.estMoi ? "text-right text-slate-400" : "text-slate-400"}`}>
+                      {message.estMoi ? "Lu" : message.nomAuteur} · {formaterHeure(message.dateEnvoi)}
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                      message.estMoi ? "bg-violet-marque text-white" : "bg-slate-100 text-slate-800"
+                    }`}
+                  >
+                    <p>{message.contenu}</p>
+                    <p className={`mt-1 text-[10px] ${message.estMoi ? "text-white/70" : "text-slate-400"}`}>
+                      {formaterHeure(message.dateEnvoi)}
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <form onSubmit={envoyer} className="flex gap-2 border-t border-slate-100 p-3">
           <input
             value={contenu}
             onChange={(e) => setContenu(e.target.value)}
-            placeholder="Écrire un message..."
+            placeholder="Écrire un message sur ce produit..."
             className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
           />
           <button
