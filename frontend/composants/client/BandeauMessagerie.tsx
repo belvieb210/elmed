@@ -5,7 +5,9 @@ import { lienMessagerie } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
 export function BandeauMessagerie() {
-  const { compteReel } = useClient();
+  const { compteReel, menuMobileOuvert } = useClient();
+
+  if (menuMobileOuvert) return null;
 
   return (
     <div className="pointer-events-none fixed inset-x-3 bottom-3 z-20 lg:left-[286px]">

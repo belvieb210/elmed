@@ -56,6 +56,46 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
 
+  useEffect(() => {
+    setMenuMobileOuvert(false);
+  }, [chemin]);
+
+  useEffect(() => {
+    if (!menuMobileOuvert) return undefined;
+
+    const html = document.documentElement;
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const overflowHtml = html.style.overflow;
+    const position = body.style.position;
+    const top = body.style.top;
+    const left = body.style.left;
+    const right = body.style.right;
+    const width = body.style.width;
+    const overflowBody = body.style.overflow;
+
+    html.classList.add("menu-ouvert");
+    html.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
+    return () => {
+      html.classList.remove("menu-ouvert");
+      html.style.overflow = overflowHtml;
+      body.style.position = position;
+      body.style.top = top;
+      body.style.left = left;
+      body.style.right = right;
+      body.style.width = width;
+      body.style.overflow = overflowBody;
+      window.scrollTo(0, scrollY);
+    };
+  }, [menuMobileOuvert]);
+
   const personnel = estPersonnel(utilisateur?.role);
   const compteReel = Boolean(utilisateur && !utilisateur.estInvite && !personnel);
 

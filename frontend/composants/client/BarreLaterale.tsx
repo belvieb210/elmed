@@ -48,16 +48,16 @@ export function BarreLaterale() {
       {menuMobileOuvert && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+          className="fixed inset-0 z-40 h-dvh w-full bg-slate-900/40 lg:hidden"
           aria-label="Fermer le menu"
           onClick={() => definirMenuMobileOuvert(false)}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(300px,86vw)] flex-col overflow-hidden border-2 border-bleu-hero bg-white px-4 py-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[8px_0_32px_rgba(79,116,255,0.16)] transition-transform duration-200 lg:w-[270px] lg:border-y-0 lg:border-l-0 lg:border-r-2 lg:shadow-none ${
+        className={`fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-[min(300px,86vw)] flex-col overflow-hidden overscroll-none border-2 border-bleu-hero bg-white px-4 py-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[8px_0_32px_rgba(79,116,255,0.16)] transition-transform duration-200 lg:inset-y-0 lg:h-auto lg:max-h-none lg:w-[270px] lg:border-y-0 lg:border-l-0 lg:border-r-2 lg:pb-5 lg:shadow-none ${
           menuMobileOuvert ? "translate-x-0" : "-translate-x-full"
-        } rounded-r-[2rem] lg:translate-x-0 lg:rounded-none`}
+        } rounded-tr-[2rem] lg:translate-x-0 lg:rounded-none`}
       >
         <div className="mb-6 flex items-center justify-between px-1">
           <LogoMateMedical />
@@ -87,7 +87,7 @@ export function BarreLaterale() {
           </div>
         )}
 
-        <nav className="flex-1 space-y-1 overflow-y-auto">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain">
           {liens.map((lien) => {
             const actif = chemin === lien.href;
             const Icone = lien.icone;
