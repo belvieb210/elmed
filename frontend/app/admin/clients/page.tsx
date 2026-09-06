@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Pencil, SlidersHorizontal } from "lucide-react";
+import { Eye, FileText, Pencil, SlidersHorizontal } from "lucide-react";
 import { FormulaireNouveauClient } from "@/composants/admin/FormulaireNouveauClient";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import {
@@ -45,9 +45,14 @@ export default function PageClientsAdmin() {
   const [clientAfficheId, setClientAfficheId] = useState<string | null>(null);
   const [parcoursForce, setParcoursForce] = useState<"Ancien client" | null>(null);
   const [cleFormulaire, setCleFormulaire] = useState(0);
+  const [clientAModifier, setClientAModifier] = useState<ClientAdmin | null>(null);
 
   const enregistrerApercu = useCallback((suivant: ApercuClient) => {
-    setApercu((actuel) => (actuel.id ? actuel : suivant));
+    setApercu((actuel) => {
+      if (!actuel.id) return suivant;
+      if (suivant.id && suivant.id === actuel.id) return suivant;
+      return actuel;
+    });
   }, []);
 
   function afficherClient(client: ClientAdmin) {
@@ -81,18 +86,28 @@ export default function PageClientsAdmin() {
           <FormulaireNouveauClient
             key={cleFormulaire}
             clientsExistants={clients}
+            clientAModifier={clientAModifier}
             parcoursForce={parcoursForce}
             onApercu={enregistrerApercu}
             onAnnuler={() => {
               setCleFormulaire((actuel) => actuel + 1);
               setApercu(apercuVide);
               setClientAfficheId(null);
+              setClientAModifier(null);
               setParcoursForce(null);
             }}
             onCree={(client, motDePasse) => {
               sessionStorage.setItem("mm_mdp_client", motDePasse);
               ajouterRecent(client);
               setClients((actuels) => [client, ...actuels.filter((item) => item.id !== client.id)]);
+              afficherClient(client);
+            }}
+            onModifie={(client) => {
+              setClients((actuels) => actuels.map((item) => (item.id === client.id ? { ...item, ...client } : item)));
+              setRecentsSession((actuels) =>
+                actuels.map((item) => (item.id === client.id ? { ...item, ...client } : item)),
+              );
+              setClientAModifier(null);
               afficherClient(client);
             }}
             onSelectionnerAncien={(client) => {
@@ -201,12 +216,26 @@ export default function PageClientsAdmin() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClientAModifier(client);
+                            afficherClient(client);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                          aria-label="Modifier le client"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Modifier
+                        </button>
                         <Link
                           href={`/admin/clients/${client.id}`}
                           onClick={(e) => e.stopPropagation()}
                           className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-slate-600"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <FileText className="h-3.5 w-3.5" />
                           Facturer
                         </Link>
                       </div>

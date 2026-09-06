@@ -60,16 +60,20 @@ const ficheVide: Fiche = {
 
 export function FormulaireNouveauClient({
   clientsExistants,
+  clientAModifier,
   parcoursForce,
   onAnnuler,
   onCree,
+  onModifie,
   onSelectionnerAncien,
   onApercu,
 }: {
   clientsExistants: ClientAdmin[];
+  clientAModifier?: ClientAdmin | null;
   parcoursForce?: (typeof parcoursClients)[number] | null;
   onAnnuler: () => void;
   onCree: (client: ClientAdmin, motDePasseTemporaire: string) => void;
+  onModifie: (client: ClientAdmin) => void;
   onSelectionnerAncien: (client: ClientAdmin) => void;
   onApercu: (apercu: ApercuClient) => void;
 }) {
@@ -109,11 +113,35 @@ export function FormulaireNouveauClient({
   }, [clientsExistants, rechercheAncien]);
 
   const ancienClient = parcours === "Ancien client";
+  const enModification = Boolean(clientAModifier);
 
   useEffect(() => {
     if (!parcoursForce) return;
     setParcours(parcoursForce);
   }, [parcoursForce]);
+
+  useEffect(() => {
+    if (!clientAModifier) return;
+    const ficheExistante = ficheDepuisClient(clientAModifier);
+    setIdentite({
+      nom: (clientAModifier.nom ?? clientAModifier.nomComplet).toUpperCase(),
+      prenom: clientAModifier.prenom ?? "",
+      email: clientAModifier.email.includes("@clients.elmed.local") ? "" : clientAModifier.email,
+      telephone: clientAModifier.telephone ?? "",
+      nomSociete: clientAModifier.nomSociete ?? "",
+      adresse: clientAModifier.adresse ?? "",
+      ville: clientAModifier.ville ?? "",
+    });
+    setFiche(ficheExistante);
+    setPhoto(clientAModifier.photoProfil);
+    setClientSelectionneId(clientAModifier.id);
+    const type = ficheExistante.typeClient;
+    if (type === "Commande urgente" || type === "Rendez-vous") {
+      setParcours(type);
+    } else {
+      setParcours("Nouveau client");
+    }
+  }, [clientAModifier]);
 
   useEffect(() => {
     onApercu({
@@ -168,20 +196,31 @@ export function FormulaireNouveauClient({
     }
     setEnCours(true);
     setErreur(null);
+    const corps = {
+      prenom: identite.prenom,
+      nom: identite.nom,
+      email: identite.email || undefined,
+      telephone: identite.telephone || undefined,
+      nomSociete: identite.nomSociete || fiche.typeClient || undefined,
+      adresse: identite.adresse || undefined,
+      ville: identite.ville || undefined,
+      photoProfil: photo || undefined,
+      fiche: { ...fiche, typeClient: parcours },
+    };
     try {
+      if (clientAModifier) {
+        const donnees = await appelerApi<{ client: ClientAdmin }>(`/admin/clients/${clientAModifier.id}`, {
+          method: "PUT",
+          body: JSON.stringify(corps),
+        });
+        setClientSelectionneId(donnees.client.id);
+        onModifie(donnees.client);
+        setEnCours(false);
+        return;
+      }
       const donnees = await appelerApi<{ client: ClientAdmin; motDePasseTemporaire: string }>("/admin/clients", {
         method: "POST",
-        body: JSON.stringify({
-          prenom: identite.prenom,
-          nom: identite.nom,
-          email: identite.email || undefined,
-          telephone: identite.telephone || undefined,
-          nomSociete: identite.nomSociete || fiche.typeClient || undefined,
-          adresse: identite.adresse || undefined,
-          ville: identite.ville || undefined,
-          photoProfil: photo || undefined,
-          fiche: { ...fiche, typeClient: parcours },
-        }),
+        body: JSON.stringify(corps),
       });
       setClientSelectionneId(donnees.client.id);
       onCree(donnees.client, donnees.motDePasseTemporaire);
@@ -195,11 +234,14 @@ export function FormulaireNouveauClient({
     <form onSubmit={soumettre} className="space-y-5 rounded-2xl border border-bleu-hero bg-white p-4 sm:p-6">
       <div>
         <h2 className="text-lg font-semibold text-[#1e3a8a]">Informations personnelles</h2>
-        <p className="mt-1 text-sm text-violet-marque">{parcours}</p>
+        <p className="mt-1 text-sm text-violet-marque">{enModification ? "Modifier le client" : parcours}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <ChampLecture label="N° client (permanent)" valeur={numeroApercu} />
+        <ChampLecture
+          label="N° client (permanent)"
+          valeur={clientAModifier?.numeroClient || numeroApercu}
+        />
         <ChampLecture label="Date" valeur={dateTexte} />
         <ChampLecture label="Heure" valeur={heureTexte} />
       </div>
@@ -483,13 +525,37 @@ export function FormulaireNouveauClient({
           disabled={enCours}
           className="rounded-xl bg-[#1e3a8a] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {enCours ? "Enregistrement..." : "Enregistrer le client"}
+          {enCours ? "Enregistrement..." : enModification ? "Enregistrer les modifications" : "Enregistrer le client"}
         </button>
       </div>
       </>
       )}
     </form>
   );
+}
+
+function ficheDepuisClient(client: ClientAdmin): Fiche {
+  const fiche = client.fiche ?? {};
+  return {
+    typeClient: String(fiche.typeClient ?? ""),
+    postNom: String(fiche.postNom ?? ""),
+    sexe: fiche.sexe === "Féminin" || fiche.sexe === "Masculin" ? fiche.sexe : "",
+    jourNaissance: String(fiche.jourNaissance ?? ""),
+    moisNaissance: String(fiche.moisNaissance ?? ""),
+    anneeNaissance: String(fiche.anneeNaissance ?? ""),
+    age: String(fiche.age ?? ""),
+    telephoneSecondaire: String(fiche.telephoneSecondaire ?? ""),
+    etatCivil: String(fiche.etatCivil ?? "Célibataire"),
+    commune: String(fiche.commune ?? ""),
+    pays: String(fiche.pays ?? "RDC"),
+    contactPro: String(fiche.contactPro ?? ""),
+    telPro: String(fiche.telPro ?? ""),
+    fonction: String(fiche.fonction ?? ""),
+    secteur: String(fiche.secteur ?? ""),
+    numeroRccm: String(fiche.numeroRccm ?? ""),
+    numeroPiece: String(fiche.numeroPiece ?? ""),
+    observations: String(fiche.observations ?? ""),
+  };
 }
 
 function ChampLecture({ label: libelle, valeur }: { label: string; valeur: string }) {

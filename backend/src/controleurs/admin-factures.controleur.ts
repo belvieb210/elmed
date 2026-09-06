@@ -199,6 +199,52 @@ export async function creerClientAdmin(requete: RequeteAuthentifiee, reponse: Re
   });
 }
 
+export async function mettreAJourClientAdmin(requete: RequeteAuthentifiee, reponse: Response) {
+  const analyse = schemaClient.safeParse(requete.body);
+  if (!analyse.success) {
+    reponse.status(400).json({
+      succes: false,
+      message: analyse.error.issues[0]?.message ?? "Données client invalides.",
+    });
+    return;
+  }
+
+  const client = await baseDeDonnees.utilisateur.findFirst({
+    where: { id: identifiantRoute(requete.params.id), role: "CLIENT" },
+  });
+  if (!client) {
+    reponse.status(404).json({ succes: false, message: "Client introuvable." });
+    return;
+  }
+
+  const donnees = analyse.data;
+  const email = donnees.email?.trim() || client.email;
+  const autre = await baseDeDonnees.utilisateur.findFirst({
+    where: { email, id: { not: client.id }, estInvite: false },
+  });
+  if (autre) {
+    reponse.status(409).json({ succes: false, message: "Un autre client utilise déjà cet email." });
+    return;
+  }
+
+  const misAJour = await baseDeDonnees.utilisateur.update({
+    where: { id: client.id },
+    data: {
+      prenom: donnees.prenom,
+      nom: donnees.nom,
+      email,
+      telephone: donnees.telephone || null,
+      nomSociete: donnees.nomSociete || null,
+      adresse: donnees.adresse || null,
+      ville: donnees.ville || null,
+      photoProfil: donnees.photoProfil || client.photoProfil,
+      ficheClient: (donnees.fiche as Prisma.InputJsonValue | undefined) ?? client.ficheClient ?? undefined,
+    },
+  });
+
+  reponse.json({ succes: true, client: formaterClient(misAJour) });
+}
+
 export async function obtenirClientAdmin(requete: RequeteAuthentifiee, reponse: Response) {
   const client = await baseDeDonnees.utilisateur.findFirst({
     where: { id: identifiantRoute(requete.params.id), role: "CLIENT", estInvite: false },
