@@ -96,6 +96,7 @@ model Utilisateur {
   adresse       String?
   ville         String?
   actif         Boolean         @default(true)
+  estInvite     Boolean         @default(false) @map("est_invite")
   dateCreation  DateTime        @default(now()) @map("date_creation")
   dateMaj       DateTime        @updatedAt @map("date_maj")
 

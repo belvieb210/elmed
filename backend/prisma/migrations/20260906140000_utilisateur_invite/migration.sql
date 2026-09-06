@@ -1,0 +1,1 @@
+ALTER TABLE "utilisateurs" ADD COLUMN IF NOT EXISTS "est_invite" BOOLEAN NOT NULL DEFAULT false;

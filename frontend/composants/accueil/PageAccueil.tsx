@@ -26,7 +26,7 @@ const iconesCategories: Record<string, typeof FlaskConical> = {
 };
 
 export function PageAccueil() {
-  const { tableauDeBord, utilisateur } = useClient();
+  const { tableauDeBord, utilisateur, compteReel } = useClient();
   if (!tableauDeBord) return null;
 
   const prenomNom = utilisateur?.nomComplet ?? "Client";
@@ -37,16 +37,30 @@ export function PageAccueil() {
       <div className="grid gap-4 xl:grid-cols-12">
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#4f74ff] to-[#5b63f5] px-6 py-7 text-white shadow-sm xl:col-span-8">
           <div className="relative z-10 max-w-xl">
-            <h1 className="text-2xl font-semibold sm:text-3xl">Bienvenue {prenomNom} 👋</h1>
+            <h1 className="text-2xl font-semibold sm:text-3xl">
+              {compteReel ? `Bienvenue ${prenomNom}` : "Fournitures médicales professionnelles"}
+            </h1>
             <p className="mt-3 max-w-md text-sm leading-6 text-white/90 sm:text-base">
-              Nous sommes là pour vous fournir les meilleurs produits médicaux et de laboratoire.
+              {compteReel
+                ? "Nous sommes là pour vous fournir les meilleurs produits médicaux et de laboratoire."
+                : "Parcourez le catalogue, commandez et payez sans créer de compte. Un compte sert uniquement au suivi et à la messagerie."}
             </p>
-            <Link
-              href="/produits"
-              className="mt-6 inline-flex rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#4f6bff] shadow-sm transition hover:bg-slate-50"
-            >
-              Voir les produits
-            </Link>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/produits"
+                className="inline-flex rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#4f6bff] shadow-sm transition hover:bg-slate-50"
+              >
+                Voir les produits
+              </Link>
+              {!compteReel && (
+                <Link
+                  href="/inscription"
+                  className="inline-flex rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20"
+                >
+                  Créer un compte
+                </Link>
+              )}
+            </div>
           </div>
           <div className="pointer-events-none absolute -right-2 bottom-0 hidden sm:block">
             <IllustrationLaboratoire />
@@ -54,30 +68,56 @@ export function PageAccueil() {
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:col-span-4 xl:grid-cols-2">
-          <CarteStat
-            titre="Mes commandes"
-            valeur={statistiques.nombreCommandes}
-            lien="/commandes"
-            libelleLien="Voir toutes"
-          />
-          <CarteStat
-            titre="En attente"
-            valeur={statistiques.nombreEnAttente}
-            lien="/commandes?statut=EN_ATTENTE"
-            libelleLien="Voir toutes"
-          />
-          <CarteStat
-            titre="Commandes validées"
-            valeur={statistiques.nombreValidees}
-            lien="/commandes?statut=VALIDEE"
-            libelleLien="Voir toutes"
-          />
-          <CarteStat
-            titre="Payées"
-            valeur={statistiques.nombrePayees ?? 0}
-            lien="/commandes"
-            libelleLien="Voir toutes"
-          />
+          {compteReel ? (
+            <>
+              <CarteStat
+                titre="Mes commandes"
+                valeur={statistiques.nombreCommandes}
+                lien="/commandes"
+                libelleLien="Voir toutes"
+              />
+              <CarteStat
+                titre="En attente"
+                valeur={statistiques.nombreEnAttente}
+                lien="/commandes?statut=EN_ATTENTE"
+                libelleLien="Voir toutes"
+              />
+              <CarteStat
+                titre="Commandes validées"
+                valeur={statistiques.nombreValidees}
+                lien="/commandes?statut=VALIDEE"
+                libelleLien="Voir toutes"
+              />
+              <CarteStat
+                titre="Payées"
+                valeur={statistiques.nombrePayees ?? 0}
+                lien="/commandes"
+                libelleLien="Voir toutes"
+              />
+            </>
+          ) : (
+            <>
+              <article className="rounded-2xl border border-slate-100 bg-white px-5 py-4 sm:col-span-2">
+                <p className="text-sm font-semibold text-slate-800">Commander sans compte</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Ajoutez des produits au panier, passez commande et payez. Pour retrouver l&apos;historique et
+                  écrire à l&apos;équipe, créez un compte ensuite.
+                </p>
+                <Link href="/panier" className="mt-3 inline-block text-sm font-medium text-violet-marque hover:underline">
+                  Ouvrir le panier
+                </Link>
+              </article>
+              <article className="rounded-2xl border border-slate-100 bg-white px-5 py-4 sm:col-span-2">
+                <p className="text-sm font-semibold text-slate-800">Compte client</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Messagerie, notifications et liste de commandes : réservées aux comptes.
+                </p>
+                <Link href="/connexion" className="mt-3 inline-block text-sm font-medium text-violet-marque hover:underline">
+                  Se connecter
+                </Link>
+              </article>
+            </>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-100 bg-white p-5 xl:col-span-8">
@@ -104,13 +144,29 @@ export function PageAccueil() {
 
         <section className="rounded-2xl border border-slate-100 bg-white p-5 xl:col-span-4 xl:row-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-800">Mes dernières commandes</h2>
-            <Link href="/commandes" className="text-sm font-medium text-violet-marque hover:underline">
-              Voir toutes
-            </Link>
+            <h2 className="text-base font-semibold text-slate-800">
+              {compteReel ? "Mes dernières commandes" : "Suivi des commandes"}
+            </h2>
+            {compteReel && (
+              <Link href="/commandes" className="text-sm font-medium text-violet-marque hover:underline">
+                Voir toutes
+              </Link>
+            )}
           </div>
           <div className="space-y-3">
-            {dernieresCommandes.map((commande) => (
+            {!compteReel && (
+              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm leading-6 text-slate-500">
+                Connectez-vous pour voir l&apos;historique de vos commandes. Après un paiement sans compte, conservez
+                le lien de confirmation pour suivre cette commande.
+                <Link href="/connexion?suivant=%2Fcommandes" className="mt-3 block font-medium text-violet-marque hover:underline">
+                  Accéder à mes commandes
+                </Link>
+              </div>
+            )}
+            {compteReel && dernieresCommandes.length === 0 && (
+              <p className="text-sm text-slate-500">Aucune commande pour le moment.</p>
+            )}
+            {compteReel && dernieresCommandes.map((commande) => (
               <Link
                 key={commande.id}
                 href={`/commandes/${commande.id}`}

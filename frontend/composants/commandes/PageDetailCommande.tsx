@@ -29,12 +29,15 @@ import {
   libelleDetailStatut,
 } from "@/composants/commandes/suivi";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
+import { lienProtege } from "@/lib/compte";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { formaterDate, formaterDateHeure, formaterHeure, formaterMontant } from "@/lib/formatage";
+import { useClient } from "@/store/contexteClient";
 import type { DetailCommande } from "@/types/modeles";
 
 export function PageDetailCommande() {
   const params = useParams<{ id: string }>();
+  const { compteReel } = useClient();
   const [commande, setCommande] = useState<DetailCommande | null>(null);
   const [copie, setCopie] = useState(false);
   const [pdfEnCours, setPdfEnCours] = useState(false);
@@ -97,7 +100,7 @@ export function PageDetailCommande() {
           Accueil
         </Link>
         {" > "}
-        <Link href="/commandes" className="hover:text-violet-marque">
+        <Link href={lienProtege("/commandes", compteReel)} className="hover:text-violet-marque">
           Mes commandes
         </Link>
         {" > "}
@@ -118,7 +121,7 @@ export function PageDetailCommande() {
 
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link
-          href="/commandes"
+          href={lienProtege("/commandes", compteReel)}
           className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -355,9 +358,11 @@ export function PageDetailCommande() {
             <article className="rounded-2xl border border-slate-100 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900">Informations du client</h3>
-                <Link href="/profil" className="text-xs font-medium text-bleu-hero">
-                  Voir profil
-                </Link>
+                {compteReel && (
+                  <Link href="/profil" className="text-xs font-medium text-bleu-hero">
+                    Voir profil
+                  </Link>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <img
@@ -432,7 +437,7 @@ export function PageDetailCommande() {
               Suivre la commande
             </button>
             <Link
-              href="/messagerie"
+              href={lienProtege("/messagerie", compteReel)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <Headset className="h-4 w-4" />

@@ -1,12 +1,17 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { LogoMateMedical } from "@/composants/LogoMateMedical";
+import { FormEvent, Suspense, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
+import { MiseEnPageAuth } from "@/composants/auth/MiseEnPageAuth";
+import { lienInscription, normaliserSuivant } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
-export default function PageConnexion() {
+function FormulaireConnexion() {
   const routeur = useRouter();
+  const params = useSearchParams();
+  const suivant = normaliserSuivant(params.get("suivant"));
   const { connecter } = useClient();
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
@@ -19,7 +24,7 @@ export default function PageConnexion() {
     setErreur(null);
     try {
       await connecter(email, motDePasse);
-      routeur.push("/");
+      routeur.push(suivant);
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Connexion impossible.");
     } finally {
@@ -28,51 +33,59 @@ export default function PageConnexion() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-fond-page px-4">
-      <form
-        onSubmit={soumettre}
-        className="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-8"
-      >
-        <LogoMateMedical />
-        <h1 className="mt-6 text-2xl font-semibold text-slate-900">Connexion client</h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Accédez à vos commandes, factures et à la messagerie MateMedical.
-        </p>
-
-        <label className="mt-6 block text-sm font-medium text-slate-700">
-          Email
+    <MiseEnPageAuth
+      titre="Connexion"
+      sousTitre="Retrouvez vos commandes, factures et conversations avec l’équipe MateMedical."
+    >
+      <form onSubmit={soumettre} className="mt-7 space-y-4">
+        <label className="block text-sm font-medium text-slate-700">
+          Email professionnel
           <input
             type="email"
             value={email}
             autoComplete="email"
+            placeholder="nina.v@example.com"
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-marque"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
             required
           />
         </label>
 
-        <label className="mt-4 block text-sm font-medium text-slate-700">
-          Mot de passe
-          <input
-            type="password"
-            value={motDePasse}
-            autoComplete="current-password"
-            onChange={(e) => setMotDePasse(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-marque"
-            required
-          />
-        </label>
+        <ChampMotDePasse
+          label="Mot de passe"
+          value={motDePasse}
+          onChange={setMotDePasse}
+          autoComplete="current-password"
+          placeholder="Votre mot de passe"
+        />
 
-        {erreur && <p className="mt-3 text-sm text-red-600">{erreur}</p>}
+        {erreur && (
+          <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">{erreur}</p>
+        )}
 
         <button
           type="submit"
           disabled={enCours}
-          className="mt-6 w-full rounded-xl bg-violet-marque py-3 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60"
+          className="w-full rounded-xl bg-violet-marque py-3 text-sm font-semibold text-white transition hover:bg-violet-fonce disabled:opacity-60"
         >
           {enCours ? "Connexion..." : "Se connecter"}
         </button>
       </form>
-    </div>
+
+      <p className="mt-6 text-center text-sm text-slate-500">
+        Pas encore de compte ?{" "}
+        <Link href={lienInscription(suivant)} className="font-semibold text-violet-marque hover:underline">
+          Créer un compte
+        </Link>
+      </p>
+    </MiseEnPageAuth>
+  );
+}
+
+export default function PageConnexion() {
+  return (
+    <Suspense fallback={<div className="grid min-h-screen place-items-center text-sm text-slate-500">Chargement...</div>}>
+      <FormulaireConnexion />
+    </Suspense>
   );
 }

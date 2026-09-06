@@ -25,3 +25,8 @@ export const optionsCookieJeton = {
   path: "/",
   maxAge: 8 * 60 * 60 * 1000,
 };
+
+export const optionsCookieInvite = {
+  ...optionsCookieJeton,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+};

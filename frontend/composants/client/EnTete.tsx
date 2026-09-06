@@ -2,13 +2,15 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, MessageCircle, Search, ShoppingCart } from "lucide-react";
+import { lienConnexion, lienInscription } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
 export function EnTete() {
   const routeur = useRouter();
-  const { utilisateur, badges, definirMenuMobileOuvert } = useClient();
+  const chemin = usePathname();
+  const { utilisateur, compteReel, badges, definirMenuMobileOuvert } = useClient();
   const [texteRecherche, setTexteRecherche] = useState("");
 
   function soumettreRecherche(evenement: FormEvent) {
@@ -62,31 +64,48 @@ export function EnTete() {
         </Link>
 
         <Link
-          href="/messagerie"
+          href={compteReel ? "/messagerie" : lienConnexion("/messagerie")}
           className="relative rounded-full p-2 text-slate-600 hover:bg-slate-50"
           aria-label="Messages"
         >
           <MessageCircle className="h-5 w-5" />
-          {badges.messagesNonLus > 0 && (
+          {compteReel && badges.messagesNonLus > 0 && (
             <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-violet-marque text-[10px] font-semibold text-white">
               {badges.messagesNonLus}
             </span>
           )}
         </Link>
 
-        <Link href="/profil" className="hidden items-center gap-2 pl-1 sm:flex">
-          <img
-            src={utilisateur?.photoProfil ?? "https://i.pravatar.cc/80?img=12"}
-            alt={utilisateur?.nomComplet ?? "Client"}
-            className="h-10 w-10 rounded-full object-cover"
-          />
-          <span className="hidden leading-tight md:block">
-            <span className="block text-sm font-semibold text-slate-800">
-              {utilisateur?.nomComplet ?? "Client"}
+        {compteReel ? (
+          <Link href="/profil" className="hidden items-center gap-2 pl-1 sm:flex">
+            <img
+              src={utilisateur?.photoProfil ?? "https://i.pravatar.cc/80?img=12"}
+              alt={utilisateur?.nomComplet ?? "Client"}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+            <span className="hidden leading-tight md:block">
+              <span className="block text-sm font-semibold text-slate-800">
+                {utilisateur?.nomComplet ?? "Client"}
+              </span>
+              <span className="block text-xs text-slate-400">Client</span>
             </span>
-            <span className="block text-xs text-slate-400">Client</span>
-          </span>
-        </Link>
+          </Link>
+        ) : (
+          <div className="hidden items-center gap-2 sm:flex">
+            <Link
+              href={lienConnexion(chemin)}
+              className="rounded-full px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Connexion
+            </Link>
+            <Link
+              href={lienInscription(chemin)}
+              className="rounded-full bg-violet-marque px-3.5 py-2 text-sm font-semibold text-white hover:bg-violet-fonce"
+            >
+              S&apos;inscrire
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { BarriereCompte } from "@/composants/auth/BarriereCompte";
+import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
@@ -28,34 +30,32 @@ export default function PageParametres() {
 
   return (
     <MiseEnPageClient>
-      <EnTetePage titre="Paramètres" description="Sécurité de votre compte client." />
-      <form onSubmit={changer} className="max-w-lg space-y-4 rounded-2xl border border-slate-100 bg-white p-6">
-        <label className="block text-sm font-medium">
-          Mot de passe actuel
-          <input
-            type="password"
+      <BarriereCompte
+        titre="Paramètres du compte"
+        description="La sécurité du compte (mot de passe) est disponible après inscription ou connexion."
+      >
+        <EnTetePage titre="Paramètres" description="Sécurité de votre compte client." />
+        <form onSubmit={changer} className="max-w-lg space-y-4 rounded-2xl border border-slate-100 bg-white p-6">
+          <ChampMotDePasse
+            label="Mot de passe actuel"
             value={motDePasseActuel}
-            onChange={(e) => setMotDePasseActuel(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-            required
+            onChange={setMotDePasseActuel}
+            autoComplete="current-password"
           />
-        </label>
-        <label className="block text-sm font-medium">
-          Nouveau mot de passe
-          <input
-            type="password"
+          <ChampMotDePasse
+            label="Nouveau mot de passe"
             value={nouveauMotDePasse}
-            onChange={(e) => setNouveauMotDePasse(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-            required
+            onChange={setNouveauMotDePasse}
+            autoComplete="new-password"
+            aide="Au moins 8 caractères, une majuscule et un chiffre."
           />
-        </label>
-        <button type="submit" className="rounded-xl bg-violet-marque px-4 py-2.5 text-sm font-semibold text-white">
-          Mettre à jour
-        </button>
-        {message && <p className="text-sm text-slate-600">{message}</p>}
-      </form>
-      <BandeauMessagerie />
+          <button type="submit" className="rounded-xl bg-violet-marque px-4 py-2.5 text-sm font-semibold text-white">
+            Mettre à jour
+          </button>
+          {message && <p className="text-sm text-slate-600">{message}</p>}
+        </form>
+        <BandeauMessagerie />
+      </BarriereCompte>
     </MiseEnPageClient>
   );
 }

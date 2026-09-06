@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { LogoMateMedical } from "@/composants/LogoMateMedical";
+import { lienConnexion, lienInscription, lienProtege } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
 const liens = [
@@ -33,7 +34,7 @@ const liens = [
 
 export function BarreLaterale() {
   const chemin = usePathname();
-  const { badges, menuMobileOuvert, definirMenuMobileOuvert } = useClient();
+  const { badges, compteReel, menuMobileOuvert, definirMenuMobileOuvert } = useClient();
 
   const valeurBadge = (type?: "panier" | "messages" | "notifications") => {
     if (type === "panier") return badges.nombreArticlesPanier;
@@ -69,6 +70,23 @@ export function BarreLaterale() {
           </button>
         </div>
 
+        {!compteReel && (
+          <div className="mb-4 grid grid-cols-2 gap-2 px-1 sm:hidden">
+            <Link
+              href={lienConnexion(chemin)}
+              className="rounded-xl border border-slate-200 px-2 py-2 text-center text-xs font-semibold text-slate-700"
+            >
+              Connexion
+            </Link>
+            <Link
+              href={lienInscription(chemin)}
+              className="rounded-xl bg-violet-marque px-2 py-2 text-center text-xs font-semibold text-white"
+            >
+              S&apos;inscrire
+            </Link>
+          </div>
+        )}
+
         <nav className="flex-1 space-y-1 overflow-y-auto">
           {liens.map((lien) => {
             const actif = chemin === lien.href;
@@ -78,7 +96,7 @@ export function BarreLaterale() {
             return (
               <Link
                 key={lien.href}
-                href={lien.href}
+                href={lienProtege(lien.href, compteReel)}
                 className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   actif
                     ? "bg-violet-clair text-violet-marque"
@@ -100,16 +118,41 @@ export function BarreLaterale() {
         </nav>
 
         <div className="mt-4 rounded-2xl bg-[#f4f1ff] p-4">
-          <p className="text-sm font-semibold text-slate-800">Besoin d&apos;aide ?</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Notre équipe vous répond en direct pour vos commandes et documents.
-          </p>
-          <Link
-            href="/messagerie"
-            className="mt-3 flex w-full items-center justify-center rounded-xl bg-violet-marque px-3 py-2.5 text-sm font-medium text-white transition hover:bg-violet-fonce"
-          >
-            Ouvrir le chat
-          </Link>
+          {compteReel ? (
+            <>
+              <p className="text-sm font-semibold text-slate-800">Besoin d&apos;aide ?</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Notre équipe vous répond en direct pour vos commandes et documents.
+              </p>
+              <Link
+                href="/messagerie"
+                className="mt-3 flex w-full items-center justify-center rounded-xl bg-violet-marque px-3 py-2.5 text-sm font-medium text-white transition hover:bg-violet-fonce"
+              >
+                Ouvrir le chat
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-slate-800">Suivi et messagerie</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Commandez sans compte. Connectez-vous pour l&apos;historique et le chat.
+              </p>
+              <div className="mt-3 space-y-2">
+                <Link
+                  href={lienConnexion("/messagerie")}
+                  className="flex w-full items-center justify-center rounded-xl bg-violet-marque px-3 py-2.5 text-sm font-medium text-white transition hover:bg-violet-fonce"
+                >
+                  Se connecter
+                </Link>
+                <Link
+                  href={lienInscription("/messagerie")}
+                  className="flex w-full items-center justify-center rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-marque"
+                >
+                  Créer un compte
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </aside>
     </>

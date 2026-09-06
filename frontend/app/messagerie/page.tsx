@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Send } from "lucide-react";
+import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { appelerApi } from "@/lib/api";
@@ -22,7 +23,7 @@ function ficheDuMessage(message: MessageChat): FicheProduitMessage | null {
 }
 
 export default function PageMessagerie() {
-  const { chargerTableauDeBord } = useClient();
+  const { chargerTableauDeBord, compteReel } = useClient();
   const [messages, setMessages] = useState<MessageChat[]>([]);
   const [contenu, setContenu] = useState("");
   const listeRef = useRef<HTMLDivElement>(null);
@@ -34,8 +35,9 @@ export default function PageMessagerie() {
   }, [chargerTableauDeBord]);
 
   useEffect(() => {
+    if (!compteReel) return;
     void charger();
-  }, [charger]);
+  }, [charger, compteReel]);
 
   useEvenementTempsReel("message", charger);
 
@@ -56,6 +58,10 @@ export default function PageMessagerie() {
 
   return (
     <MiseEnPageClient>
+      <BarriereCompte
+        titre="Messagerie client"
+        description="La messagerie est réservée aux comptes. Vous pouvez déjà commander et payer sans vous inscrire."
+      >
       <EnTetePage titre="Messagerie" description="Échanges directs avec l'équipe MateMedical." />
       <div className="flex h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white sm:h-[68vh]">
         <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -114,6 +120,7 @@ export default function PageMessagerie() {
           </button>
         </form>
       </div>
+      </BarriereCompte>
     </MiseEnPageClient>
   );
 }

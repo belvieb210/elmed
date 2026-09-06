@@ -10,6 +10,7 @@ export interface Utilisateur {
   nomSociete?: string | null;
   adresse?: string | null;
   ville?: string | null;
+  estInvite?: boolean;
 }
 
 export interface BadgesNavigation {

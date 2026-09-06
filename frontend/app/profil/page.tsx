@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
@@ -44,6 +45,10 @@ export default function PageProfil() {
 
   return (
     <MiseEnPageClient>
+      <BarriereCompte
+        titre="Profil client"
+        description="Le profil, l’adresse et les informations société sont liés à un compte MateMedical."
+      >
       <EnTetePage titre="Mon profil" description="Informations de votre établissement." />
       <form onSubmit={enregistrer} className="max-w-2xl space-y-4 rounded-2xl border border-slate-100 bg-white p-6">
         {Object.entries({
@@ -78,6 +83,7 @@ export default function PageProfil() {
         {message && <p className="text-sm text-emerald-600">{message}</p>}
       </form>
       <BandeauMessagerie />
+      </BarriereCompte>
     </MiseEnPageClient>
   );
 }

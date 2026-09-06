@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
@@ -33,10 +34,7 @@ function ListeCommandes() {
   const charger = useCallback(() => {
     appelerApi<{ commandes: CommandeResume[] }>("/commandes")
       .then((donnees) => setCommandes(donnees.commandes))
-      .catch(async () => {
-        const { tableauDeBordDemo } = await import("@/lib/donneesDemo");
-        setCommandes(tableauDeBordDemo.dernieresCommandes);
-      });
+      .catch(() => setCommandes([]));
   }, []);
 
   useEffect(() => {
@@ -181,9 +179,14 @@ function ListeCommandes() {
 export default function PageCommandes() {
   return (
     <MiseEnPageClient>
-      <Suspense fallback={<p className="text-sm text-slate-500">Chargement...</p>}>
-        <ListeCommandes />
-      </Suspense>
+      <BarriereCompte
+        titre="Historique des commandes"
+        description="Créez un compte ou connectez-vous pour retrouver toutes vos commandes, factures et statuts. Commander et payer reste possible sans inscription."
+      >
+        <Suspense fallback={<p className="text-sm text-slate-500">Chargement...</p>}>
+          <ListeCommandes />
+        </Suspense>
+      </BarriereCompte>
     </MiseEnPageClient>
   );
 }

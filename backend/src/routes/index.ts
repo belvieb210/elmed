@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { middlewareAuthentification } from "../middlewares/authentification";
+import { assurerClientOuInvite } from "../authentification/invite";
+import { middlewareAuthentificationSouple, middlewareCompteReel } from "../middlewares/authentification";
 import {
   changerMotDePasse,
   connecterClient,
   deconnecterClient,
+  inscrireClient,
   mettreAJourProfil,
   obtenirProfil,
 } from "../controleurs/authentification.controleur";
@@ -34,41 +36,43 @@ import {
 
 export const routeurPrincipal = Router();
 
+const sessionInvite = [middlewareAuthentificationSouple, assurerClientOuInvite];
+const compteClient = [middlewareAuthentificationSouple, middlewareCompteReel];
+
 routeurPrincipal.get("/sante", (_requete, reponse) => {
   reponse.json({ succes: true, service: "MateMedical API", statut: "ok" });
 });
 
 routeurPrincipal.post("/connexion", limiteConnexion, connecterClient);
+routeurPrincipal.post("/inscription", limiteConnexion, inscrireClient);
 routeurPrincipal.post("/deconnexion", deconnecterClient);
 routeurPrincipal.get("/produits", listerProduits);
 routeurPrincipal.get("/produits/:id", obtenirProduit);
 routeurPrincipal.get("/categories", listerCategories);
+routeurPrincipal.get("/accueil", middlewareAuthentificationSouple, obtenirTableauDeBord);
 
-routeurPrincipal.use(middlewareAuthentification);
+routeurPrincipal.get("/panier", ...sessionInvite, obtenirPanier);
+routeurPrincipal.get("/panier/proforma", ...sessionInvite, telechargerProformaPanier);
+routeurPrincipal.post("/panier", ...sessionInvite, ajouterAuPanier);
+routeurPrincipal.patch("/panier/:id", ...sessionInvite, modifierQuantitePanier);
+routeurPrincipal.delete("/panier", ...sessionInvite, viderPanier);
+routeurPrincipal.delete("/panier/:id", ...sessionInvite, retirerDuPanier);
 
-routeurPrincipal.get("/profil", obtenirProfil);
-routeurPrincipal.put("/profil", mettreAJourProfil);
-routeurPrincipal.put("/profil/mot-de-passe", changerMotDePasse);
-routeurPrincipal.get("/accueil", obtenirTableauDeBord);
+routeurPrincipal.get("/commandes", ...compteClient, listerCommandes);
+routeurPrincipal.get("/commandes/:id/facture", ...sessionInvite, telechargerFactureCommande);
+routeurPrincipal.get("/commandes/:id", ...sessionInvite, obtenirCommande);
+routeurPrincipal.post("/commandes", ...sessionInvite, creerCommandeDepuisPanier);
 
-routeurPrincipal.get("/panier", obtenirPanier);
-routeurPrincipal.get("/panier/proforma", telechargerProformaPanier);
-routeurPrincipal.post("/panier", ajouterAuPanier);
-routeurPrincipal.patch("/panier/:id", modifierQuantitePanier);
-routeurPrincipal.delete("/panier", viderPanier);
-routeurPrincipal.delete("/panier/:id", retirerDuPanier);
+routeurPrincipal.get("/paiements/configuration", ...sessionInvite, obtenirConfigurationPaiement);
+routeurPrincipal.post("/paiements/confirmer", ...sessionInvite, limitePaiement, confirmerPaiementEnLigne);
 
-routeurPrincipal.get("/commandes", listerCommandes);
-routeurPrincipal.get("/commandes/:id/facture", telechargerFactureCommande);
-routeurPrincipal.get("/commandes/:id", obtenirCommande);
-routeurPrincipal.post("/commandes", creerCommandeDepuisPanier);
+routeurPrincipal.get("/profil", ...compteClient, obtenirProfil);
+routeurPrincipal.put("/profil", ...compteClient, mettreAJourProfil);
+routeurPrincipal.put("/profil/mot-de-passe", ...compteClient, changerMotDePasse);
 
-routeurPrincipal.get("/paiements/configuration", obtenirConfigurationPaiement);
-routeurPrincipal.post("/paiements/confirmer", limitePaiement, confirmerPaiementEnLigne);
+routeurPrincipal.get("/messagerie", ...compteClient, obtenirConversation);
+routeurPrincipal.post("/messagerie", ...compteClient, envoyerMessage);
 
-routeurPrincipal.get("/messagerie", obtenirConversation);
-routeurPrincipal.post("/messagerie", envoyerMessage);
-
-routeurPrincipal.get("/notifications", listerNotifications);
-routeurPrincipal.patch("/notifications/toutes", marquerToutesLues);
-routeurPrincipal.patch("/notifications/:id", marquerNotificationLue);
+routeurPrincipal.get("/notifications", ...compteClient, listerNotifications);
+routeurPrincipal.patch("/notifications/toutes", ...compteClient, marquerToutesLues);
+routeurPrincipal.patch("/notifications/:id", ...compteClient, marquerNotificationLue);

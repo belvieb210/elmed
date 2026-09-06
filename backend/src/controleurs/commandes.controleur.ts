@@ -138,12 +138,14 @@ export async function obtenirCommande(requete: RequeteAuthentifiee, reponse: Res
       nombreProduits: commande.lignes.length,
       nombreArticles,
       client: {
-        nomComplet: `${commande.client.prenom} ${commande.client.nom}`.trim(),
-        prenom: commande.client.prenom,
-        nom: commande.client.nom,
-        email: commande.client.email,
+        nomComplet: commande.client.estInvite
+          ? "Client"
+          : `${commande.client.prenom} ${commande.client.nom}`.trim(),
+        prenom: commande.client.estInvite ? "Client" : commande.client.prenom,
+        nom: commande.client.estInvite ? "" : commande.client.nom,
+        email: commande.client.estInvite ? undefined : commande.client.email,
         telephone: commande.client.telephone,
-        photoProfil: commande.client.photoProfil,
+        photoProfil: commande.client.estInvite ? null : commande.client.photoProfil,
         nomSociete: commande.client.nomSociete,
       },
       paiement: paiement

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
@@ -12,7 +13,7 @@ import { useClient } from "@/store/contexteClient";
 import type { NotificationClient } from "@/types/modeles";
 
 export default function PageNotifications() {
-  const { chargerTableauDeBord } = useClient();
+  const { chargerTableauDeBord, compteReel } = useClient();
   const [notifications, setNotifications] = useState<NotificationClient[]>([]);
 
   const charger = useCallback(async () => {
@@ -21,8 +22,9 @@ export default function PageNotifications() {
   }, []);
 
   useEffect(() => {
+    if (!compteReel) return;
     void charger();
-  }, [charger]);
+  }, [charger, compteReel]);
 
   useEvenementTempsReel("notification", charger);
 
@@ -34,6 +36,10 @@ export default function PageNotifications() {
 
   return (
     <MiseEnPageClient>
+      <BarriereCompte
+        titre="Notifications"
+        description="Les alertes commandes, messages et factures sont disponibles après connexion."
+      >
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <EnTetePage titre="Notifications" description="Alertes commandes, messages et factures." />
         <button
@@ -60,6 +66,7 @@ export default function PageNotifications() {
         ))}
       </div>
       <BandeauMessagerie />
+      </BarriereCompte>
     </MiseEnPageClient>
   );
 }

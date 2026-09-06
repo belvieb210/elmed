@@ -3,8 +3,8 @@ import { FournisseurClient } from "@/store/contexteClient";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MateMedical — Espace client",
-  description: "Plateforme professionnelle de vente et gestion de produits médicaux.",
+  title: "MateMedical",
+  description: "Catalogue, commande et paiement de produits médicaux. Compte facultatif pour le suivi et la messagerie.",
 };
 
 export const viewport: Viewport = {

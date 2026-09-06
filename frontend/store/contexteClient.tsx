@@ -3,17 +3,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { appelerApi } from "@/lib/api";
+import { estPageAuthentification, estPageCompte, normaliserSuivant } from "@/lib/compte";
 import { connecterSocketTempsReel } from "@/lib/socket";
 import { diffuserEvenementTempsReel } from "@/lib/temps-reel";
-import type {
-  BadgesNavigation,
-  Panier,
-  TableauDeBord,
-  Utilisateur,
-} from "@/types/modeles";
+import type { BadgesNavigation, Panier, TableauDeBord, Utilisateur } from "@/types/modeles";
+
+interface DonneesInscription {
+  prenom: string;
+  nom: string;
+  email: string;
+  motDePasse: string;
+  telephone?: string;
+  nomSociete?: string;
+}
 
 interface ContexteClientValeur {
   utilisateur: Utilisateur | null;
+  compteReel: boolean;
   badges: BadgesNavigation;
   tableauDeBord: TableauDeBord | null;
   panier: Panier | null;
@@ -22,6 +28,7 @@ interface ContexteClientValeur {
   menuMobileOuvert: boolean;
   definirMenuMobileOuvert: (ouvert: boolean) => void;
   connecter: (email: string, motDePasse: string) => Promise<void>;
+  inscrire: (donnees: DonneesInscription) => Promise<void>;
   deconnecter: () => void;
   chargerTableauDeBord: () => Promise<void>;
   chargerPanier: () => Promise<void>;
@@ -36,8 +43,6 @@ const badgesVides: BadgesNavigation = {
   notificationsNonLues: 0,
 };
 
-const pagesPubliques = ["/connexion"];
-
 export function FournisseurClient({ children }: { children: React.ReactNode }) {
   const routeur = useRouter();
   const chemin = usePathname();
@@ -48,6 +53,8 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
   const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
+
+  const compteReel = Boolean(utilisateur && !utilisateur.estInvite);
 
   const chargerTableauDeBord = useCallback(async () => {
     const donnees = await appelerApi<{ tableauDeBord: TableauDeBord }>("/accueil");
@@ -77,6 +84,18 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
     [chargerTableauDeBord],
   );
 
+  const inscrire = useCallback(
+    async (donneesInscription: DonneesInscription) => {
+      const donnees = await appelerApi<{ utilisateur: Utilisateur }>("/inscription", {
+        method: "POST",
+        body: JSON.stringify(donneesInscription),
+      });
+      setUtilisateur(donnees.utilisateur);
+      await chargerTableauDeBord();
+    },
+    [chargerTableauDeBord],
+  );
+
   const deconnecter = useCallback(async () => {
     try {
       await appelerApi("/deconnexion", { method: "POST" });
@@ -84,11 +103,15 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
       /* cookie déjà expiré */
     }
     setUtilisateur(null);
-    setTableauDeBord(null);
     setPanier(null);
     setBadges(badgesVides);
-    routeur.push("/connexion");
-  }, [routeur]);
+    routeur.push("/");
+    try {
+      await chargerTableauDeBord();
+    } catch {
+      setTableauDeBord(null);
+    }
+  }, [routeur, chargerTableauDeBord]);
 
   const ajouterProduitAuPanier = useCallback(
     async (produitId: string) => {
@@ -112,10 +135,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
         if (!ignore) {
           setUtilisateur(null);
           setTableauDeBord(null);
-          setErreur(err instanceof Error ? err.message : "Session expirée.");
-          if (!pagesPubliques.includes(chemin)) {
-            routeur.push("/connexion");
-          }
+          setErreur(err instanceof Error ? err.message : "Impossible de charger le catalogue.");
         }
       } finally {
         if (!ignore) setChargement(false);
@@ -126,14 +146,24 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
     return () => {
       ignore = true;
     };
-  }, [chargerTableauDeBord, chemin, routeur]);
+  }, [chargerTableauDeBord]);
+
+  useEffect(() => {
+    if (chargement) return;
+    if (!compteReel && estPageCompte(chemin)) {
+      routeur.replace(`/connexion?suivant=${encodeURIComponent(chemin)}`);
+    }
+    if (compteReel && estPageAuthentification(chemin)) {
+      routeur.replace("/");
+    }
+  }, [chargement, compteReel, chemin, routeur]);
 
   useEffect(() => {
     setMenuMobileOuvert(false);
   }, [chemin]);
 
   useEffect(() => {
-    if (!utilisateur) return;
+    if (!compteReel) return;
 
     return connecterSocketTempsReel((type) => {
       diffuserEvenementTempsReel({ type });
@@ -143,11 +173,12 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
         void chargerTableauDeBord();
       }
     });
-  }, [utilisateur, chargerPanier, chargerTableauDeBord]);
+  }, [compteReel, chargerPanier, chargerTableauDeBord]);
 
   const valeur = useMemo(
     () => ({
       utilisateur,
+      compteReel,
       badges,
       tableauDeBord,
       panier,
@@ -156,6 +187,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
       menuMobileOuvert,
       definirMenuMobileOuvert: setMenuMobileOuvert,
       connecter,
+      inscrire,
       deconnecter,
       chargerTableauDeBord,
       chargerPanier,
@@ -163,6 +195,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
     }),
     [
       utilisateur,
+      compteReel,
       badges,
       tableauDeBord,
       panier,
@@ -170,6 +203,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
       erreur,
       menuMobileOuvert,
       connecter,
+      inscrire,
       deconnecter,
       chargerTableauDeBord,
       chargerPanier,
@@ -186,4 +220,8 @@ export function useClient() {
     throw new Error("useClient doit être utilisé dans FournisseurClient.");
   }
   return contexte;
+}
+
+export function destinationApresAuth(suivant: string | null) {
+  return normaliserSuivant(suivant);
 }

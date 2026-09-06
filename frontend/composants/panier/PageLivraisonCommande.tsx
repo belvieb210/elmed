@@ -8,11 +8,14 @@ import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { BoutonRetourEtape, EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { classeBadgePaiement } from "@/composants/commandes/suivi";
 import { appelerApi } from "@/lib/api";
+import { lienInscription } from "@/lib/compte";
 import { formaterMontant } from "@/lib/formatage";
+import { useClient } from "@/store/contexteClient";
 import type { DetailCommande } from "@/types/modeles";
 
 export function PageLivraisonCommande() {
   const params = useSearchParams();
+  const { compteReel } = useClient();
   const commandeId = params.get("commande");
   const [commande, setCommande] = useState<DetailCommande | null>(null);
 
@@ -91,6 +94,18 @@ export function PageLivraisonCommande() {
                   Voir la facture
                 </Link>
               </div>
+              {!compteReel && (
+                <p className="mt-6 rounded-xl bg-violet-clair px-4 py-3 text-sm leading-6 text-slate-700">
+                  Conservez ce lien pour suivre cette commande. Pour retrouver toutes vos commandes et la messagerie,{" "}
+                  <Link
+                    href={lienInscription(`/commandes/${commande.id}`)}
+                    className="font-semibold text-violet-marque hover:underline"
+                  >
+                    créez un compte
+                  </Link>
+                  .
+                </p>
+              )}
             </section>
 
             <aside className="space-y-4 lg:col-span-5 xl:col-span-4">

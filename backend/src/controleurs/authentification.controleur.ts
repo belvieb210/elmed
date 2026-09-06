@@ -1,13 +1,27 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { fusionnerCompteInvite, poserSession } from "../authentification/invite";
 import { baseDeDonnees } from "../config/baseDeDonnees";
-import { optionsCookieJeton } from "../config/environnement";
-import { creerJeton, type RequeteAuthentifiee } from "../middlewares/authentification";
+import { optionsCookieInvite, optionsCookieJeton } from "../config/environnement";
+import type { RequeteAuthentifiee } from "../middlewares/authentification";
 
 const schemaConnexion = z.object({
   email: z.string().email(),
   motDePasse: z.string().min(6),
+});
+
+const schemaInscription = z.object({
+  prenom: z.string().trim().min(1, "Le prénom est requis."),
+  nom: z.string().trim().min(1, "Le nom est requis."),
+  email: z.string().email("Email invalide."),
+  motDePasse: z
+    .string()
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
+    .regex(/[A-Za-z]/, "Le mot de passe doit contenir une lettre.")
+    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre."),
+  telephone: z.string().trim().optional(),
+  nomSociete: z.string().trim().optional(),
 });
 
 function formaterUtilisateur(utilisateur: {
@@ -21,6 +35,7 @@ function formaterUtilisateur(utilisateur: {
   nomSociete: string | null;
   adresse: string | null;
   ville: string | null;
+  estInvite?: boolean;
 }) {
   return {
     id: utilisateur.id,
@@ -34,6 +49,7 @@ function formaterUtilisateur(utilisateur: {
     nomSociete: utilisateur.nomSociete,
     adresse: utilisateur.adresse,
     ville: utilisateur.ville,
+    estInvite: Boolean(utilisateur.estInvite),
   };
 }
 
@@ -47,7 +63,7 @@ export async function connecterClient(requete: Request, reponse: Response) {
   const { email, motDePasse } = analyse.data;
   const utilisateur = await baseDeDonnees.utilisateur.findUnique({ where: { email } });
 
-  if (!utilisateur) {
+  if (!utilisateur || utilisateur.estInvite) {
     reponse.status(401).json({ succes: false, message: "Identifiants incorrects." });
     return;
   }
@@ -58,9 +74,65 @@ export async function connecterClient(requete: Request, reponse: Response) {
     return;
   }
 
-  const jeton = creerJeton(utilisateur.id, utilisateur.role);
-  reponse.cookie("mm_jeton", jeton, optionsCookieJeton);
+  const inviteId = requete.cookies?.mm_invite as string | undefined;
+  await fusionnerCompteInvite(inviteId, utilisateur.id);
+  poserSession(reponse, utilisateur.id, utilisateur.role, false);
   reponse.json({
+    succes: true,
+    utilisateur: formaterUtilisateur({ ...utilisateur, estInvite: false }),
+  });
+}
+
+export async function inscrireClient(requete: Request, reponse: Response) {
+  const analyse = schemaInscription.safeParse(requete.body);
+  if (!analyse.success) {
+    reponse.status(400).json({
+      succes: false,
+      message: analyse.error.issues[0]?.message ?? "Données d'inscription invalides.",
+    });
+    return;
+  }
+
+  const { prenom, nom, email, motDePasse, telephone, nomSociete } = analyse.data;
+  const existant = await baseDeDonnees.utilisateur.findUnique({ where: { email } });
+  if (existant && !existant.estInvite) {
+    reponse.status(409).json({ succes: false, message: "Un compte existe déjà avec cet email." });
+    return;
+  }
+
+  const hash = await bcrypt.hash(motDePasse, 12);
+  const utilisateur = existant?.estInvite
+    ? await baseDeDonnees.utilisateur.update({
+        where: { id: existant.id },
+        data: {
+          prenom,
+          nom,
+          email,
+          motDePasse: hash,
+          telephone: telephone || null,
+          nomSociete: nomSociete || null,
+          estInvite: false,
+        },
+      })
+    : await baseDeDonnees.utilisateur.create({
+        data: {
+          prenom,
+          nom,
+          email,
+          motDePasse: hash,
+          telephone: telephone || null,
+          nomSociete: nomSociete || null,
+          role: "CLIENT",
+          estInvite: false,
+        },
+      });
+
+  const inviteId = requete.cookies?.mm_invite as string | undefined;
+  if (inviteId !== utilisateur.id) {
+    await fusionnerCompteInvite(inviteId, utilisateur.id);
+  }
+  poserSession(reponse, utilisateur.id, utilisateur.role, false);
+  reponse.status(201).json({
     succes: true,
     utilisateur: formaterUtilisateur(utilisateur),
   });
@@ -68,6 +140,7 @@ export async function connecterClient(requete: Request, reponse: Response) {
 
 export function deconnecterClient(_requete: Request, reponse: Response) {
   reponse.clearCookie("mm_jeton", { ...optionsCookieJeton, maxAge: 0 });
+  reponse.clearCookie("mm_invite", { ...optionsCookieInvite, maxAge: 0 });
   reponse.json({ succes: true, message: "Déconnexion effectuée." });
 }
 

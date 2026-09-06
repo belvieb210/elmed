@@ -4,30 +4,11 @@ import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 
 export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse: Response) {
-  const clientId = requete.utilisateurId!;
+  const clientId = requete.utilisateurId;
+  const compteReel = Boolean(clientId && !requete.estInvite);
 
-  const [
-    utilisateur,
-    nombreCommandes,
-    nombreEnAttente,
-    nombreValidees,
-    nombrePayees,
-    categories,
-    produitsPopulaires,
-    dernieresCommandes,
-    nombreArticlesPanier,
-    messagesNonLus,
-    notificationsNonLues,
-  ] = await Promise.all([
-    baseDeDonnees.utilisateur.findUnique({ where: { id: clientId } }),
-    baseDeDonnees.commande.count({ where: { clientId } }),
-    baseDeDonnees.commande.count({ where: { clientId, statut: "EN_ATTENTE" } }),
-    baseDeDonnees.commande.count({
-      where: { clientId, statut: { in: ["VALIDEE", "EN_PREPARATION", "PRET_RETRAIT", "LIVREE", "CLOTUREE"] } },
-    }),
-    baseDeDonnees.paiement.count({
-      where: { commande: { clientId }, statut: "PAYE" },
-    }),
+  const [utilisateur, categories, produitsPopulaires] = await Promise.all([
+    clientId ? baseDeDonnees.utilisateur.findUnique({ where: { id: clientId } }) : Promise.resolve(null),
     baseDeDonnees.categorie.findMany({
       orderBy: { ordre: "asc" },
       include: { _count: { select: { produits: true } } },
@@ -38,41 +19,79 @@ export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse
       take: 8,
       include: { categorie: true },
     }),
-    baseDeDonnees.commande.findMany({
-      where: { clientId },
-      orderBy: { dateCommande: "desc" },
-      take: 5,
-      include: { paiements: { orderBy: { datePaiement: "desc" }, take: 1 } },
-    }),
-    baseDeDonnees.lignePanier.aggregate({
-      where: { clientId },
-      _sum: { quantite: true },
-    }),
-    baseDeDonnees.message.count({
-      where: {
-        lu: false,
-        conversation: { clientId },
-        auteurId: { not: clientId },
-      },
-    }),
-    baseDeDonnees.notification.count({
-      where: { utilisateurId: clientId, lue: false },
-    }),
+  ]);
+
+  const [
+    nombreCommandes,
+    nombreEnAttente,
+    nombreValidees,
+    nombrePayees,
+    dernieresCommandes,
+    nombreArticlesPanier,
+    messagesNonLus,
+    notificationsNonLues,
+  ] = await Promise.all([
+    compteReel ? baseDeDonnees.commande.count({ where: { clientId } }) : Promise.resolve(0),
+    compteReel ? baseDeDonnees.commande.count({ where: { clientId, statut: "EN_ATTENTE" } }) : Promise.resolve(0),
+    compteReel
+      ? baseDeDonnees.commande.count({
+          where: {
+            clientId,
+            statut: { in: ["VALIDEE", "EN_PREPARATION", "PRET_RETRAIT", "LIVREE", "CLOTUREE"] },
+          },
+        })
+      : Promise.resolve(0),
+    compteReel
+      ? baseDeDonnees.paiement.count({
+          where: { commande: { clientId }, statut: "PAYE" },
+        })
+      : Promise.resolve(0),
+    compteReel
+      ? baseDeDonnees.commande.findMany({
+          where: { clientId },
+          orderBy: { dateCommande: "desc" },
+          take: 5,
+          include: { paiements: { orderBy: { datePaiement: "desc" }, take: 1 } },
+        })
+      : Promise.resolve([]),
+    clientId
+      ? baseDeDonnees.lignePanier.aggregate({
+          where: { clientId },
+          _sum: { quantite: true },
+        })
+      : Promise.resolve({ _sum: { quantite: 0 } }),
+    compteReel
+      ? baseDeDonnees.message.count({
+          where: {
+            lu: false,
+            conversation: { clientId },
+            auteurId: { not: clientId },
+          },
+        })
+      : Promise.resolve(0),
+    compteReel
+      ? baseDeDonnees.notification.count({
+          where: { utilisateurId: clientId, lue: false },
+        })
+      : Promise.resolve(0),
   ]);
 
   reponse.json({
     succes: true,
     tableauDeBord: {
-      utilisateur: utilisateur
-        ? {
-            id: utilisateur.id,
-            prenom: utilisateur.prenom,
-            nom: utilisateur.nom,
-            nomComplet: `${utilisateur.prenom} ${utilisateur.nom}`,
-            role: utilisateur.role,
-            photoProfil: utilisateur.photoProfil,
-          }
-        : null,
+      utilisateur:
+        utilisateur && !utilisateur.estInvite
+          ? {
+              id: utilisateur.id,
+              prenom: utilisateur.prenom,
+              nom: utilisateur.nom,
+              nomComplet: `${utilisateur.prenom} ${utilisateur.nom}`,
+              email: utilisateur.email,
+              role: utilisateur.role,
+              photoProfil: utilisateur.photoProfil,
+              estInvite: false,
+            }
+          : null,
       statistiques: {
         nombreCommandes,
         nombreEnAttente,
