@@ -1,0 +1,430 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Check,
+  FileText,
+  MapPin,
+  Minus,
+  Navigation,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
+import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
+import { ApercuProforma } from "@/composants/documents/ApercuProforma";
+import { formaterMontant } from "@/lib/formatage";
+import { appelerApi, ouvrirPdf } from "@/lib/api";
+import { useClient } from "@/store/contexteClient";
+import type { ArticlePanier, EntrepotResume } from "@/types/modeles";
+
+const etapesPanier = ["Panier", "Paiement", "Confirmation", "Livraison"];
+
+const modesPaiement = [
+  { id: "CARTE_BANCAIRE", libelle: "Paiement en ligne" },
+  { id: "PAIEMENT_RETRAIT", libelle: "Paiement au retrait" },
+  { id: "PAIEMENT_LIVRAISON", libelle: "Paiement à la livraison" },
+];
+
+const entrepotParDefaut: EntrepotResume = {
+  nom: "Entrepôt Central Kinshasa",
+  adresse: "Avenue des Poids Lourds",
+  ville: "Kinshasa",
+  latitude: -4.3276,
+  longitude: 15.3136,
+};
+
+function classeCategorie(slug?: string) {
+  if (slug?.includes("reactif")) return "bg-violet-100 text-violet-700";
+  if (slug?.includes("equip")) return "bg-sky-100 text-sky-700";
+  if (slug?.includes("conso")) return "bg-orange-100 text-orange-700";
+  if (slug?.includes("medic")) return "bg-emerald-100 text-emerald-700";
+  if (slug?.includes("secur")) return "bg-rose-100 text-rose-700";
+  return "bg-slate-100 text-slate-600";
+}
+
+export function PagePanier() {
+  const routeur = useRouter();
+  const { panier, utilisateur, chargerPanier, chargerTableauDeBord } = useClient();
+  const [selection, setSelection] = useState<string[]>([]);
+  const [modePaiement, setModePaiement] = useState("CARTE_BANCAIRE");
+  const [enCours, setEnCours] = useState(false);
+  const [proformaOuverte, setProformaOuverte] = useState(false);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    chargerPanier();
+  }, [chargerPanier]);
+
+  const articles = panier?.articles ?? [];
+
+  useEffect(() => {
+    setSelection(articles.map((article) => article.id));
+  }, [panier?.articles]);
+
+  const articlesSelectionnes = useMemo(
+    () => articles.filter((article) => selection.includes(article.id)),
+    [articles, selection],
+  );
+  const sousTotal = articlesSelectionnes.reduce((somme, article) => somme + article.sousTotal, 0);
+  const entrepot = panier?.entrepot ?? entrepotParDefaut;
+  const nomClient = [utilisateur?.nomSociete, utilisateur?.nomComplet].filter(Boolean).join(" — ") || "Client";
+  const carteUrl =
+    entrepot.latitude && entrepot.longitude
+      ? `https://www.google.com/maps?q=${entrepot.latitude},${entrepot.longitude}`
+      : `https://www.google.com/maps/search/${encodeURIComponent(`${entrepot.adresse} ${entrepot.ville}`)}`;
+  const itineraireUrl =
+    entrepot.latitude && entrepot.longitude
+      ? `https://www.google.com/maps/dir/?api=1&destination=${entrepot.latitude},${entrepot.longitude}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${entrepot.adresse} ${entrepot.ville}`)}`;
+  const carteEmbed =
+    entrepot.latitude && entrepot.longitude
+      ? `https://www.openstreetmap.org/export/embed.html?bbox=${entrepot.longitude - 0.02}%2C${entrepot.latitude - 0.015}%2C${entrepot.longitude + 0.02}%2C${entrepot.latitude + 0.015}&layer=mapnik&marker=${entrepot.latitude}%2C${entrepot.longitude}`
+      : null;
+
+  async function changerQuantite(id: string, quantite: number) {
+    await appelerApi(`/panier/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ quantite }),
+    });
+    await Promise.all([chargerPanier(), chargerTableauDeBord()]);
+  }
+
+  async function supprimerSelection() {
+    if (selection.length === 0 || selection.length === articles.length) {
+      await appelerApi("/panier", { method: "DELETE" });
+    } else {
+      await Promise.all(selection.map((id) => appelerApi(`/panier/${id}`, { method: "DELETE" })));
+    }
+    await Promise.all([chargerPanier(), chargerTableauDeBord()]);
+  }
+
+  async function envoyerCommande() {
+    if (articles.length === 0) return;
+    setEnCours(true);
+    setMessage(null);
+    try {
+      const resultat = await appelerApi<{ message: string }>("/commandes", {
+        method: "POST",
+        body: JSON.stringify({ modePaiement }),
+      });
+      setMessage(resultat.message);
+      await Promise.all([chargerPanier(), chargerTableauDeBord()]);
+      routeur.push("/commandes");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Envoi impossible.");
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  async function ouvrirPdfProforma() {
+    setPdfEnCours(true);
+    try {
+      await ouvrirPdf("/panier/proforma");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Impossible d'ouvrir la proforma.");
+    } finally {
+      setPdfEnCours(false);
+    }
+  }
+
+  return (
+    <MiseEnPageClient>
+      <div className="mb-5">
+        <h1 className="text-2xl font-semibold text-slate-900">Mon panier</h1>
+        <ol className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          {etapesPanier.map((etape, index) => (
+            <li key={etape} className="flex items-center gap-2">
+              <span
+                className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${
+                  index === 0 ? "bg-violet-marque text-white" : "bg-slate-200 text-slate-500"
+                }`}
+              >
+                {index + 1}
+              </span>
+              <span className={index === 0 ? "font-medium text-violet-marque" : "text-slate-400"}>{etape}</span>
+              {index < etapesPanier.length - 1 && <span className="text-slate-300">—</span>}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {!panier || articles.length === 0 ? (
+        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
+          <p className="text-sm text-slate-500">Votre panier est vide.</p>
+          <Link href="/produits" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-violet-marque">
+            <ArrowLeft className="h-4 w-4" />
+            Continuer mes achats
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <div className="mb-3 flex items-center justify-between rounded-xl bg-slate-100 px-4 py-2.5 text-sm">
+              <label className="flex items-center gap-2 text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={selection.length === articles.length}
+                  onChange={(evenement) =>
+                    setSelection(evenement.target.checked ? articles.map((article) => article.id) : [])
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-violet-marque"
+                />
+                {selection.length} article{selection.length > 1 ? "s" : ""} sélectionné{selection.length > 1 ? "s" : ""}
+              </label>
+              <button
+                type="button"
+                onClick={supprimerSelection}
+                className="inline-flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer tout
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {articles.map((article) => (
+                <LigneArticle
+                  key={article.id}
+                  article={article}
+                  selectionne={selection.includes(article.id)}
+                  onSelection={(cochee) =>
+                    setSelection((actuel) =>
+                      cochee ? [...actuel, article.id] : actuel.filter((id) => id !== article.id),
+                    )
+                  }
+                  onQuantite={changerQuantite}
+                />
+              ))}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Link
+                href="/produits"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Continuer mes achats
+              </Link>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setProformaOuverte(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <FileText className="h-4 w-4" />
+                  Facture proforma
+                </button>
+                <button
+                  type="button"
+                  onClick={envoyerCommande}
+                  disabled={enCours}
+                  className="rounded-xl bg-violet-marque px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60"
+                >
+                  {enCours ? "Envoi..." : "Passer la commande →"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <aside className="h-fit space-y-4 rounded-2xl border border-slate-100 bg-white p-5">
+            <h2 className="text-base font-semibold text-slate-900">Résumé de la commande</h2>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between text-slate-600">
+                <dt>Sous-total</dt>
+                <dd>{formaterMontant(sousTotal)}</dd>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <dt>Frais de livraison</dt>
+                <dd>{formaterMontant(0)}</dd>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <dt>Remises</dt>
+                <dd>{formaterMontant(0)}</dd>
+              </div>
+            </dl>
+            <div className="rounded-xl bg-violet-clair px-4 py-3">
+              <p className="text-sm text-slate-600">Total à payer</p>
+              <p className="text-xl font-semibold text-violet-marque">{formaterMontant(sousTotal)}</p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-semibold text-slate-800">Mode de paiement</p>
+              <div className="space-y-2">
+                {modesPaiement.map((mode) => (
+                  <label key={mode.id} className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="mode-paiement"
+                      checked={modePaiement === mode.id}
+                      onChange={() => setModePaiement(mode.id)}
+                      className="text-violet-marque"
+                    />
+                    {mode.libelle}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-semibold text-slate-800">Point de retrait / Livraison</p>
+              <p className="text-sm font-medium text-slate-800">{entrepot.nom}</p>
+              <p className="text-sm text-slate-500">
+                {entrepot.adresse}, {entrepot.ville}
+              </p>
+              {entrepot.heures && <p className="text-xs text-slate-400">{entrepot.heures}</p>}
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href={carteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  Voir sur la carte
+                </a>
+                <a
+                  href={itineraireUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <Navigation className="h-3.5 w-3.5" />
+                  Obtenir l&apos;itinéraire
+                </a>
+              </div>
+              {carteEmbed && (
+                <iframe
+                  title="Carte de l'entrepôt"
+                  src={carteEmbed}
+                  className="mt-3 h-32 w-full rounded-xl border border-slate-200"
+                />
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={envoyerCommande}
+              disabled={enCours}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-marque py-3 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60"
+            >
+              <Check className="h-4 w-4" />
+              {enCours ? "Envoi..." : "Confirmer la commande"}
+            </button>
+            {message && <p className="text-sm text-slate-600">{message}</p>}
+          </aside>
+        </div>
+      )}
+
+      {proformaOuverte && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4">
+          <div className="mx-auto max-w-4xl rounded-2xl bg-white p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Facture proforma</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={ouvrirPdfProforma}
+                  disabled={pdfEnCours}
+                  className="rounded-xl bg-violet-marque px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {pdfEnCours ? "PDF..." : "Télécharger le PDF"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProformaOuverte(false)}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-slate-100"
+                  aria-label="Fermer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <ApercuProforma
+              articles={articlesSelectionnes.length > 0 ? articlesSelectionnes : articles}
+              montantTotal={sousTotal}
+              nomClient={nomClient}
+            />
+          </div>
+        </div>
+      )}
+      <BandeauMessagerie />
+    </MiseEnPageClient>
+  );
+}
+
+function LigneArticle({
+  article,
+  selectionne,
+  onSelection,
+  onQuantite,
+}: {
+  article: ArticlePanier;
+  selectionne: boolean;
+  onSelection: (cochee: boolean) => void;
+  onQuantite: (id: string, quantite: number) => Promise<void>;
+}) {
+  const [attente, setAttente] = useState(false);
+
+  async function changer(quantite: number) {
+    setAttente(true);
+    try {
+      await onQuantite(article.id, quantite);
+    } finally {
+      setAttente(false);
+    }
+  }
+
+  return (
+    <article className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 md:flex-row md:items-center">
+      <input
+        type="checkbox"
+        checked={selectionne}
+        onChange={(evenement) => onSelection(evenement.target.checked)}
+        className="h-4 w-4 rounded border-slate-300 text-violet-marque"
+        aria-label={`Sélectionner ${article.nomProduit}`}
+      />
+      <img src={article.image ?? ""} alt="" className="h-20 w-20 rounded-xl bg-slate-100 object-cover" />
+      <div className="min-w-0 flex-1">
+        {article.nomCategorie && (
+          <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${classeCategorie(article.slugCategorie)}`}>
+            {article.nomCategorie}
+          </span>
+        )}
+        <h2 className="mt-1 font-medium text-slate-800">{article.nomProduit}</h2>
+        <p className="text-xs text-slate-400">
+          SKU : {article.sku}
+          {article.numeroLot ? ` · Lot : ${article.numeroLot}` : ""}
+        </p>
+        <p className={`mt-1 text-xs font-medium ${(article.quantiteStock ?? 0) > 0 ? "text-emerald-600" : "text-red-500"}`}>
+          {(article.quantiteStock ?? 0) > 0 ? `En stock (${article.quantiteStock})` : "Rupture de stock"}
+        </p>
+      </div>
+      <div className="text-sm text-slate-600 md:w-40">
+        <p className="font-medium text-slate-800">{formaterMontant(article.prixUnitaire)}</p>
+        <p className="text-xs text-slate-400">
+          ({article.quantite} × {formaterMontant(article.prixUnitaire)})
+        </p>
+      </div>
+      <div className="flex items-center rounded-xl border border-slate-200">
+        <button type="button" className="px-2.5 py-1.5" disabled={attente} onClick={() => changer(article.quantite - 1)}>
+          <Minus className="h-4 w-4" />
+        </button>
+        <span className="w-8 text-center text-sm font-semibold">{article.quantite}</span>
+        <button type="button" className="px-2.5 py-1.5" disabled={attente} onClick={() => changer(article.quantite + 1)}>
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+      <p className="text-sm font-semibold md:w-24 md:text-right">{formaterMontant(article.sousTotal)}</p>
+      <button type="button" className="text-red-500" onClick={() => changer(0)} aria-label="Retirer">
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </article>
+  );
+}

@@ -5,10 +5,28 @@ import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { identifiantRoute } from "../utils/identifiant";
 
+const inclusionProduit = {
+  produit: {
+    include: {
+      categorie: true,
+      lots: { orderBy: { dateExpiration: "asc" as const }, take: 1 },
+    },
+  },
+};
+
 function formaterLigne(ligne: {
   id: string;
   quantite: number;
-  produit: { id: string; nom: string; prix: { toString(): string }; image: string | null; sku: string };
+  produit: {
+    id: string;
+    nom: string;
+    prix: { toString(): string };
+    image: string | null;
+    sku: string;
+    quantiteStock: number;
+    categorie?: { nom: string; slug: string };
+    lots?: { numeroLot: string }[];
+  };
 }) {
   const prixUnitaire = Number(ligne.produit.prix);
   return {
@@ -20,6 +38,10 @@ function formaterLigne(ligne: {
     quantite: ligne.quantite,
     prixUnitaire,
     sousTotal: prixUnitaire * ligne.quantite,
+    nomCategorie: ligne.produit.categorie?.nom ?? "",
+    slugCategorie: ligne.produit.categorie?.slug ?? "",
+    quantiteStock: ligne.produit.quantiteStock,
+    numeroLot: ligne.produit.lots?.[0]?.numeroLot ?? null,
   };
 }
 
@@ -84,15 +106,34 @@ export async function telechargerProformaPanier(requete: RequeteAuthentifiee, re
 export async function obtenirPanier(requete: RequeteAuthentifiee, reponse: Response) {
   const lignes = await baseDeDonnees.lignePanier.findMany({
     where: { clientId: requete.utilisateurId },
-    include: { produit: true },
+    include: inclusionProduit,
     orderBy: { id: "asc" },
   });
 
   const articles = lignes.map(formaterLigne);
   const montantTotal = articles.reduce((somme, article) => somme + article.sousTotal, 0);
   const nombreArticles = articles.reduce((somme, article) => somme + article.quantite, 0);
+  const entrepot = await baseDeDonnees.entrepot.findFirst({ orderBy: { nom: "asc" } });
 
-  reponse.json({ succes: true, panier: { articles, montantTotal, nombreArticles } });
+  reponse.json({
+    succes: true,
+    panier: {
+      articles,
+      montantTotal,
+      nombreArticles,
+      entrepot: entrepot
+        ? {
+            nom: entrepot.nom,
+            adresse: entrepot.adresse,
+            ville: entrepot.ville,
+            telephone: entrepot.telephone,
+            latitude: entrepot.latitude,
+            longitude: entrepot.longitude,
+            heures: entrepot.heures,
+          }
+        : null,
+    },
+  });
 }
 
 export async function ajouterAuPanier(requete: RequeteAuthentifiee, reponse: Response) {
@@ -154,10 +195,17 @@ export async function modifierQuantitePanier(requete: RequeteAuthentifiee, repon
   const ligne = await baseDeDonnees.lignePanier.update({
     where: { id: identifiantRoute(requete.params.id) },
     data: { quantite: analyse.data.quantite },
-    include: { produit: true },
+    include: inclusionProduit,
   });
 
   reponse.json({ succes: true, article: formaterLigne(ligne) });
+}
+
+export async function viderPanier(requete: RequeteAuthentifiee, reponse: Response) {
+  await baseDeDonnees.lignePanier.deleteMany({
+    where: { clientId: requete.utilisateurId },
+  });
+  reponse.json({ succes: true, message: "Panier vidé." });
 }
 
 export async function retirerDuPanier(requete: RequeteAuthentifiee, reponse: Response) {

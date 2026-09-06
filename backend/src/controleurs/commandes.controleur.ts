@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import { ModePaiement } from "@prisma/client";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
@@ -123,6 +124,10 @@ export async function obtenirCommande(requete: RequeteAuthentifiee, reponse: Res
 
 export async function creerCommandeDepuisPanier(requete: RequeteAuthentifiee, reponse: Response) {
   const clientId = requete.utilisateurId!;
+  const modesValides = new Set<string>(Object.values(ModePaiement));
+  const modeDemande = typeof requete.body?.modePaiement === "string" ? requete.body.modePaiement : "";
+  const modePaiement = modesValides.has(modeDemande) ? (modeDemande as ModePaiement) : ModePaiement.PAIEMENT_LIVRAISON;
+
   const lignesPanier = await baseDeDonnees.lignePanier.findMany({
     where: { clientId },
     include: { produit: true },
@@ -153,6 +158,15 @@ export async function creerCommandeDepuisPanier(requete: RequeteAuthentifiee, re
             prixUnitaire: ligne.produit.prix,
           })),
         },
+      },
+    });
+
+    await transaction.paiement.create({
+      data: {
+        commandeId: creee.id,
+        montant: montantTotal,
+        modePaiement,
+        statut: "EN_ATTENTE",
       },
     });
 

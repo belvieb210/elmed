@@ -79,6 +79,16 @@ export interface CommandeResume {
   paiement?: PaiementResume;
 }
 
+export interface EntrepotResume {
+  nom: string;
+  adresse: string;
+  ville: string;
+  telephone?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  heures?: string | null;
+}
+
 export interface ArticlePanier {
   id: string;
   produitId: string;
@@ -88,12 +98,17 @@ export interface ArticlePanier {
   quantite: number;
   prixUnitaire: number;
   sousTotal: number;
+  nomCategorie?: string;
+  slugCategorie?: string;
+  quantiteStock?: number;
+  numeroLot?: string | null;
 }
 
 export interface Panier {
   articles: ArticlePanier[];
   montantTotal: number;
   nombreArticles: number;
+  entrepot?: EntrepotResume | null;
 }
 
 export interface FicheProduitMessage {
