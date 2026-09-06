@@ -279,11 +279,19 @@ export async function obtenirClientAdmin(requete: RequeteAuthentifiee, reponse: 
     };
   });
 
+  const factureAvance =
+    commandes.find(
+      (commande) =>
+        commande.resteAPayer > 0 &&
+        (commande.modeFacture === "AVANCE" || commande.statutPaiement === "PARTIEL"),
+    ) ?? null;
+
   reponse.json({
     succes: true,
     client: formaterClient(client),
     commandes,
-    peutSolde: commandes.some((commande) => commande.resteAPayer > 0 && commande.statutPaiement === "PARTIEL"),
+    factureAvance,
+    peutSolde: Boolean(factureAvance),
   });
 }
 
@@ -324,7 +332,8 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
           montantPaye: paye,
           resteAPayer: reste,
           statutPaiement: paye > 0 ? "PARTIEL" : "EN_ATTENTE",
-          libelleStatut: paye > 0 ? "Partiellement payée" : "À facturer",
+          modeFacture: commande.modeFacture,
+          libelleStatut: paye > 0 ? "Avance · solde à établir" : "À facturer",
           dateCommande: commande.dateCommande,
         };
       })
@@ -371,6 +380,7 @@ export async function obtenirFactureAdmin(requete: RequeteAuthentifiee, reponse:
       notes: commande.notes,
       montantTotal: Number(commande.montantTotal),
       montantPaye: paye,
+      resteAPayer: arrondi(Math.max(0, Number(commande.montantTotal) - paye)),
       modePaiement: commande.paiements[0]?.modePaiement ?? "ESPECES",
       statutPaiement: commande.paiements[0]?.statut ?? "EN_ATTENTE",
     },
@@ -415,6 +425,34 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
     };
   });
 
+  let commandeCibleId = donnees.commandeId;
+  if (donnees.modeFacture === "SOLDE") {
+    const avance = commandeCibleId
+      ? await baseDeDonnees.commande.findFirst({
+          where: { id: commandeCibleId, clientId: client.id },
+          include: { paiements: true },
+        })
+      : await baseDeDonnees.commande.findFirst({
+          where: {
+            clientId: client.id,
+            statut: { notIn: ["ANNULEE", "REFUSEE"] },
+            OR: [{ modeFacture: "AVANCE" }, { paiements: { some: { statut: "PARTIEL" } } }],
+          },
+          include: { paiements: true },
+          orderBy: { dateCommande: "desc" },
+        });
+    const payeAvance = avance ? montantPayeCommande(avance.paiements) : 0;
+    const resteAvance = avance ? arrondi(Math.max(0, Number(avance.montantTotal) - payeAvance)) : 0;
+    if (!avance || resteAvance <= 0) {
+      reponse.status(400).json({
+        succes: false,
+        message: "Aucune facture d'avance à solder pour ce client.",
+      });
+      return;
+    }
+    commandeCibleId = avance.id;
+  }
+
   const totalProduits = arrondi(lignes.reduce((somme, ligne) => somme + ligne.sousTotal, 0));
   const total = arrondi(Math.max(0, totalProduits - donnees.remise + donnees.fraisDivers));
   const montantPaye = arrondi(Math.min(donnees.montantPaye, total));
@@ -424,9 +462,9 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
     .join(" ");
 
   const commande = await baseDeDonnees.$transaction(async (transaction) => {
-    let cible = donnees.commandeId
+    let cible = commandeCibleId
       ? await transaction.commande.findFirst({
-          where: { id: donnees.commandeId, clientId: client.id },
+          where: { id: commandeCibleId, clientId: client.id },
           include: { paiements: true },
         })
       : null;
@@ -583,6 +621,8 @@ export async function telechargerFactureAdmin(requete: RequeteAuthentifiee, repo
     .replace(/^(\d+\s)([a-z])/, (_tout, prefixe: string, lettre: string) => `${prefixe}${lettre.toUpperCase()}`);
 
   const paiement = commande.paiements[0];
+  const montantPaye = montantPayeCommande(commande.paiements);
+  const montantTotal = Number(commande.montantTotal);
   const pdf = await genererProformaPdf({
     numero: commande.numeroRecu || commande.numeroCommande,
     dateTexte,
@@ -597,7 +637,9 @@ export async function telechargerFactureAdmin(requete: RequeteAuthentifiee, repo
       prixUnitaire: Number(ligne.prixUnitaire),
       prixTotal: Number(ligne.prixUnitaire) * ligne.quantite,
     })),
-    montantTotal: Number(commande.montantTotal),
+    montantTotal,
+    montantPaye,
+    resteAPayer: arrondi(Math.max(0, montantTotal - montantPaye)),
   });
 
   reponse.setHeader("Content-Type", "application/pdf");

@@ -8,7 +8,7 @@ import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { TableauFacturesEnAttente } from "@/composants/admin/TableauFacturesEnAttente";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
 import { formaterDate, formaterMontant } from "@/lib/formatage";
-import type { ClientAdmin, ProduitAdmin } from "@/types/modeles";
+import type { ClientAdmin, FactureAvanceAdmin, ProduitAdmin } from "@/types/modeles";
 
 type ModeFacture = "CASH" | "AVANCE" | "SOLDE" | "PRISE_EN_CHARGE" | "ABONNE" | "CONVENTIONNE";
 type TypeFacture = "STANDARD" | "GROS";
@@ -20,6 +20,21 @@ type LigneFacture = {
   sku: string;
   quantite: number;
   prixUnitaire: number;
+};
+
+type FactureChargee = {
+  id: string;
+  lignes: LigneFacture[];
+  modeFacture: ModeFacture;
+  typeFacture: TypeFacture;
+  remise: number;
+  fraisDivers: number;
+  numeroRecu: string | null;
+  notes: string | null;
+  montantPaye: number;
+  resteAPayer?: number;
+  modePaiement: ModePaiement;
+  statutPaiement?: string;
 };
 
 const modesFacture: Array<{ id: ModeFacture; titre: string; texte: string }> = [
@@ -66,8 +81,12 @@ export function PageFacturationClient({
   const [client, setClient] = useState<ClientAdmin | null>(null);
   const [produits, setProduits] = useState<ProduitAdmin[]>([]);
   const [peutSolde, setPeutSolde] = useState(false);
+  const [factureAvance, setFactureAvance] = useState<FactureAvanceAdmin | null>(null);
   const [lignes, setLignes] = useState<LigneFacture[]>([]);
   const [commandeCourante, setCommandeCourante] = useState<string | null>(commandeId);
+  const [montantDejaAvance, setMontantDejaAvance] = useState(0);
+  const [statutEncaissement, setStatutEncaissement] = useState("EN_ATTENTE");
+  const [cleAttente, setCleAttente] = useState(0);
   const [rechercheProduit, setRechercheProduit] = useState("");
   const [modeFacture, setModeFacture] = useState<ModeFacture>("CASH");
   const [typeFacture, setTypeFacture] = useState<TypeFacture>("STANDARD");
@@ -91,7 +110,35 @@ export function PageFacturationClient({
   );
   const sousTotal = Math.max(0, totalProduits - remise);
   const totalAPayer = Math.max(0, sousTotal + fraisDivers);
-  const resteAPayer = Math.max(0, totalAPayer - montantPaye);
+  const soldeAEncaisser = Math.max(0, Number((totalAPayer - montantDejaAvance).toFixed(2)));
+  const resteAPayer =
+    modeFacture === "SOLDE" ? Math.max(0, soldeAEncaisser - montantPaye) : Math.max(0, totalAPayer - montantPaye);
+  const peutImprimer = statutEncaissement === "PARTIEL" || statutEncaissement === "PAYE";
+
+  function appliquerFacture(facture: FactureChargee, modeForce?: ModeFacture) {
+    const mode = modeForce ?? facture.modeFacture;
+    const dejaAvance = facture.montantPaye;
+    const reste = facture.resteAPayer ?? 0;
+    setCommandeCourante(facture.id);
+    setLignes(facture.lignes);
+    setModeFacture(mode);
+    setTypeFacture(facture.typeFacture);
+    setRemise(facture.remise);
+    setFraisDivers(facture.fraisDivers);
+    setNumeroRecu(facture.numeroRecu ?? numeroRecu);
+    setNotes(facture.notes ?? "");
+    setMontantDejaAvance(dejaAvance);
+    setMontantPaye(mode === "SOLDE" ? reste : dejaAvance);
+    setModePaiement(facture.modePaiement);
+    setStatutEncaissement(facture.statutPaiement ?? (dejaAvance > 0 ? "PARTIEL" : "EN_ATTENTE"));
+    if (dejaAvance > 0 && reste > 0) setPeutSolde(true);
+  }
+
+  async function chargerFacture(id: string, modeForce?: ModeFacture) {
+    const donnees = await appelerApi<{ facture: FactureChargee }>(`/admin/factures/${id}`);
+    appliquerFacture(donnees.facture, modeForce);
+    return donnees.facture;
+  }
 
   useEffect(() => {
     const temporaire = sessionStorage.getItem("mm_mdp_client");
@@ -103,51 +150,29 @@ export function PageFacturationClient({
     appelerApi<{
       client: ClientAdmin;
       peutSolde: boolean;
+      factureAvance: FactureAvanceAdmin | null;
     }>(`/admin/clients/${clientId}`)
       .then((donnees) => {
         setClient(donnees.client);
         setPeutSolde(donnees.peutSolde);
+        setFactureAvance(donnees.factureAvance);
+        const aCharger = commandeId ?? donnees.factureAvance?.id;
+        if (aCharger) {
+          void chargerFacture(aCharger).catch(() => undefined);
+        }
       })
       .catch(() => setClient(null));
 
     appelerApi<{ produits: ProduitAdmin[] }>("/admin/produits")
       .then((donnees) => setProduits(donnees.produits))
       .catch(() => setProduits([]));
-  }, [clientId]);
-
-  useEffect(() => {
-    if (!commandeId) return;
-    appelerApi<{
-      facture: {
-        id: string;
-        lignes: LigneFacture[];
-        modeFacture: ModeFacture;
-        typeFacture: TypeFacture;
-        remise: number;
-        fraisDivers: number;
-        numeroRecu: string | null;
-        notes: string | null;
-        montantPaye: number;
-        modePaiement: ModePaiement;
-      };
-    }>(`/admin/factures/${commandeId}`).then((donnees) => {
-      setCommandeCourante(donnees.facture.id);
-      setLignes(donnees.facture.lignes);
-      setModeFacture(donnees.facture.modeFacture);
-      setTypeFacture(donnees.facture.typeFacture);
-      setRemise(donnees.facture.remise);
-      setFraisDivers(donnees.facture.fraisDivers);
-      setNumeroRecu(donnees.facture.numeroRecu ?? numeroRecu);
-      setNotes(donnees.facture.notes ?? "");
-      setMontantPaye(donnees.facture.montantPaye);
-      setModePaiement(donnees.facture.modePaiement);
-    }).catch(() => undefined);
-  }, [commandeId]);
+  }, [clientId, commandeId]);
 
   useEffect(() => {
     if (modeFacture === "CASH") setMontantPaye(Number(totalAPayer.toFixed(2)));
+    if (modeFacture === "SOLDE") setMontantPaye(soldeAEncaisser);
     if (modeFacture === "SOLDE" && !peutSolde) setModeFacture("CASH");
-  }, [modeFacture, totalAPayer, peutSolde]);
+  }, [modeFacture, totalAPayer, soldeAEncaisser, peutSolde]);
 
   const suggestions = produits.filter((produit) => {
     if (!rechercheProduit.trim()) return false;
@@ -178,6 +203,10 @@ export function PageFacturationClient({
       setErreur("Ajoutez au moins un produit médical.");
       return null;
     }
+    if (modeFacture === "AVANCE" && (montantPaye <= 0 || montantPaye >= totalAPayer)) {
+      setErreur("Saisissez un montant d'avance inférieur au total de la facture.");
+      return null;
+    }
     setEnCours(true);
     setErreur(null);
     setMessage(null);
@@ -199,7 +228,7 @@ export function PageFacturationClient({
             modePaiement,
             remise,
             fraisDivers,
-            montantPaye,
+            montantPaye: modeFacture === "SOLDE" ? totalAPayer : montantPaye,
             numeroRecu,
             notes,
             valider,
@@ -208,11 +237,34 @@ export function PageFacturationClient({
       );
       setCommandeCourante(donnees.commandeId);
       setNumeroRecu(donnees.numeroRecu ?? donnees.numeroCommande);
-      setMessage(
-        valider
-          ? `Facture ${donnees.numeroCommande} validée et encaissée.`
-          : `Facture ${donnees.numeroCommande} enregistrée.`,
-      );
+      if (valider) {
+        if (modeFacture === "AVANCE") {
+          setMontantDejaAvance(montantPaye);
+          setStatutEncaissement("PARTIEL");
+          setPeutSolde(true);
+          setFactureAvance({
+            id: donnees.commandeId,
+            numeroCommande: donnees.numeroCommande,
+            montantTotal: totalAPayer,
+            montantPaye,
+            resteAPayer,
+            statutPaiement: "PARTIEL",
+            modeFacture: "AVANCE",
+          });
+          setMessage(
+            `Avance ${donnees.numeroCommande} encaissée : ${formaterMontant(montantPaye)} payés, reste ${formaterMontant(resteAPayer)} pour la facture solde.`,
+          );
+        } else {
+          setMontantDejaAvance(totalAPayer);
+          setStatutEncaissement("PAYE");
+          setPeutSolde(false);
+          setFactureAvance(null);
+          setMessage(`Facture ${donnees.numeroCommande} validée et encaissée.`);
+        }
+      } else {
+        setMessage(`Facture ${donnees.numeroCommande} enregistrée.`);
+      }
+      setCleAttente((actuel) => actuel + 1);
       return donnees.commandeId;
     } catch (cause) {
       setErreur(cause instanceof Error ? cause.message : "Enregistrement impossible.");
@@ -237,7 +289,11 @@ export function PageFacturationClient({
   }
 
   const statutPaiement =
-    montantPaye <= 0 ? "En attente de paiement" : resteAPayer > 0 ? "Paiement partiel" : "Payée";
+    statutEncaissement === "PAYE" || (montantPaye > 0 && resteAPayer <= 0 && modeFacture !== "AVANCE")
+      ? "Payée"
+      : montantDejaAvance > 0 || (modeFacture === "AVANCE" && montantPaye > 0)
+        ? "Avance versée"
+        : "En attente de paiement";
 
   return (
     <MiseEnPageAdmin titre="Facturation" sousTitre={`${client.nomSociete || client.nomComplet} · produits médicaux`}>
@@ -259,7 +315,15 @@ export function PageFacturationClient({
                 <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase text-sky-700">
                   Client
                 </span>
-                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                    statutPaiement === "Payée"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : statutPaiement === "Avance versée"
+                        ? "bg-orange-100 text-orange-800"
+                        : "bg-amber-100 text-amber-800"
+                  }`}
+                >
                   {statutPaiement}
                 </span>
               </div>
@@ -270,6 +334,13 @@ export function PageFacturationClient({
               </p>
               {client.nomSociete && <p className="text-sm text-slate-500">Société : {client.nomSociete}</p>}
               <p className="mt-1 text-xs text-slate-400">Client depuis le {formaterDate(client.dateCreation)}</p>
+              {(montantDejaAvance > 0 || modeFacture === "AVANCE" || modeFacture === "SOLDE") && (
+                <p className="mt-2 text-sm font-medium text-slate-600">
+                  Montant payé {formaterMontant(modeFacture === "AVANCE" ? montantPaye : montantDejaAvance)}
+                  {" · "}
+                  Reste à payer {formaterMontant(modeFacture === "SOLDE" ? soldeAEncaisser : resteAPayer)}
+                </p>
+              )}
               {motDePasseTemporaire && (
                 <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                   Mot de passe temporaire à transmettre : <strong>{motDePasseTemporaire}</strong>
@@ -297,8 +368,13 @@ export function PageFacturationClient({
               <input
                 value={rechercheProduit}
                 onChange={(e) => setRechercheProduit(e.target.value)}
-                placeholder="Rechercher un produit (nom ou SKU)"
-                className="w-full rounded-xl border border-bleu-hero py-2.5 pl-9 pr-3 text-sm outline-none"
+                placeholder={
+                  modeFacture === "SOLDE"
+                    ? "Les produits de l'avance sont verrouillés"
+                    : "Rechercher un produit (nom ou SKU)"
+                }
+                disabled={modeFacture === "SOLDE"}
+                className="w-full rounded-xl border border-bleu-hero py-2.5 pl-9 pr-3 text-sm outline-none disabled:bg-slate-50"
               />
               {suggestions.length > 0 && (
                 <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-bleu-hero bg-white shadow-lg">
@@ -346,6 +422,7 @@ export function PageFacturationClient({
                           type="number"
                           min={1}
                           value={ligne.quantite}
+                          readOnly={modeFacture === "SOLDE"}
                           onChange={(e) =>
                             setLignes((actuelles) =>
                               actuelles.map((item) =>
@@ -355,21 +432,25 @@ export function PageFacturationClient({
                               ),
                             )
                           }
-                          className="w-16 rounded-lg border border-bleu-hero px-2 py-1 text-sm"
+                          className={`w-16 rounded-lg border border-bleu-hero px-2 py-1 text-sm ${
+                            modeFacture === "SOLDE" ? "bg-slate-50 text-slate-500" : ""
+                          }`}
                         />
                       </td>
                       <td className="py-2 pr-3 font-semibold">
                         {formaterMontant(ligne.prixUnitaire * ligne.quantite)}
                       </td>
                       <td className="py-2">
-                        <button
-                          type="button"
-                          onClick={() => setLignes((actuelles) => actuelles.filter((item) => item.produitId !== ligne.produitId))}
-                          className="text-red-500 hover:text-red-700"
-                          aria-label="Retirer le produit"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {modeFacture !== "SOLDE" && (
+                          <button
+                            type="button"
+                            onClick={() => setLignes((actuelles) => actuelles.filter((item) => item.produitId !== ligne.produitId))}
+                            className="text-red-500 hover:text-red-700"
+                            aria-label="Retirer le produit"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -396,8 +477,18 @@ export function PageFacturationClient({
                     type="button"
                     disabled={bloque}
                     onClick={() => {
+                      if (mode.id === "SOLDE") {
+                        const idAvance = commandeCourante ?? factureAvance?.id;
+                        if (idAvance) {
+                          void chargerFacture(idAvance, "SOLDE").catch(() => setModeFacture("SOLDE"));
+                          return;
+                        }
+                      }
                       setModeFacture(mode.id);
-                      if (mode.id === "AVANCE") setMontantPaye(0);
+                      if (mode.id === "AVANCE") {
+                        setMontantPaye(0);
+                        if (statutEncaissement === "EN_ATTENTE") setMontantDejaAvance(0);
+                      }
                     }}
                     className={`rounded-xl border px-3 py-3 text-left ${
                       actif ? "border-2 border-bleu-hero bg-sky-50" : "border-bleu-hero bg-white"
@@ -411,7 +502,11 @@ export function PageFacturationClient({
                         </span>
                       )}
                     </span>
-                    <span className="mt-1 block text-xs text-slate-500">{mode.texte}</span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {mode.id === "SOLDE" && factureAvance
+                        ? `Reste ${formaterMontant(factureAvance.resteAPayer)} après l'avance`
+                        : mode.texte}
+                    </span>
                   </button>
                 );
               })}
@@ -424,15 +519,19 @@ export function PageFacturationClient({
             </h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <label className="text-sm font-medium text-slate-700">
-                Montant à payer
+                {modeFacture === "SOLDE" ? "Solde à encaisser" : "Montant à payer"}
                 <input
                   readOnly
-                  value={formaterMontant(totalAPayer)}
+                  value={formaterMontant(modeFacture === "SOLDE" ? soldeAEncaisser : totalAPayer)}
                   className="mt-1.5 w-full rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
                 />
               </label>
               <label className="text-sm font-medium text-slate-700">
-                {modeFacture === "AVANCE" ? "Montant avance *" : "Montant payé *"}
+                {modeFacture === "AVANCE"
+                  ? "Montant avance *"
+                  : modeFacture === "SOLDE"
+                    ? "Montant solde *"
+                    : "Montant payé *"}
                 <input
                   type="number"
                   min={0}
@@ -516,8 +615,9 @@ export function PageFacturationClient({
                   min={0}
                   step="0.01"
                   value={remise}
+                  readOnly={modeFacture === "SOLDE"}
                   onChange={(e) => setRemise(Number(e.target.value) || 0)}
-                  className="w-28 rounded-lg border border-bleu-hero px-2 py-1.5 text-right text-sm"
+                  className="w-28 rounded-lg border border-bleu-hero px-2 py-1.5 text-right text-sm read-only:bg-slate-50"
                 />
               </label>
               <div className="flex justify-between">
@@ -531,20 +631,37 @@ export function PageFacturationClient({
                   min={0}
                   step="0.01"
                   value={fraisDivers}
+                  readOnly={modeFacture === "SOLDE"}
                   onChange={(e) => setFraisDivers(Number(e.target.value) || 0)}
-                  className="w-28 rounded-lg border border-bleu-hero px-2 py-1.5 text-right text-sm"
+                  className="w-28 rounded-lg border border-bleu-hero px-2 py-1.5 text-right text-sm read-only:bg-slate-50"
                 />
               </label>
             </dl>
             <div className="mt-4 border-t border-bleu-hero pt-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Total à payer</p>
               <p className="mt-1 text-2xl font-semibold text-slate-900">{formaterMontant(totalAPayer)}</p>
-              <p className="mt-2 text-sm text-slate-500">
-                {modeFacture === "AVANCE" ? "Montant avance" : "Montant payé"} {formaterMontant(montantPaye)}
-              </p>
-              <p className={`text-sm font-semibold ${resteAPayer > 0 ? "text-orange-600" : "text-emerald-600"}`}>
-                Reste à payer {formaterMontant(resteAPayer)}
-              </p>
+              {(modeFacture === "AVANCE" || modeFacture === "SOLDE" || montantDejaAvance > 0) && (
+                <div className="mt-3 rounded-xl border border-bleu-hero bg-sky-50 px-3 py-2.5 text-sm">
+                  <p className="flex justify-between text-slate-600">
+                    <span>Montant payé</span>
+                    <span className="font-semibold">
+                      {formaterMontant(modeFacture === "AVANCE" ? montantPaye : montantDejaAvance)}
+                    </span>
+                  </p>
+                  <p className={`mt-1 flex justify-between font-semibold ${resteAPayer > 0 || soldeAEncaisser > 0 ? "text-orange-600" : "text-emerald-600"}`}>
+                    <span>Reste à payer</span>
+                    <span>{formaterMontant(modeFacture === "SOLDE" ? soldeAEncaisser : resteAPayer)}</span>
+                  </p>
+                </div>
+              )}
+              {modeFacture !== "AVANCE" && modeFacture !== "SOLDE" && montantDejaAvance <= 0 && (
+                <>
+                  <p className="mt-2 text-sm text-slate-500">Montant payé {formaterMontant(montantPaye)}</p>
+                  <p className={`text-sm font-semibold ${resteAPayer > 0 ? "text-orange-600" : "text-emerald-600"}`}>
+                    Reste à payer {formaterMontant(resteAPayer)}
+                  </p>
+                </>
+              )}
             </div>
           </section>
 
@@ -613,24 +730,28 @@ export function PageFacturationClient({
           >
             Annuler
           </button>
-          <button
-            type="button"
-            disabled={enCours}
-            onClick={() => void imprimer("proforma")}
-            className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
-          >
-            <Printer className="h-4 w-4" />
-            Imprimer proforma
-          </button>
-          <button
-            type="button"
-            disabled={enCours}
-            onClick={() => void imprimer("facture")}
-            className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
-          >
-            <Printer className="h-4 w-4" />
-            Imprimer facture
-          </button>
+          {peutImprimer && (
+            <>
+              <button
+                type="button"
+                disabled={enCours}
+                onClick={() => void imprimer("proforma")}
+                className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimer proforma
+              </button>
+              <button
+                type="button"
+                disabled={enCours}
+                onClick={() => void imprimer("facture")}
+                className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero px-4 py-2.5 text-sm font-medium text-slate-700"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimer facture
+              </button>
+            </>
+          )}
         </div>
         <button
           type="button"
@@ -639,12 +760,16 @@ export function PageFacturationClient({
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1e3a8a] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
         >
           <Check className="h-4 w-4" />
-          Valider et encaisser
+          {modeFacture === "AVANCE"
+            ? "Valider l'avance"
+            : modeFacture === "SOLDE"
+              ? "Valider le solde"
+              : "Valider et encaisser"}
         </button>
       </div>
 
       <div className="mt-6">
-        <TableauFacturesEnAttente />
+        <TableauFacturesEnAttente key={cleAttente} clientIdActif={clientId} />
       </div>
     </MiseEnPageAdmin>
   );

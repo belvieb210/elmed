@@ -14,6 +14,8 @@ export type DonneesProforma = {
   nomClient: string;
   lignes: LigneProforma[];
   montantTotal: number;
+  montantPaye?: number;
+  resteAPayer?: number;
   titreDocument?: string;
   statutPaiement?: string;
   libellePaiement?: string;
@@ -139,6 +141,18 @@ export function genererProformaPdf(donnees: DonneesProforma): Promise<Buffer> {
       width: largeurs[3] - 8,
       align: "right",
     });
+
+    if ((donnees.montantPaye ?? 0) > 0 || (donnees.resteAPayer ?? 0) > 0) {
+      const paye = donnees.montantPaye ?? 0;
+      const reste = donnees.resteAPayer ?? Math.max(0, donnees.montantTotal - paye);
+      doc.font("Helvetica").fontSize(10).fillColor(bleuProforma);
+      doc.text(
+        `Montant payé : ${formaterMontant(paye)}     Reste à payer : ${formaterMontant(reste)}`,
+        36,
+        yBas + 10,
+        { width: 523, align: "center" },
+      );
+    }
 
     if (donnees.lignes.length > nombreLignes) {
       doc.addPage();

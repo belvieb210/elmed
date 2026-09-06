@@ -258,6 +258,16 @@ export interface ClientAdmin {
   fiche?: Record<string, unknown> | null;
 }
 
+export interface FactureAvanceAdmin {
+  id: string;
+  numeroCommande: string;
+  montantTotal: number;
+  montantPaye: number;
+  resteAPayer: number;
+  statutPaiement: string;
+  modeFacture: string;
+}
+
 export interface FactureAttenteAdmin {
   id: string;
   clientId: string;
@@ -270,6 +280,7 @@ export interface FactureAttenteAdmin {
   resteAPayer: number;
   statutPaiement: string;
   libelleStatut: string;
+  modeFacture?: string;
   dateCommande: string;
 }
 

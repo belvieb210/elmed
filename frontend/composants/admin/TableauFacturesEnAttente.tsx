@@ -7,7 +7,7 @@ import { formaterHeure, formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { FactureAttenteAdmin } from "@/types/modeles";
 
-export function TableauFacturesEnAttente() {
+export function TableauFacturesEnAttente({ clientIdActif }: { clientIdActif?: string }) {
   const routeur = useRouter();
   const [factures, setFactures] = useState<FactureAttenteAdmin[]>([]);
 
@@ -74,6 +74,7 @@ export function TableauFacturesEnAttente() {
           <tbody>
             {parClient.map((facture, index) => {
               const href = `/admin/clients/${facture.clientId}?commande=${facture.id}`;
+              const selectionne = facture.clientId === clientIdActif;
               return (
                 <tr
                   key={facture.clientId}
@@ -86,18 +87,28 @@ export function TableauFacturesEnAttente() {
                       routeur.push(href);
                     }
                   }}
-                  className="cursor-pointer border-t border-bleu-hero hover:bg-sky-50"
+                  className={`cursor-pointer border-t border-bleu-hero ${
+                    selectionne ? "bg-sky-50" : "hover:bg-sky-50"
+                  }`}
                 >
                   <td className="px-4 py-3 text-slate-500">{index + 1}</td>
                   <td className="px-4 py-3">
                     <p className="font-semibold text-slate-800">{facture.nomClient}</p>
                     <p className="text-[11px] uppercase tracking-wide text-sky-600">
-                      Client{facture.nombreFactures > 1 ? ` · ${facture.nombreFactures} factures` : ""}
+                      {selectionne ? "Sélectionné" : "Client"}
+                      {facture.nombreFactures > 1 ? ` · ${facture.nombreFactures} factures` : ""}
                     </p>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{facture.provenance}</td>
                   <td className="px-4 py-3">{facture.nombreArticles}</td>
-                  <td className="px-4 py-3 font-medium">{formaterMontant(facture.montantTotal)}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{formaterMontant(facture.montantTotal)}</p>
+                    {facture.montantPaye > 0 && (
+                      <p className="text-[11px] text-slate-500">
+                        Payé {formaterMontant(facture.montantPaye)} · Reste {formaterMontant(facture.resteAPayer)}
+                      </p>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-medium ${
