@@ -632,7 +632,14 @@ export function PageFacturationClient({
                   step="0.01"
                   readOnly={modeFacture !== "AVANCE"}
                   value={montantPaye}
-                  onChange={(e) => setMontantPaye(Number(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const saisi = Number(e.target.value) || 0;
+                    setMontantPaye(
+                      modeFacture === "AVANCE"
+                        ? Math.min(Math.max(0, saisi), Math.max(0, totalAPayer - 0.01))
+                        : saisi,
+                    );
+                  }}
                   className={`mt-1.5 w-full rounded-xl border px-3 py-2.5 text-sm ${
                     modeFacture === "AVANCE"
                       ? "border-2 border-bleu-hero"
@@ -698,6 +705,24 @@ export function PageFacturationClient({
           <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
             <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Résumé de la facture</h3>
             <dl className="mt-4 space-y-3 text-sm">
+              {modeFacture === "AVANCE" && (
+                <label className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-slate-700">Montant avance</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    max={Math.max(0, totalAPayer - 0.01)}
+                    value={montantPaye}
+                    onChange={(e) => {
+                      const saisi = Number(e.target.value) || 0;
+                      setMontantPaye(Math.min(Math.max(0, saisi), Math.max(0, totalAPayer - 0.01)));
+                    }}
+                    className="w-28 rounded-lg border-2 border-bleu-hero px-2 py-1.5 text-right text-sm"
+                    aria-label="Montant de l'avance"
+                  />
+                </label>
+              )}
               <div className="flex justify-between">
                 <dt className="text-slate-500">Total produits</dt>
                 <dd className="font-medium">{formaterMontant(totalProduits)}</dd>

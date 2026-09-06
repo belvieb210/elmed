@@ -28,7 +28,7 @@ application.use(
   }),
 );
 application.use(cookieParser());
-application.use(express.json({ limit: "1mb" }));
+application.use(express.json({ limit: "14mb" }));
 application.use(refuserMethodesInconnues);
 application.use(verifierOrigine);
 application.use(limiteGenerale);

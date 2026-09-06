@@ -179,8 +179,8 @@ export function FormulaireNouveauClient({
 
   function chargerPhoto(fichier?: File) {
     if (!fichier) return;
-    if (fichier.size > 2 * 1024 * 1024) {
-      setErreur("La photo ne doit pas dépasser 2 Mo.");
+    if (fichier.size > 10 * 1024 * 1024) {
+      setErreur("La photo ne doit pas dépasser 10 Mo.");
       return;
     }
     const lecteur = new FileReader();
@@ -493,7 +493,7 @@ export function FormulaireNouveauClient({
               <>
                 <Upload className="mb-2 h-6 w-6 text-bleu-hero" />
                 Glisser-déposer ou cliquer
-                <span className="mt-1 text-xs text-slate-400">PNG, JPG — max 2 Mo</span>
+                <span className="mt-1 text-xs text-slate-400">PNG, JPG — max 10 Mo</span>
               </>
             )}
           </span>
