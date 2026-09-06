@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Search, Upload, UserRound, X } from "lucide-react";
 import { appelerApi } from "@/lib/api";
+import type { ApercuClient } from "@/composants/admin/PanneauLateralClient";
 import type { ClientAdmin } from "@/types/modeles";
 
 const parcoursClients = ["Nouveau client", "Ancien client", "Commande urgente", "Rendez-vous"] as const;
@@ -59,14 +60,18 @@ const ficheVide: Fiche = {
 
 export function FormulaireNouveauClient({
   clientsExistants,
+  parcoursForce,
   onAnnuler,
   onCree,
   onSelectionnerAncien,
+  onApercu,
 }: {
   clientsExistants: ClientAdmin[];
+  parcoursForce?: (typeof parcoursClients)[number] | null;
   onAnnuler: () => void;
   onCree: (client: ClientAdmin, motDePasseTemporaire: string) => void;
   onSelectionnerAncien: (client: ClientAdmin) => void;
+  onApercu: (apercu: ApercuClient) => void;
 }) {
   const maintenant = useMemo(() => new Date(), []);
   const [enCours, setEnCours] = useState(false);
@@ -85,6 +90,7 @@ export function FormulaireNouveauClient({
     ville: "",
   });
   const [fiche, setFiche] = useState<Fiche>(ficheVide);
+  const [clientSelectionneId, setClientSelectionneId] = useState<string | undefined>();
 
   const numeroApercu = `${maintenant.getFullYear()}${String(maintenant.getMonth() + 1).padStart(2, "0")}${String(maintenant.getDate()).padStart(2, "0")}…`;
   const dateTexte = maintenant.toLocaleDateString("fr-FR");
@@ -103,6 +109,28 @@ export function FormulaireNouveauClient({
   }, [clientsExistants, rechercheAncien]);
 
   const ancienClient = parcours === "Ancien client";
+
+  useEffect(() => {
+    if (!parcoursForce) return;
+    setParcours(parcoursForce);
+  }, [parcoursForce]);
+
+  useEffect(() => {
+    onApercu({
+      id: clientSelectionneId,
+      nom: identite.nom,
+      prenom: identite.prenom,
+      postNom: fiche.postNom,
+      sexe: fiche.sexe,
+      age: fiche.age,
+      telephone: identite.telephone,
+      nomSociete: identite.nomSociete,
+      photo,
+      numeroClient:
+        clientsExistants.find((client) => client.id === clientSelectionneId)?.numeroClient ?? numeroApercu,
+      dateEnregistrement: `${dateTexte} ${heureTexte}`,
+    });
+  }, [identite, fiche, photo, numeroApercu, dateTexte, heureTexte, clientSelectionneId, onApercu]);
 
   function mettreFiche<K extends keyof Fiche>(cle: K, valeur: Fiche[K]) {
     setFiche((actuelle) => {
@@ -155,6 +183,7 @@ export function FormulaireNouveauClient({
           fiche: { ...fiche, typeClient: parcours },
         }),
       });
+      setClientSelectionneId(donnees.client.id);
       onCree(donnees.client, donnees.motDePasseTemporaire);
     } catch (cause) {
       setErreur(cause instanceof Error ? cause.message : "Enregistrement impossible.");
@@ -163,7 +192,7 @@ export function FormulaireNouveauClient({
   }
 
   return (
-    <form onSubmit={soumettre} className="mb-6 space-y-5 rounded-2xl border border-bleu-hero bg-white p-4 sm:p-6">
+    <form onSubmit={soumettre} className="space-y-5 rounded-2xl border border-bleu-hero bg-white p-4 sm:p-6">
       <div>
         <h2 className="text-lg font-semibold text-[#1e3a8a]">Informations personnelles</h2>
         <p className="mt-1 text-sm text-violet-marque">{parcours}</p>
@@ -208,6 +237,17 @@ export function FormulaireNouveauClient({
                         onClick={() => {
                           onSelectionnerAncien(client);
                           setRechercheAncien("");
+                          setClientSelectionneId(client.id);
+                          setIdentite({
+                            nom: (client.nom ?? client.nomComplet).toUpperCase(),
+                            prenom: client.prenom ?? "",
+                            email: client.email,
+                            telephone: client.telephone ?? "",
+                            nomSociete: client.nomSociete ?? "",
+                            adresse: client.adresse ?? "",
+                            ville: client.ville ?? "",
+                          });
+                          setPhoto(client.photoProfil);
                         }}
                         className="flex w-full items-center gap-3 rounded-2xl border border-bleu-hero bg-white px-3 py-2.5 text-left hover:bg-slate-50"
                       >
