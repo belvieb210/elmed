@@ -47,6 +47,7 @@ export default function PageClientsAdmin() {
   const [parcoursForce, setParcoursForce] = useState<"Ancien client" | null>(null);
   const [cleFormulaire, setCleFormulaire] = useState(0);
   const [clientAModifier, setClientAModifier] = useState<ClientAdmin | null>(null);
+  const [messageFacture, setMessageFacture] = useState<string | null>(null);
 
   const enregistrerApercu = useCallback((suivant: ApercuClient) => {
     setApercu((actuel) => {
@@ -63,19 +64,50 @@ export default function PageClientsAdmin() {
 
   const chargerClients = useCallback(() => {
     appelerApi<{ clients: ClientAdmin[] }>("/admin/clients")
-      .then((donnees) => setClients(donnees.clients))
+      .then((donnees) => {
+        setClients(donnees.clients);
+        setRecentsSession((actuels) =>
+          actuels.map((client) => donnees.clients.find((item) => item.id === client.id) ?? client),
+        );
+        setApercu((actuel) => {
+          if (!actuel.id) return actuel;
+          const frais = donnees.clients.find((item) => item.id === actuel.id);
+          return frais && !clientEnAttenteDeFacture(frais) ? apercuVide : actuel;
+        });
+        setClientAfficheId((actuel) => {
+          if (!actuel) return actuel;
+          const frais = donnees.clients.find((item) => item.id === actuel);
+          return frais && !clientEnAttenteDeFacture(frais) ? null : actuel;
+        });
+        setClientAModifier((actuel) => {
+          if (!actuel) return actuel;
+          const frais = donnees.clients.find((item) => item.id === actuel.id);
+          return frais && !clientEnAttenteDeFacture(frais) ? null : actuel;
+        });
+      })
       .catch(() => setClients([]));
   }, []);
 
   useEffect(() => {
     chargerClients();
+    if (sessionStorage.getItem("mm_facture_ok")) {
+      sessionStorage.removeItem("mm_facture_ok");
+      setMessageFacture("Facture établie. Le client n’est plus en attente de facturation.");
+      setCleFormulaire((actuel) => actuel + 1);
+      setApercu(apercuVide);
+      setClientAfficheId(null);
+      setClientAModifier(null);
+    }
   }, [chargerClients]);
 
   useEvenementTempsReel("client", chargerClients);
   useEvenementTempsReel("commande", chargerClients);
 
   const recents = useMemo(() => {
-    const fusion = [...recentsSession, ...clients.filter((client) => !recentsSession.some((item) => item.id === client.id))];
+    const fusion = [
+      ...recentsSession.map((client) => clients.find((item) => item.id === client.id) ?? client),
+      ...clients.filter((client) => !recentsSession.some((item) => item.id === client.id)),
+    ];
     return fusion
       .filter(clientEnAttenteDeFacture)
       .filter((client) => correspondFiltres(client, filtresAppliques))
@@ -90,6 +122,11 @@ export default function PageClientsAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Clients" sousTitre="Enregistrer un client et établir sa facture">
+      {messageFacture && (
+        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {messageFacture}
+        </p>
+      )}
       <div className="grid gap-4 xl:grid-cols-12">
         <div className="xl:col-span-8">
           <FormulaireNouveauClient

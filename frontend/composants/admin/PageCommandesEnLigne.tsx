@@ -189,14 +189,18 @@ export function PageCommandesEnLigne() {
     setSelectionIds((actuels) => (actuels.includes(id) ? actuels.filter((item) => item !== id) : [...actuels, id]));
   }
 
-  function selectionnerToutesDuClient() {
-    if (!clientOuvert) {
-      const ids = clientsPage.flatMap((groupe) => groupe.commandes.map((commande) => commande.id));
-      setSelectionIds(ids);
+  function basculerSelectionGroupe(ids: string[]) {
+    if (ids.length === 0) return;
+    const toutesCochees = ids.every((id) => selectionIds.includes(id));
+    if (toutesCochees) {
+      setSelectionIds((actuels) => actuels.filter((id) => !ids.includes(id)));
       return;
     }
-    setSelectionIds(clientOuvert.commandes.map((commande) => commande.id));
+    setSelectionIds((actuels) => [...new Set([...actuels, ...ids])]);
   }
+
+  const idsEntete = clientsPage.flatMap((groupe) => groupe.commandes.map((commande) => commande.id));
+  const toutCocheEntete = idsEntete.length > 0 && idsEntete.every((id) => selectionIds.includes(id));
 
   async function marquerDelivree() {
     if (!premiereSelection) return;
@@ -239,9 +243,14 @@ export function PageCommandesEnLigne() {
               </button>
               <button
                 type="button"
-                onClick={selectionnerToutesDuClient}
-                className="grid h-9 w-9 place-items-center rounded-xl border border-bleu-hero bg-white text-slate-700"
-                aria-label="Sélectionner toutes les commandes"
+                onClick={() => basculerSelectionGroupe(idsEntete)}
+                className={`grid h-9 w-9 place-items-center rounded-xl border ${
+                  toutCocheEntete
+                    ? "border-bleu-hero bg-bleu-hero text-white"
+                    : "border-bleu-hero bg-white text-slate-700"
+                }`}
+                aria-label={toutCocheEntete ? "Tout désélectionner" : "Sélectionner toutes les commandes"}
+                aria-pressed={toutCocheEntete}
               >
                 <ListChecks className="h-4 w-4" />
               </button>
@@ -340,7 +349,9 @@ export function PageCommandesEnLigne() {
                       onChoisir={(id) => setSelectionIds([id])}
                       onBasculer={basculerCommande}
                       onPageCommandes={setPageCommandes}
-                      onSelectionnerToutes={selectionnerToutesDuClient}
+                      onSelectionnerToutes={() =>
+                        basculerSelectionGroupe(groupe.commandes.map((commande) => commande.id))
+                      }
                     />
                   );
                 })}
@@ -516,6 +527,8 @@ function ClientRows({
   onSelectionnerToutes: () => void;
 }) {
   const plusieurs = groupe.commandes.length > 1;
+  const toutCoche =
+    groupe.commandes.length > 0 && groupe.commandes.every((commande) => selectionIds.includes(commande.id));
   return (
     <>
       <tr
@@ -567,10 +580,13 @@ function ClientRows({
                 <button
                   type="button"
                   onClick={onSelectionnerToutes}
-                  className="grid h-8 w-8 place-items-center rounded-lg border border-bleu-hero"
-                  aria-label="Tout sélectionner"
+                  className={`grid h-8 w-8 place-items-center rounded-lg border ${
+                    toutCoche ? "border-bleu-hero bg-bleu-hero text-white" : "border-bleu-hero bg-white text-slate-700"
+                  }`}
+                  aria-label={toutCoche ? "Tout désélectionner" : "Tout sélectionner"}
+                  aria-pressed={toutCoche}
                 >
-                  <ListChecks className="h-4 w-4 text-slate-700" />
+                  <ListChecks className="h-4 w-4" />
                 </button>
               </div>
               <ul>

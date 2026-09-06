@@ -220,8 +220,12 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!compteReel && !personnel && chemin !== "/messagerie" && !chemin.startsWith("/admin")) return;
 
-    return connecterSocketTempsReel((type) => {
-      diffuserEvenementTempsReel({ type });
+    return connecterSocketTempsReel((type, extra) => {
+      diffuserEvenementTempsReel({
+        type,
+        clientId: typeof extra?.clientId === "string" ? extra.clientId : undefined,
+        commandeId: typeof extra?.commandeId === "string" ? extra.commandeId : undefined,
+      });
       if (type === "panier") {
         void chargerPanier();
       } else {

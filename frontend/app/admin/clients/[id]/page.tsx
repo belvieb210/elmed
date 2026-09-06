@@ -6,5 +6,12 @@ import { PageFacturationClient } from "@/composants/admin/PageFacturationClient"
 export default function PageFactureClientAdmin() {
   const params = useParams<{ id: string }>();
   const recherche = useSearchParams();
-  return <PageFacturationClient clientId={params.id} commandeId={recherche.get("commande")} />;
+  const commandeId = recherche.get("commande");
+  return (
+    <PageFacturationClient
+      key={`${params.id}-${commandeId ?? "nouvelle"}`}
+      clientId={params.id}
+      commandeId={commandeId}
+    />
+  );
 }

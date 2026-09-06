@@ -30,14 +30,14 @@ export function obtenirSocket(): Socket {
 }
 
 export function connecterSocketTempsReel(
-  surEvenement: (type: TypeEvenementTempsReel) => void,
+  surEvenement: (type: TypeEvenementTempsReel, extra?: Record<string, unknown>) => void,
 ) {
   const flux = obtenirSocket();
   const types: TypeEvenementTempsReel[] = ["panier", "message", "notification", "commande", "client"];
 
   for (const type of types) {
     flux.off(type);
-    flux.on(type, () => surEvenement(type));
+    flux.on(type, (donnees?: Record<string, unknown>) => surEvenement(type, donnees));
   }
 
   if (!flux.connected) flux.connect();

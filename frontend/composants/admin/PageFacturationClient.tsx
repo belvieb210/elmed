@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, FlaskConical, Package, Printer, RefreshCw, Search, Trash2 } from "lucide-react";
@@ -8,6 +8,7 @@ import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { TableauFacturesEnAttente } from "@/composants/admin/TableauFacturesEnAttente";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
 import { formaterDate, formaterMontant } from "@/lib/formatage";
+import { useEvenementTempsReel } from "@/lib/temps-reel";
 import type { ClientAdmin, FactureAvanceAdmin, ProduitAdmin } from "@/types/modeles";
 
 type ModeFacture = "CASH" | "AVANCE" | "SOLDE" | "PRISE_EN_CHARGE" | "ABONNE" | "CONVENTIONNE";
@@ -24,6 +25,7 @@ type LigneFacture = {
 
 type FactureChargee = {
   id: string;
+  clientId?: string;
   lignes: LigneFacture[];
   modeFacture: ModeFacture;
   typeFacture: TypeFacture;
@@ -36,6 +38,14 @@ type FactureChargee = {
   modePaiement: ModePaiement;
   statutPaiement?: string;
 };
+
+function numeroRecuDuJour() {
+  return `REC${new Date().getFullYear()}`;
+}
+
+function factureDejaSoldée(facture: Pick<FactureChargee, "resteAPayer" | "statutPaiement">) {
+  return facture.statutPaiement === "PAYE" && (facture.resteAPayer ?? 0) <= 0.009;
+}
 
 const modesFacture: Array<{ id: ModeFacture; titre: string; texte: string }> = [
   { id: "CASH", titre: "Cash", texte: "Paiement complet immédiat" },
@@ -94,7 +104,7 @@ export function PageFacturationClient({
   const [remise, setRemise] = useState(0);
   const [fraisDivers, setFraisDivers] = useState(0);
   const [montantPaye, setMontantPaye] = useState(0);
-  const [numeroRecu, setNumeroRecu] = useState(`REC${aujourdHui.getFullYear()}`);
+  const [numeroRecu, setNumeroRecu] = useState(numeroRecuDuJour);
   const [notes, setNotes] = useState("");
   const [jour, setJour] = useState(String(aujourdHui.getDate()));
   const [moisPaiement, setMoisPaiement] = useState(String(aujourdHui.getMonth() + 1));
@@ -103,6 +113,7 @@ export function PageFacturationClient({
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [motDePasseTemporaire, setMotDePasseTemporaire] = useState<string | null>(null);
+  const [saisiePrete, setSaisiePrete] = useState(false);
 
   const totalProduits = useMemo(
     () => lignes.reduce((somme, ligne) => somme + ligne.prixUnitaire * ligne.quantite, 0),
@@ -119,7 +130,36 @@ export function PageFacturationClient({
     (statutEncaissement === "PARTIEL" || (modeFacture === "AVANCE" && montantPaye > 0)) &&
     resteAPayer > 0;
 
+  function viderSaisieFacture() {
+    setLignes([]);
+    setCommandeCourante(null);
+    setMontantDejaAvance(0);
+    setStatutEncaissement("EN_ATTENTE");
+    setRechercheProduit("");
+    setModeFacture("CASH");
+    setTypeFacture("STANDARD");
+    setModePaiement("ESPECES");
+    setRemise(0);
+    setFraisDivers(0);
+    setMontantPaye(0);
+    setNumeroRecu(numeroRecuDuJour());
+    setNotes("");
+    setPeutSolde(false);
+    setFactureAvance(null);
+    setMessage(null);
+    setErreur(null);
+    setSaisiePrete(false);
+  }
+
+  function quitterApresEncaissement() {
+    sessionStorage.setItem("mm_facture_ok", "1");
+    viderSaisieFacture();
+    setClient(null);
+    routeur.replace("/admin/clients");
+  }
+
   function appliquerFacture(facture: FactureChargee, modeForce?: ModeFacture) {
+    if (facture.clientId && facture.clientId !== clientId) return;
     const mode = modeForce ?? facture.modeFacture;
     const dejaAvance = facture.montantPaye;
     const reste = facture.resteAPayer ?? 0;
@@ -129,7 +169,7 @@ export function PageFacturationClient({
     setTypeFacture(facture.typeFacture);
     setRemise(facture.remise);
     setFraisDivers(facture.fraisDivers);
-    setNumeroRecu(facture.numeroRecu ?? numeroRecu);
+    setNumeroRecu(facture.numeroRecu ?? numeroRecuDuJour());
     setNotes(facture.notes ?? "");
     setMontantDejaAvance(dejaAvance);
     setMontantPaye(mode === "SOLDE" ? reste : dejaAvance);
@@ -140,37 +180,90 @@ export function PageFacturationClient({
 
   async function chargerFacture(id: string, modeForce?: ModeFacture) {
     const donnees = await appelerApi<{ facture: FactureChargee }>(`/admin/factures/${id}`);
+    if (donnees.facture.clientId && donnees.facture.clientId !== clientId) return donnees.facture;
     appliquerFacture(donnees.facture, modeForce);
     return donnees.facture;
   }
 
+  const chargerClient = useCallback(async (quitterSiSoldée = false) => {
+    const donnees = await appelerApi<{
+      client: ClientAdmin;
+      peutSolde: boolean;
+      factureAvance: FactureAvanceAdmin | null;
+    }>(`/admin/clients/${clientId}`);
+    const aCharger = commandeId ?? donnees.factureAvance?.id;
+    if (aCharger) {
+      const facture = await appelerApi<{ facture: FactureChargee }>(`/admin/factures/${aCharger}`).then(
+        (reponse) => reponse.facture,
+      );
+      if (facture.clientId && facture.clientId !== clientId) {
+        setClient(donnees.client);
+        setSaisiePrete(true);
+        return donnees;
+      }
+      if (factureDejaSoldée(facture)) {
+        if (quitterSiSoldée) {
+          quitterApresEncaissement();
+          return donnees;
+        }
+        viderSaisieFacture();
+        setClient(donnees.client);
+        setSaisiePrete(true);
+        return donnees;
+      }
+      setClient(donnees.client);
+      setPeutSolde(donnees.peutSolde);
+      setFactureAvance(donnees.factureAvance);
+      appliquerFacture(facture);
+      setSaisiePrete(true);
+      return donnees;
+    }
+    setClient(donnees.client);
+    setPeutSolde(donnees.peutSolde);
+    setFactureAvance(donnees.factureAvance);
+    setSaisiePrete(true);
+    return donnees;
+  }, [clientId, commandeId]);
+
   useEffect(() => {
+    let ignore = false;
+    viderSaisieFacture();
+    setClient(null);
+    setCommandeCourante(commandeId);
+
     const temporaire = sessionStorage.getItem("mm_mdp_client");
     if (temporaire) {
       setMotDePasseTemporaire(temporaire);
       sessionStorage.removeItem("mm_mdp_client");
     }
 
-    appelerApi<{
-      client: ClientAdmin;
-      peutSolde: boolean;
-      factureAvance: FactureAvanceAdmin | null;
-    }>(`/admin/clients/${clientId}`)
-      .then((donnees) => {
-        setClient(donnees.client);
-        setPeutSolde(donnees.peutSolde);
-        setFactureAvance(donnees.factureAvance);
-        const aCharger = commandeId ?? donnees.factureAvance?.id;
-        if (aCharger) {
-          void chargerFacture(aCharger).catch(() => undefined);
-        }
-      })
-      .catch(() => setClient(null));
+    void chargerClient(true).catch(() => {
+      if (!ignore) setClient(null);
+    });
 
     appelerApi<{ produits: ProduitAdmin[] }>("/admin/produits")
-      .then((donnees) => setProduits(donnees.produits))
-      .catch(() => setProduits([]));
-  }, [clientId, commandeId]);
+      .then((donnees) => {
+        if (!ignore) setProduits(donnees.produits);
+      })
+      .catch(() => {
+        if (!ignore) setProduits([]);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [clientId, commandeId, chargerClient]);
+
+  const surEvenementClient = useCallback(
+    (detail?: { clientId?: string }) => {
+      if (detail?.clientId !== clientId) return;
+      void chargerClient(true).catch(() => undefined);
+    },
+    [chargerClient, clientId],
+  );
+
+  useEvenementTempsReel("commande", surEvenementClient);
+  useEvenementTempsReel("client", surEvenementClient);
 
   useEffect(() => {
     if (modeFacture === "CASH") setMontantPaye(Number(totalAPayer.toFixed(2)));
@@ -259,11 +352,8 @@ export function PageFacturationClient({
             `Avance ${donnees.numeroCommande} encaissée : ${formaterMontant(montantPaye)} payés, reste ${formaterMontant(resteAPayer)} pour la facture solde.`,
           );
         } else {
-          setMontantDejaAvance(totalAPayer);
-          setStatutEncaissement("PAYE");
-          setPeutSolde(false);
-          setFactureAvance(null);
-          setMessage(`Facture ${donnees.numeroCommande} validée et encaissée.`);
+          quitterApresEncaissement();
+          return donnees.commandeId;
         }
       } else {
         setMessage(`Facture ${donnees.numeroCommande} enregistrée.`);
@@ -777,12 +867,16 @@ export function PageFacturationClient({
           key={cleAttente}
           clientIdActif={clientId}
           rafraichir={cleAttente}
-          brouillon={{
-            nombreArticles,
-            montantTotal: totalAPayer,
-            montantPaye: modeFacture === "SOLDE" ? montantDejaAvance : montantPaye,
-            resteAPayer: modeFacture === "SOLDE" ? soldeAEncaisser : resteAPayer,
-          }}
+          brouillon={
+            saisiePrete
+              ? {
+                  nombreArticles,
+                  montantTotal: totalAPayer,
+                  montantPaye: modeFacture === "SOLDE" ? montantDejaAvance : montantPaye,
+                  resteAPayer: modeFacture === "SOLDE" ? soldeAEncaisser : resteAPayer,
+                }
+              : undefined
+          }
         />
       </div>
     </MiseEnPageAdmin>
