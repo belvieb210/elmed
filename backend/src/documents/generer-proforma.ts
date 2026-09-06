@@ -15,6 +15,9 @@ export type DonneesProforma = {
   lignes: LigneProforma[];
   montantTotal: number;
   titreDocument?: string;
+  statutPaiement?: string;
+  libellePaiement?: string;
+  libelleModePaiement?: string;
 };
 
 function formaterMontant(montant: number) {
@@ -144,6 +147,27 @@ export function genererProformaPdf(donnees: DonneesProforma): Promise<Buffer> {
         doc.fillColor("#1a365d").font("Helvetica").fontSize(9);
         doc.text(`${ligne.quantite}  ${ligne.designation}    ${formaterMontant(ligne.prixTotal)}`, 36, y, { width: 523 });
       });
+    }
+
+    const payee = donnees.statutPaiement === "PAYE";
+    if (donnees.libellePaiement || donnees.libelleModePaiement) {
+      doc.font("Helvetica-Bold").fontSize(11).fillColor(payee ? "#047857" : "#c2410c");
+      doc.text(
+        `Paiement : ${donnees.libellePaiement ?? "En attente"}${donnees.libelleModePaiement ? ` — ${donnees.libelleModePaiement}` : ""}`,
+        36,
+        752,
+        { width: 523, align: "center" },
+      );
+    }
+
+    if (payee) {
+      doc.save();
+      doc.rotate(-18, { origin: [430, 620] });
+      doc.lineWidth(3).strokeColor("#059669");
+      doc.roundedRect(360, 590, 150, 46, 6).stroke();
+      doc.font("Helvetica-Bold").fontSize(22).fillColor("#059669");
+      doc.text("PAYÉ", 360, 602, { width: 150, align: "center" });
+      doc.restore();
     }
 
     doc.font("Helvetica-Oblique").fontSize(11).fillColor(bleuProforma);

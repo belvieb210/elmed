@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import { libelleModePaiement, libelleStatutPaiement } from "./commandes.controleur";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 
@@ -10,6 +11,7 @@ export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse
     nombreCommandes,
     nombreEnAttente,
     nombreValidees,
+    nombrePayees,
     categories,
     produitsPopulaires,
     dernieresCommandes,
@@ -22,6 +24,9 @@ export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse
     baseDeDonnees.commande.count({ where: { clientId, statut: "EN_ATTENTE" } }),
     baseDeDonnees.commande.count({
       where: { clientId, statut: { in: ["VALIDEE", "EN_PREPARATION", "PRET_RETRAIT", "LIVREE", "CLOTUREE"] } },
+    }),
+    baseDeDonnees.paiement.count({
+      where: { commande: { clientId }, statut: "PAYE" },
     }),
     baseDeDonnees.categorie.findMany({
       orderBy: { ordre: "asc" },
@@ -37,6 +42,7 @@ export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse
       where: { clientId },
       orderBy: { dateCommande: "desc" },
       take: 5,
+      include: { paiements: { orderBy: { datePaiement: "desc" }, take: 1 } },
     }),
     baseDeDonnees.lignePanier.aggregate({
       where: { clientId },
@@ -71,6 +77,7 @@ export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse
         nombreCommandes,
         nombreEnAttente,
         nombreValidees,
+        nombrePayees,
       },
       categories: categories.map((categorie) => ({
         id: categorie.id,
@@ -87,13 +94,29 @@ export async function obtenirTableauDeBord(requete: RequeteAuthentifiee, reponse
         sku: produit.sku,
         nomCategorie: produit.categorie.nom,
       })),
-      dernieresCommandes: dernieresCommandes.map((commande) => ({
-        id: commande.id,
-        numeroCommande: commande.numeroCommande,
-        montantTotal: Number(commande.montantTotal),
-        statut: commande.statut,
-        dateCommande: commande.dateCommande,
-      })),
+      dernieresCommandes: dernieresCommandes.map((commande) => {
+        const paiement = commande.paiements[0];
+        return {
+          id: commande.id,
+          numeroCommande: commande.numeroCommande,
+          montantTotal: Number(commande.montantTotal),
+          statut: commande.statut,
+          dateCommande: commande.dateCommande,
+          paiement: paiement
+            ? {
+                mode: paiement.modePaiement,
+                libelleMode: libelleModePaiement(paiement.modePaiement),
+                statut: paiement.statut,
+                libelleStatut: libelleStatutPaiement(paiement.statut),
+              }
+            : {
+                mode: "PAIEMENT_LIVRAISON",
+                libelleMode: "Paiement à la commande",
+                statut: "EN_ATTENTE",
+                libelleStatut: "En attente",
+              },
+        };
+      }),
       badges: {
         nombreArticlesPanier: nombreArticlesPanier._sum.quantite ?? 0,
         messagesNonLus,

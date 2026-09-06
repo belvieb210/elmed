@@ -12,6 +12,7 @@ import {
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { CarteProduit } from "@/composants/client/CarteProduit";
 import { IllustrationLaboratoire } from "@/composants/accueil/IllustrationLaboratoire";
+import { classeBadgePaiement } from "@/composants/commandes/suivi";
 import { classeStatut, formaterDate, formaterMontant, libelleStatutCommande } from "@/lib/formatage";
 import { useClient } from "@/store/contexteClient";
 
@@ -52,7 +53,7 @@ export function PageAccueil() {
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-3 xl:col-span-4 xl:grid-cols-1">
+        <section className="grid gap-3 sm:grid-cols-2 xl:col-span-4 xl:grid-cols-2">
           <CarteStat
             titre="Mes commandes"
             valeur={statistiques.nombreCommandes}
@@ -69,6 +70,12 @@ export function PageAccueil() {
             titre="Commandes validées"
             valeur={statistiques.nombreValidees}
             lien="/commandes?statut=VALIDEE"
+            libelleLien="Voir toutes"
+          />
+          <CarteStat
+            titre="Payées"
+            valeur={statistiques.nombrePayees ?? 0}
+            lien="/commandes"
             libelleLien="Voir toutes"
           />
         </section>
@@ -123,6 +130,13 @@ export function PageAccueil() {
                     >
                       {libelleStatutCommande(commande.statut)}
                     </span>
+                    {commande.paiement && (
+                      <span
+                        className={`mt-1 ml-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${classeBadgePaiement(commande.paiement.statut)}`}
+                      >
+                        {commande.paiement.libelleStatut}
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>

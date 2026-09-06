@@ -137,7 +137,18 @@ export function PageDetailCommande() {
         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${classeBadgeStatut(commande.statut)}`}>
           {libelleDetailStatut(commande.statut)}
         </span>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${classeBadgePaiement(paiement?.statut ?? "EN_ATTENTE")}`}>
+          {paiement?.libelleStatut ?? "En attente"}
+        </span>
       </div>
+
+      {paiement?.statut === "PAYE" && (
+        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+          Cette commande est payée
+          {paiement.libelleMode ? ` · ${paiement.libelleMode}` : ""}
+          {paiement.reference ? ` · réf. ${paiement.reference}` : ""}.
+        </p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -234,8 +245,8 @@ export function PageDetailCommande() {
                       <td className="px-4 py-3">{formaterMontant(ligne.prixUnitaire)}</td>
                       <td className="px-4 py-3 font-semibold">{formaterMontant(ligne.sousTotal)}</td>
                       <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${classeBadgeStatut(commande.statut)}`}>
-                          {libelleDetailStatut(commande.statut)}
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${classeBadgePaiement(paiement?.statut ?? "EN_ATTENTE")}`}>
+                          {paiement?.libelleStatut ?? "En attente"}
                         </span>
                       </td>
                     </tr>
@@ -366,14 +377,13 @@ export function PageDetailCommande() {
             {paiement?.datePaiement && (
               <p className="text-xs text-slate-400">{formaterDateHeure(paiement.datePaiement)}</p>
             )}
-            <button
-              type="button"
-              onClick={telechargerFacture}
+            <Link
+              href={`/commandes/${commande.id}/facture`}
               className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-bleu-hero"
             >
               <FileText className="h-4 w-4" />
               Voir la facture
-            </button>
+            </Link>
           </article>
 
           <article className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">

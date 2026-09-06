@@ -6,7 +6,7 @@ import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { identifiantRoute } from "../utils/identifiant";
 
-function libelleModePaiement(mode: string) {
+export function libelleModePaiement(mode: string) {
   const libelles: Record<string, string> = {
     MOBILE_MONEY_MPESA: "Mobile Money - M-Pesa",
     MOBILE_MONEY_AIRTEL: "Mobile Money - Airtel Money",
@@ -25,7 +25,7 @@ function libelleLivraison(mode?: string) {
   return "Retrait en entrepôt";
 }
 
-function libelleStatutPaiement(statut: string) {
+export function libelleStatutPaiement(statut: string) {
   const libelles: Record<string, string> = {
     EN_ATTENTE: "En attente",
     PARTIEL: "Partiel",
@@ -154,6 +154,7 @@ export async function obtenirCommande(requete: RequeteAuthentifiee, reponse: Res
             libelleStatut: libelleStatutPaiement(paiement.statut),
             montant: Number(paiement.montant),
             datePaiement: paiement.datePaiement,
+            reference: paiement.reference,
             libelleLivraison: libelleLivraison(paiement.modePaiement),
           }
         : {
@@ -223,7 +224,11 @@ export async function creerCommandeDepuisPanier(requete: RequeteAuthentifiee, re
 export async function telechargerFactureCommande(requete: RequeteAuthentifiee, reponse: Response) {
   const commande = await baseDeDonnees.commande.findFirst({
     where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
-    include: { lignes: { include: { produit: true } }, client: true },
+    include: {
+      lignes: { include: { produit: true } },
+      client: true,
+      paiements: { orderBy: { datePaiement: "desc" } },
+    },
   });
 
   if (!commande) {
@@ -243,11 +248,15 @@ export async function telechargerFactureCommande(requete: RequeteAuthentifiee, r
     .filter(Boolean)
     .join(" — ");
 
+  const paiement = commande.paiements[0];
   const pdf = await genererProformaPdf({
     numero: commande.numeroCommande,
     dateTexte,
     nomClient: nomClient || "Client",
     titreDocument: "FACTURE",
+    statutPaiement: paiement?.statut,
+    libellePaiement: paiement ? libelleStatutPaiement(paiement.statut) : "En attente",
+    libelleModePaiement: paiement ? libelleModePaiement(paiement.modePaiement) : undefined,
     lignes: commande.lignes.map((ligne) => ({
       quantite: ligne.quantite,
       designation: ligne.produit.nom,

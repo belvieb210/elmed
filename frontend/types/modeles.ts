@@ -66,6 +66,7 @@ export interface PaiementResume {
   libelleStatut: string;
   montant?: number;
   datePaiement?: string | null;
+  reference?: string | null;
   libelleLivraison?: string;
 }
 
@@ -177,6 +178,7 @@ export interface TableauDeBord {
     nombreCommandes: number;
     nombreEnAttente: number;
     nombreValidees: number;
+    nombrePayees?: number;
   };
   categories: Categorie[];
   produitsPopulaires: Produit[];

@@ -1,5 +1,4 @@
 import { formaterDate, formaterMontant } from "@/lib/formatage";
-import type { ArticlePanier } from "@/types/modeles";
 
 function IconeMicroscope() {
   return (
@@ -16,14 +15,25 @@ export function ApercuProforma({
   articles,
   montantTotal,
   nomClient,
+  numero,
+  dateTexte,
+  titreDocument = "PROFORMA",
+  paiement,
 }: {
-  articles: ArticlePanier[];
+  articles: Array<{ id: string; nomProduit: string; quantite: number; prixUnitaire: number; sousTotal: number }>;
   montantTotal: number;
   nomClient: string;
+  numero?: string;
+  dateTexte?: string;
+  titreDocument?: string;
+  paiement?: { statut: string; libelleStatut: string; libelleMode: string } | null;
 }) {
-  const aujourdHui = formaterDate(new Date().toISOString());
-  const numero = `PRO-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}`;
+  const aujourdHui = dateTexte ?? formaterDate(new Date().toISOString());
+  const numeroDocument =
+    numero ??
+    `PRO-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}`;
   const vides = Math.max(0, 4 - articles.length);
+  const payee = paiement?.statut === "PAYE";
 
   return (
     <section className="w-full overflow-x-auto rounded-2xl border border-slate-100 bg-white p-2 sm:p-5">
@@ -48,9 +58,15 @@ export function ApercuProforma({
           <div className="sm:text-right">
             <p className="text-xs sm:text-sm">Kin , le {aujourdHui}</p>
             <p className="mt-2 inline-block bg-[#2B6CB0] px-4 py-1 text-xs font-bold tracking-wide text-white sm:px-6 sm:py-1.5 sm:text-sm">
-              PROFORMA
+              {titreDocument}
             </p>
-            <p className="mt-2 text-xs sm:text-sm">N° {numero}</p>
+            <p className="mt-2 text-xs sm:text-sm">N° {numeroDocument}</p>
+            {paiement && (
+              <p className={`mt-2 text-xs font-semibold sm:text-sm ${payee ? "text-emerald-700" : "text-orange-600"}`}>
+                {paiement.libelleStatut}
+                {paiement.libelleMode ? ` · ${paiement.libelleMode}` : ""}
+              </p>
+            )}
           </div>
         </div>
 
@@ -97,6 +113,12 @@ export function ApercuProforma({
             </tr>
           </tbody>
         </table>
+
+        {payee && (
+          <p className="pointer-events-none absolute right-6 bottom-24 rotate-[-18deg] rounded border-4 border-emerald-600 px-5 py-1 text-2xl font-extrabold tracking-widest text-emerald-600 sm:text-3xl">
+            PAYÉ
+          </p>
+        )}
 
         <p className="relative mt-5 text-center text-xs italic sm:mt-6 sm:text-sm">Merci de nous avoir choisi</p>
       </div>

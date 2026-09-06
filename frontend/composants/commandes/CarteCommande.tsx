@@ -129,15 +129,13 @@ export function CarteCommande({
           >
             Voir détails
           </Link>
-          <button
-            type="button"
-            onClick={telechargerFacture}
-            disabled={pdfEnCours}
-            className="inline-flex items-center justify-center gap-1 text-xs font-medium text-slate-500 hover:text-bleu-hero disabled:opacity-60"
+          <Link
+            href={`/commandes/${commande.id}/facture`}
+            className="inline-flex items-center justify-center gap-1 text-xs font-medium text-slate-500 hover:text-bleu-hero"
           >
             <Download className="h-3.5 w-3.5" />
-            {pdfEnCours ? "PDF..." : "Facture PDF"}
-          </button>
+            Voir la facture
+          </Link>
         </div>
 
         <button
