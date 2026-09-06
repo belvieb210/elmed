@@ -20,6 +20,10 @@ export function formaterHeure(dateIso: string) {
   }).format(new Date(dateIso));
 }
 
+export function formaterDateHeure(dateIso: string) {
+  return `${formaterDate(dateIso)} • ${formaterHeure(dateIso)}`;
+}
+
 export function libelleStatutCommande(statut: string) {
   const libelles: Record<string, string> = {
     BROUILLON: "Brouillon",
@@ -39,11 +43,14 @@ export function libelleStatutCommande(statut: string) {
 }
 
 export function classeStatut(statut: string) {
-  if (statut === "EN_ATTENTE" || statut === "ENVOYEE") {
-    return "bg-amber-100 text-amber-700";
-  }
   if (statut === "REFUSEE" || statut === "ANNULEE" || statut === "ECHEC") {
     return "bg-red-100 text-red-700";
   }
-  return "bg-emerald-100 text-emerald-700";
+  if (statut === "LIVREE" || statut === "CLOTUREE" || statut === "PAYE") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+  if (statut === "EXPEDIEE" || statut === "EN_ROUTE" || statut === "EN_ATTENTE" || statut === "ENVOYEE") {
+    return "bg-orange-100 text-orange-700";
+  }
+  return "bg-blue-100 text-blue-700";
 }

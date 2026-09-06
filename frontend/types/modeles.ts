@@ -59,6 +59,13 @@ export interface DetailProduit extends Produit {
   produitsSimilaires: Produit[];
 }
 
+export interface PaiementResume {
+  mode: string;
+  libelleMode: string;
+  statut: string;
+  libelleStatut: string;
+}
+
 export interface CommandeResume {
   id: string;
   numeroCommande: string;
@@ -67,6 +74,9 @@ export interface CommandeResume {
   libelleStatut?: string;
   dateCommande: string;
   nombreArticles?: number;
+  nombreProduits?: number;
+  image?: string | null;
+  paiement?: PaiementResume;
 }
 
 export interface ArticlePanier {

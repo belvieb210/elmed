@@ -14,6 +14,7 @@ export type DonneesProforma = {
   nomClient: string;
   lignes: LigneProforma[];
   montantTotal: number;
+  titreDocument?: string;
 };
 
 function formaterMontant(montant: number) {
@@ -54,7 +55,7 @@ function dessinerEntete(doc: PDFKit.PDFDocument, donnees: DonneesProforma) {
 
   doc.roundedRect(430, 64, 130, 28, 2).fill(bleuProforma);
   doc.fillColor("white").font("Helvetica-Bold").fontSize(14);
-  doc.text("PROFORMA", 430, 71, { width: 130, align: "center" });
+  doc.text(donnees.titreDocument ?? "PROFORMA", 430, 71, { width: 130, align: "center" });
 
   doc.fillColor(bleuProforma).font("Helvetica").fontSize(11);
   doc.text(`N° ${donnees.numero}`, 360, 100, { width: 200, align: "right" });

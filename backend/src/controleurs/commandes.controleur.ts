@@ -1,7 +1,30 @@
 import type { Response } from "express";
 import { baseDeDonnees } from "../config/baseDeDonnees";
+import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { identifiantRoute } from "../utils/identifiant";
+
+function libelleModePaiement(mode: string) {
+  if (mode.startsWith("MOBILE_MONEY")) return "Mobile Money";
+  const libelles: Record<string, string> = {
+    CARTE_BANCAIRE: "Carte bancaire",
+    VIREMENT: "Virement",
+    PAIEMENT_RETRAIT: "Paiement au retrait",
+    PAIEMENT_LIVRAISON: "Paiement à la livraison",
+  };
+  return libelles[mode] ?? "Paiement";
+}
+
+function libelleStatutPaiement(statut: string) {
+  const libelles: Record<string, string> = {
+    EN_ATTENTE: "En attente",
+    PARTIEL: "Partiel",
+    PAYE: "Payé",
+    ECHEC: "Échec",
+    REMBOURSE: "Remboursé",
+  };
+  return libelles[statut] ?? statut;
+}
 
 function libelleStatut(statut: string) {
   const libelles: Record<string, string> = {
@@ -30,21 +53,42 @@ async function genererNumeroCommande() {
 export async function listerCommandes(requete: RequeteAuthentifiee, reponse: Response) {
   const commandes = await baseDeDonnees.commande.findMany({
     where: { clientId: requete.utilisateurId },
-    include: { lignes: { include: { produit: true } } },
+    include: {
+      lignes: { include: { produit: true }, orderBy: { id: "asc" } },
+      paiements: { orderBy: { datePaiement: "desc" } },
+    },
     orderBy: { dateCommande: "desc" },
   });
 
   reponse.json({
     succes: true,
-    commandes: commandes.map((commande) => ({
-      id: commande.id,
-      numeroCommande: commande.numeroCommande,
-      montantTotal: Number(commande.montantTotal),
-      statut: commande.statut,
-      libelleStatut: libelleStatut(commande.statut),
-      dateCommande: commande.dateCommande,
-      nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
-    })),
+    commandes: commandes.map((commande) => {
+      const paiement = commande.paiements[0];
+      return {
+        id: commande.id,
+        numeroCommande: commande.numeroCommande,
+        montantTotal: Number(commande.montantTotal),
+        statut: commande.statut,
+        libelleStatut: libelleStatut(commande.statut),
+        dateCommande: commande.dateCommande,
+        nombreProduits: commande.lignes.length,
+        nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
+        image: commande.lignes[0]?.produit.image ?? null,
+        paiement: paiement
+          ? {
+              mode: paiement.modePaiement,
+              libelleMode: libelleModePaiement(paiement.modePaiement),
+              statut: paiement.statut,
+              libelleStatut: libelleStatutPaiement(paiement.statut),
+            }
+          : {
+              mode: "PAIEMENT_LIVRAISON",
+              libelleMode: "Paiement à la commande",
+              statut: "EN_ATTENTE",
+              libelleStatut: "En attente",
+            },
+      };
+    }),
   });
 }
 
@@ -137,4 +181,46 @@ export async function creerCommandeDepuisPanier(requete: RequeteAuthentifiee, re
       statut: commande.statut,
     },
   });
+}
+
+export async function telechargerFactureCommande(requete: RequeteAuthentifiee, reponse: Response) {
+  const commande = await baseDeDonnees.commande.findFirst({
+    where: { id: identifiantRoute(requete.params.id), clientId: requete.utilisateurId },
+    include: { lignes: { include: { produit: true } }, client: true },
+  });
+
+  if (!commande) {
+    reponse.status(404).json({ succes: false, message: "Commande introuvable." });
+    return;
+  }
+
+  const dateTexte = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+    .format(commande.dateCommande)
+    .replace(/^(\d+\s)([a-z])/, (_tout, prefixe: string, lettre: string) => `${prefixe}${lettre.toUpperCase()}`);
+
+  const nomClient = [commande.client.nomSociete, `${commande.client.prenom} ${commande.client.nom}`.trim()]
+    .filter(Boolean)
+    .join(" — ");
+
+  const pdf = await genererProformaPdf({
+    numero: commande.numeroCommande,
+    dateTexte,
+    nomClient: nomClient || "Client",
+    titreDocument: "FACTURE",
+    lignes: commande.lignes.map((ligne) => ({
+      quantite: ligne.quantite,
+      designation: ligne.produit.nom,
+      prixUnitaire: Number(ligne.prixUnitaire),
+      prixTotal: Number(ligne.prixUnitaire) * ligne.quantite,
+    })),
+    montantTotal: Number(commande.montantTotal),
+  });
+
+  reponse.setHeader("Content-Type", "application/pdf");
+  reponse.setHeader("Content-Disposition", `inline; filename="facture-ELMED-${commande.numeroCommande}.pdf"`);
+  reponse.send(pdf);
 }

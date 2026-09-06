@@ -1,19 +1,33 @@
 "use client";
 
 import { useEffect, useMemo, useState, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
+import { CarteCommande } from "@/composants/commandes/CarteCommande";
+import {
+  commandeDansOnglet,
+  ongletDepuisStatutUrl,
+  type OngletCommandes,
+} from "@/composants/commandes/suivi";
 import { appelerApi } from "@/lib/api";
-import { classeStatut, formaterDate, formaterMontant, libelleStatutCommande } from "@/lib/formatage";
 import type { CommandeResume } from "@/types/modeles";
+
+const parPage = 5;
 
 function ListeCommandes() {
   const params = useSearchParams();
-  const statutFiltre = params.get("statut") ?? "";
+  const statutUrl = params.get("statut") ?? "";
   const [commandes, setCommandes] = useState<CommandeResume[]>([]);
+  const [onglet, setOnglet] = useState<OngletCommandes>(ongletDepuisStatutUrl(statutUrl));
+  const [tri, setTri] = useState("recentes");
+  const [page, setPage] = useState(1);
+  const [selection, setSelection] = useState<string[]>([]);
+
+  useEffect(() => {
+    setOnglet(ongletDepuisStatutUrl(statutUrl));
+  }, [statutUrl]);
 
   useEffect(() => {
     appelerApi<{ commandes: CommandeResume[] }>("/commandes")
@@ -24,36 +38,133 @@ function ListeCommandes() {
       });
   }, []);
 
+  const compteurs = useMemo(
+    () => ({
+      toutes: commandes.length,
+      en_cours: commandes.filter((commande) => commandeDansOnglet(commande.statut, "en_cours")).length,
+      livrees: commandes.filter((commande) => commandeDansOnglet(commande.statut, "livrees")).length,
+      annulees: commandes.filter((commande) => commandeDansOnglet(commande.statut, "annulees")).length,
+    }),
+    [commandes],
+  );
+
   const commandesFiltrees = useMemo(() => {
-    if (!statutFiltre) return commandes;
-    if (statutFiltre === "VALIDEE") {
-      return commandes.filter((commande) =>
-        ["VALIDEE", "EN_PREPARATION", "PRET_RETRAIT", "LIVREE", "CLOTUREE"].includes(commande.statut),
-      );
-    }
-    return commandes.filter((commande) => commande.statut === statutFiltre);
-  }, [commandes, statutFiltre]);
+    const liste = commandes.filter((commande) => commandeDansOnglet(commande.statut, onglet));
+    const copie = [...liste];
+    copie.sort((a, b) => {
+      if (tri === "anciennes") return new Date(a.dateCommande).getTime() - new Date(b.dateCommande).getTime();
+      if (tri === "montant_desc") return b.montantTotal - a.montantTotal;
+      if (tri === "montant_asc") return a.montantTotal - b.montantTotal;
+      return new Date(b.dateCommande).getTime() - new Date(a.dateCommande).getTime();
+    });
+    return copie;
+  }, [commandes, onglet, tri]);
+
+  const nombrePages = Math.max(1, Math.ceil(commandesFiltrees.length / parPage));
+  const pageCourante = Math.min(page, nombrePages);
+  const debut = (pageCourante - 1) * parPage;
+  const pageCommandes = commandesFiltrees.slice(debut, debut + parPage);
+
+  function changerOnglet(suivant: OngletCommandes) {
+    setOnglet(suivant);
+    setPage(1);
+    setSelection([]);
+  }
+
+  const onglets: { id: OngletCommandes; libelle: string; compte: number }[] = [
+    { id: "toutes", libelle: "Toutes", compte: compteurs.toutes },
+    { id: "en_cours", libelle: "En cours", compte: compteurs.en_cours },
+    { id: "livrees", libelle: "Livrées", compte: compteurs.livrees },
+    { id: "annulees", libelle: "Annulées", compte: compteurs.annulees },
+  ];
 
   return (
     <>
       <EnTetePage titre="Mes commandes" description="Suivez le statut de chaque commande en temps réel." />
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
-        {commandesFiltrees.map((commande) => (
-          <Link
-            key={commande.id}
-            href={`/commandes/${commande.id}`}
-            className="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {onglets.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => changerOnglet(item.id)}
+              className={`rounded-xl px-3 py-1.5 text-sm font-medium ${
+                onglet === item.id
+                  ? "bg-bleu-hero text-white"
+                  : "border border-slate-200 bg-white text-slate-600"
+              }`}
+            >
+              {item.libelle} ({item.compte})
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-sm text-slate-500">
+          Trier par :
+          <select
+            value={tri}
+            onChange={(evenement) => {
+              setTri(evenement.target.value);
+              setPage(1);
+            }}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none"
           >
-            <div>
-              <p className="font-semibold text-slate-800">#{commande.numeroCommande}</p>
-              <p className="text-sm text-slate-400">{formaterDate(commande.dateCommande)}</p>
-            </div>
-            <p className="font-semibold">{formaterMontant(commande.montantTotal)}</p>
-            <span className={`w-fit rounded-full px-3 py-1 text-xs font-medium ${classeStatut(commande.statut)}`}>
-              {commande.libelleStatut ?? libelleStatutCommande(commande.statut)}
-            </span>
-          </Link>
-        ))}
+            <option value="recentes">Plus récentes</option>
+            <option value="anciennes">Plus anciennes</option>
+            <option value="montant_desc">Montant décroissant</option>
+            <option value="montant_asc">Montant croissant</option>
+          </select>
+        </label>
+      </div>
+
+      {pageCommandes.length === 0 ? (
+        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-sm text-slate-500">
+          Aucune commande dans cet onglet.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {pageCommandes.map((commande) => (
+            <CarteCommande
+              key={commande.id}
+              commande={commande}
+              selectionnee={selection.includes(commande.id)}
+              onSelection={(id, cochee) =>
+                setSelection((actuel) => (cochee ? [...actuel, id] : actuel.filter((item) => item !== id)))
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-col items-center justify-between gap-3 text-sm text-slate-500 sm:flex-row">
+        <p>
+          Affichage de {commandesFiltrees.length === 0 ? 0 : debut + 1} à{" "}
+          {Math.min(debut + parPage, commandesFiltrees.length)} sur {commandesFiltrees.length} commandes
+        </p>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: nombrePages }, (_item, index) => index + 1).map((numero) => (
+            <button
+              key={numero}
+              type="button"
+              onClick={() => setPage(numero)}
+              className={`h-8 w-8 rounded-full text-sm font-medium ${
+                numero === pageCourante ? "bg-bleu-hero text-white" : "text-slate-600 hover:bg-white"
+              }`}
+            >
+              {numero}
+            </button>
+          ))}
+          {pageCourante < nombrePages && (
+            <button
+              type="button"
+              onClick={() => setPage(pageCourante + 1)}
+              className="grid h-8 w-8 place-items-center rounded-full text-slate-500 hover:bg-white"
+              aria-label="Page suivante"
+            >
+              ›
+            </button>
+          )}
+        </div>
       </div>
       <BandeauMessagerie />
     </>

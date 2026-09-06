@@ -21,6 +21,7 @@ import {
   creerCommandeDepuisPanier,
   listerCommandes,
   obtenirCommande,
+  telechargerFactureCommande,
 } from "../controleurs/commandes.controleur";
 import { envoyerMessage, obtenirConversation } from "../controleurs/messages.controleur";
 import {
@@ -55,6 +56,7 @@ routeurPrincipal.patch("/panier/:id", modifierQuantitePanier);
 routeurPrincipal.delete("/panier/:id", retirerDuPanier);
 
 routeurPrincipal.get("/commandes", listerCommandes);
+routeurPrincipal.get("/commandes/:id/facture", telechargerFactureCommande);
 routeurPrincipal.get("/commandes/:id", obtenirCommande);
 routeurPrincipal.post("/commandes", creerCommandeDepuisPanier);
 
