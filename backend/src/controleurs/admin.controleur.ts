@@ -228,6 +228,10 @@ export async function obtenirTableauAdmin(_requete: RequeteAuthentifiee, reponse
 
 export async function listerCommandesAdmin(_requete: RequeteAuthentifiee, reponse: Response) {
   const commandes = await baseDeDonnees.commande.findMany({
+    where: {
+      statut: { notIn: ["ANNULEE", "REFUSEE"] },
+      numeroRecu: null,
+    },
     include: {
       client: true,
       lignes: { include: { produit: true }, orderBy: { id: "asc" } },
@@ -238,11 +242,25 @@ export async function listerCommandesAdmin(_requete: RequeteAuthentifiee, repons
 
   reponse.json({
     succes: true,
-    commandes: commandes.map((commande) => ({
-      ...formaterCommandeResume(commande),
-      nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
-      image: commande.lignes[0]?.produit.image ?? null,
-    })),
+    commandes: commandes.map((commande) => {
+      const paye = Math.round(montantPayeCommandes(commande.paiements) * 100) / 100;
+      const total = Number(commande.montantTotal);
+      const paiement = commande.paiements[0];
+      return {
+        ...formaterCommandeResume(commande),
+        nomClient: commande.client.estInvite
+          ? "Client invité"
+          : `${commande.client.prenom} ${commande.client.nom}`.trim(),
+        numeroClient:
+          commande.client.numeroClient ||
+          `CLT-${commande.client.id.replaceAll("-", "").slice(0, 8).toUpperCase()}`,
+        nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
+        image: commande.lignes[0]?.produit.image ?? null,
+        montantPaye: paye,
+        resteAPayer: Math.round(Math.max(0, total - paye) * 100) / 100,
+        datePaiement: paiement?.datePaiement ?? commande.dateCommande,
+      };
+    }),
   });
 }
 

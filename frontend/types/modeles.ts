@@ -195,8 +195,12 @@ export interface CommandeAdmin {
   libelleStatut: string;
   dateCommande: string;
   nomClient: string;
+  numeroClient?: string | null;
   nombreArticles?: number;
   image?: string | null;
+  montantPaye?: number;
+  resteAPayer?: number;
+  datePaiement?: string;
   paiement?: {
     mode: string;
     libelleMode: string;

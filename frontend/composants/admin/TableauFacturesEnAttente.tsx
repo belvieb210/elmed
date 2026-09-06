@@ -79,8 +79,11 @@ export function TableauFacturesEnAttente({
           </thead>
           <tbody>
             {parClient.map((facture, index) => {
-              const href = `/admin/clients/${facture.clientId}?commande=${facture.id}`;
+              const href = facture.id
+                ? `/admin/clients/${facture.clientId}?commande=${facture.id}`
+                : `/admin/clients/${facture.clientId}`;
               const selectionne = facture.clientId === clientIdActif;
+              const sansFacture = !facture.id;
               return (
                 <tr
                   key={facture.clientId}
@@ -102,13 +105,17 @@ export function TableauFacturesEnAttente({
                     <p className="font-semibold text-slate-800">{facture.nomClient}</p>
                     <p className="text-[11px] uppercase tracking-wide text-sky-600">
                       {selectionne ? "Sélectionné" : "Client"}
-                      {facture.nombreFactures > 1 ? ` · ${facture.nombreFactures} factures` : ""}
+                      {sansFacture
+                        ? " · sans facture"
+                        : facture.nombreFactures > 1
+                          ? ` · ${facture.nombreFactures} factures`
+                          : ""}
                     </p>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{facture.provenance}</td>
-                  <td className="px-4 py-3">{facture.nombreArticles}</td>
+                  <td className="px-4 py-3">{sansFacture ? "—" : facture.nombreArticles}</td>
                   <td className="px-4 py-3">
-                    <p className="font-medium">{formaterMontant(facture.montantTotal)}</p>
+                    <p className="font-medium">{sansFacture ? "—" : formaterMontant(facture.montantTotal)}</p>
                     {facture.montantPaye > 0 && (
                       <p className="text-[11px] text-slate-500">
                         Payé {formaterMontant(facture.montantPaye)} · Reste {formaterMontant(facture.resteAPayer)}

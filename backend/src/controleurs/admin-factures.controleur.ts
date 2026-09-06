@@ -307,34 +307,76 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
     take: 80,
   });
 
+  const factures = commandes
+    .map((commande) => {
+      const paye = montantPayeCommande(commande.paiements);
+      const total = Number(commande.montantTotal);
+      const reste = arrondi(Math.max(0, total - paye));
+      const estPayee = reste <= 0.009;
+      const estAvance =
+        reste > 0.009 &&
+        (commande.modeFacture === "AVANCE" || commande.paiements.some((paiement) => paiement.statut === "PARTIEL"));
+      const estAdminAFacturer = Boolean(commande.numeroRecu) && reste > 0.009 && !estAvance;
+      if (estPayee || (!estAvance && !estAdminAFacturer)) return null;
+      return {
+        id: commande.id,
+        clientId: commande.clientId,
+        numeroCommande: commande.numeroCommande,
+        nomClient: nomClient(commande.client),
+        provenance: commande.numeroRecu ? "Administration" : "Boutique",
+        nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
+        montantTotal: total,
+        montantPaye: paye,
+        resteAPayer: reste,
+        statutPaiement: estAvance ? "PARTIEL" : "EN_ATTENTE",
+        modeFacture: commande.modeFacture,
+        libelleStatut: estAvance ? "Avance à solder" : "À facturer",
+        dateCommande: commande.dateCommande,
+      };
+    })
+    .filter((facture) => facture !== null);
+
+  const dejaListes = [...new Set(factures.map((facture) => facture.clientId))];
+  const clientsSansFacture = await baseDeDonnees.utilisateur.findMany({
+    where: {
+      role: "CLIENT",
+      estInvite: false,
+      ...(dejaListes.length > 0 ? { id: { notIn: dejaListes } } : {}),
+      commandes: {
+        none: {
+          statut: { notIn: ["ANNULEE", "REFUSEE"] },
+          OR: [
+            { numeroRecu: { not: null } },
+            { modeFacture: "AVANCE" },
+            { paiements: { some: { statut: "PARTIEL" } } },
+          ],
+        },
+      },
+    },
+    orderBy: { dateCreation: "desc" },
+    take: 40,
+  });
+
   reponse.json({
     succes: true,
-    factures: commandes
-      .map((commande) => {
-        const paye = montantPayeCommande(commande.paiements);
-        const total = Number(commande.montantTotal);
-        const reste = arrondi(Math.max(0, total - paye));
-        const estPayee = reste <= 0.009;
-        const estAvance = reste > 0.009 && (commande.modeFacture === "AVANCE" || commande.paiements.some((paiement) => paiement.statut === "PARTIEL"));
-        const estAdminAFacturer = Boolean(commande.numeroRecu) && reste > 0.009 && !estAvance;
-        if (estPayee || (!estAvance && !estAdminAFacturer)) return null;
-        return {
-          id: commande.id,
-          clientId: commande.clientId,
-          numeroCommande: commande.numeroCommande,
-          nomClient: nomClient(commande.client),
-          provenance: commande.numeroRecu ? "Administration" : "Boutique",
-          nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
-          montantTotal: total,
-          montantPaye: paye,
-          resteAPayer: reste,
-          statutPaiement: estAvance ? "PARTIEL" : "EN_ATTENTE",
-          modeFacture: commande.modeFacture,
-          libelleStatut: estAvance ? "Avance à solder" : "À facturer",
-          dateCommande: commande.dateCommande,
-        };
-      })
-      .filter((facture) => facture !== null),
+    factures: [
+      ...clientsSansFacture.map((client) => ({
+        id: "",
+        clientId: client.id,
+        numeroCommande: "",
+        nomClient: nomClient(client),
+        provenance: "Administration",
+        nombreArticles: 0,
+        montantTotal: 0,
+        montantPaye: 0,
+        resteAPayer: 0,
+        statutPaiement: "EN_ATTENTE",
+        modeFacture: "CASH",
+        libelleStatut: "À facturer",
+        dateCommande: client.dateCreation,
+      })),
+      ...factures,
+    ],
   });
 }
 
