@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Calendar,
   Check,
-  ChevronLeft,
   ChevronRight,
   Eye,
   EyeOff,
@@ -22,7 +21,7 @@ import {
   Smartphone,
   X,
 } from "lucide-react";
-import { EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
+import { BoutonRetourEtape, EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { ArticlePanier, EntrepotResume, Utilisateur } from "@/types/modeles";
@@ -264,25 +263,10 @@ export function ParcoursPaiement({
     <div className="mx-auto w-full max-w-6xl">
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          {etape === "accueil" ? (
-            <button
-              type="button"
-              onClick={onFermer}
-              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white"
-              aria-label="Retour au panier"
-            >
-              <X className="h-5 w-5 text-slate-700" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={revenir}
-              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white"
-              aria-label="Retour"
-            >
-              <ChevronLeft className="h-5 w-5 text-slate-700" />
-            </button>
-          )}
+          <BoutonRetourEtape
+            onClick={revenir}
+            libelle={etape === "accueil" ? "Retour au panier" : "Retour"}
+          />
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-orange-paiement">Paiement sécurisé</p>
             <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{titre}</h1>

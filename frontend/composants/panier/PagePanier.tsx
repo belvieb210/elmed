@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
-import { EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
+import { BoutonRetourEtape, EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
@@ -127,7 +127,10 @@ export function PagePanier() {
   return (
     <MiseEnPageClient>
       <div className="mb-5">
-        <h1 className="text-2xl font-semibold text-slate-900">Mon panier</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <BoutonRetourEtape href="/produits" libelle="Retour aux produits" />
+          <h1 className="text-2xl font-semibold text-slate-900">Mon panier</h1>
+        </div>
         <div className="mt-3">
           <EtapesParcoursCommande etapeCourante={1} />
         </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check, FileText, MapPin, Package } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
-import { EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
+import { BoutonRetourEtape, EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { classeBadgePaiement } from "@/composants/commandes/suivi";
 import { appelerApi } from "@/lib/api";
 import { formaterMontant } from "@/lib/formatage";
@@ -30,9 +30,15 @@ export function PageLivraisonCommande() {
   return (
     <MiseEnPageClient>
       <div className="mx-auto w-full max-w-6xl">
-        <h1 className="text-2xl font-semibold text-slate-900">Livraison</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <BoutonRetourEtape
+            href={commandeId ? `/commandes/${commandeId}` : "/commandes"}
+            libelle="Retour à la commande"
+          />
+          <h1 className="text-2xl font-semibold text-slate-900">Livraison</h1>
+        </div>
         <div className="mt-3">
-          <EtapesParcoursCommande etapeCourante={4} />
+          <EtapesParcoursCommande etapeCourante={4} retourAutorise={false} />
         </div>
 
         {!commandeId && (
