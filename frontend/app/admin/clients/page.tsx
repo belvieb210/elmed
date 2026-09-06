@@ -2,20 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Eye, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { FormulaireNouveauClient } from "@/composants/admin/FormulaireNouveauClient";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
+import {
+  filtresVides,
+  nombreFiltresActifs,
+  PanneauFiltresClients,
+  type FiltresClients,
+} from "@/composants/admin/PanneauFiltresClients";
 import { TableauFacturesEnAttente } from "@/composants/admin/TableauFacturesEnAttente";
 import { formaterHeure } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { ClientAdmin } from "@/types/modeles";
 
 export default function PageClientsAdmin() {
-  const routeur = useRouter();
   const [clients, setClients] = useState<ClientAdmin[]>([]);
   const [recherche, setRecherche] = useState("");
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
+  const [filtres, setFiltres] = useState<FiltresClients>(filtresVides);
+  const [filtresAppliques, setFiltresAppliques] = useState<FiltresClients>(filtresVides);
+  const [recentsSession, setRecentsSession] = useState<ClientAdmin[]>([]);
 
   useEffect(() => {
     appelerApi<{ clients: ClientAdmin[] }>("/admin/clients")
@@ -23,7 +31,7 @@ export default function PageClientsAdmin() {
       .catch(() => setClients([]));
   }, []);
 
-  const filtres = useMemo(() => {
+  const filtresListe = useMemo(() => {
     const terme = recherche.trim().toLowerCase();
     if (!terme) return clients;
     return clients.filter((client) =>
@@ -33,7 +41,18 @@ export default function PageClientsAdmin() {
     );
   }, [clients, recherche]);
 
-  const recents = clients.slice(0, 8);
+  const recents = useMemo(() => {
+    const fusion = [...recentsSession, ...clients.filter((client) => !recentsSession.some((item) => item.id === client.id))];
+    return fusion
+      .filter((client) => correspondFiltres(client, filtresAppliques, recentsSession.some((item) => item.id === client.id)))
+      .slice(0, 12);
+  }, [clients, recentsSession, filtresAppliques]);
+
+  const actifs = nombreFiltresActifs(filtresAppliques);
+
+  function ajouterRecent(client: ClientAdmin) {
+    setRecentsSession((actuels) => [client, ...actuels.filter((item) => item.id !== client.id)]);
+  }
 
   return (
     <MiseEnPageAdmin titre="Clients" sousTitre="Ajouter un client et établir sa facture">
@@ -56,11 +75,14 @@ export default function PageClientsAdmin() {
 
       {formulaireOuvert && (
         <FormulaireNouveauClient
+          clientsExistants={clients}
           onAnnuler={() => setFormulaireOuvert(false)}
           onCree={(client, motDePasse) => {
             sessionStorage.setItem("mm_mdp_client", motDePasse);
-            routeur.push(`/admin/clients/${client.id}`);
+            ajouterRecent(client);
+            setClients((actuels) => [client, ...actuels.filter((item) => item.id !== client.id)]);
           }}
+          onSelectionnerAncien={ajouterRecent}
         />
       )}
 
@@ -73,13 +95,32 @@ export default function PageClientsAdmin() {
               </h2>
               <p className="mt-1 text-xs text-slate-400">{recents.length} client(s) dans le registre</p>
             </div>
-            <span className="relative grid h-9 w-9 place-items-center rounded-xl border border-bleu-hero text-slate-500">
+            <button
+              type="button"
+              onClick={() => setFiltresOuverts((actuel) => !actuel)}
+              className="relative grid h-9 w-9 place-items-center rounded-xl border border-bleu-hero text-slate-500"
+              aria-label="Filtrer les clients"
+            >
               <SlidersHorizontal className="h-4 w-4" />
               <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-violet-marque text-[10px] text-white">
-                0
+                {actifs}
               </span>
-            </span>
+            </button>
           </div>
+          {filtresOuverts && (
+            <PanneauFiltresClients
+              filtres={filtres}
+              onChange={setFiltres}
+              onRechercher={() => {
+                setFiltresAppliques(filtres);
+                setFiltresOuverts(false);
+              }}
+              onReinitialiser={() => {
+                setFiltres(filtresVides);
+                setFiltresAppliques(filtresVides);
+              }}
+            />
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
@@ -94,49 +135,58 @@ export default function PageClientsAdmin() {
                 </tr>
               </thead>
               <tbody>
-                {recents.map((client) => (
-                  <tr key={client.id} className="border-t border-bleu-hero">
-                    <td className="px-4 py-3 text-slate-500">{client.numeroClient || "—"}</td>
-                    <td className="px-4 py-3 font-semibold uppercase text-slate-800">{client.nomComplet}</td>
-                    <td className="px-4 py-3 text-slate-500">{client.telephone || "—"}</td>
-                    <td className="px-4 py-3 text-slate-500">{client.nomSociete || "Client"}</td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-                        Enregistré
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{formaterHeure(client.dateCreation)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/admin/clients/${client.id}`}
-                          className="rounded-lg border border-bleu-hero p-1.5 text-slate-600"
-                          aria-label="Voir"
+                {recents.map((client) => {
+                  const selectionne = recentsSession.some((item) => item.id === client.id);
+                  return (
+                    <tr key={client.id} className="border-t border-bleu-hero">
+                      <td className="px-4 py-3 text-slate-500">{client.numeroClient || "—"}</td>
+                      <td className="px-4 py-3 font-semibold uppercase text-slate-800">{client.nomComplet}</td>
+                      <td className="px-4 py-3 text-slate-500">{client.telephone || "—"}</td>
+                      <td className="px-4 py-3 text-slate-500">{client.nomSociete || "Client"}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                            selectionne ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"
+                          }`}
                         >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                        <Link
-                          href={`/admin/clients/${client.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-slate-600"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Facturer
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {selectionne ? "Sélectionné" : "Enregistré"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">{formaterHeure(client.dateCreation)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/clients/${client.id}`}
+                            className="rounded-lg border border-bleu-hero p-1.5 text-slate-600"
+                            aria-label="Voir"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                          <Link
+                            href={`/admin/clients/${client.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-slate-600"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Facturer
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          {recents.length === 0 && <p className="px-4 py-6 text-sm text-slate-400">Aucun client enregistré pour le moment.</p>}
+          {recents.length === 0 && (
+            <p className="px-4 py-6 text-sm text-slate-400">Aucun client ne correspond à ces filtres.</p>
+          )}
         </section>
       )}
 
       {!formulaireOuvert && (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {filtres.map((client) => (
+            {filtresListe.map((client) => (
               <article key={client.id} className="rounded-2xl border border-bleu-hero bg-white p-4">
                 <div className="flex items-center gap-3">
                   {client.photoProfil ? (
@@ -160,7 +210,7 @@ export default function PageClientsAdmin() {
               </article>
             ))}
           </div>
-          {filtres.length === 0 && <p className="mt-4 text-sm text-slate-400">Aucun client trouvé.</p>}
+          {filtresListe.length === 0 && <p className="mt-4 text-sm text-slate-400">Aucun client trouvé.</p>}
           <div className="mt-8">
             <TableauFacturesEnAttente />
           </div>
@@ -168,6 +218,29 @@ export default function PageClientsAdmin() {
       )}
     </MiseEnPageAdmin>
   );
+}
+
+function correspondFiltres(client: ClientAdmin, filtres: FiltresClients, selectionne: boolean) {
+  const nom = (client.nom ?? client.nomComplet.split(" ").slice(-1)[0] ?? "").toLowerCase();
+  const prenom = (client.prenom ?? client.nomComplet.split(" ")[0] ?? "").toLowerCase();
+  if (filtres.nom && !nom.includes(filtres.nom.trim().toLowerCase())) return false;
+  if (filtres.prenom && !prenom.includes(filtres.prenom.trim().toLowerCase())) return false;
+  if (filtres.telephone && !(client.telephone ?? "").includes(filtres.telephone.trim())) return false;
+  if (filtres.numeroClient && !(client.numeroClient ?? "").toLowerCase().includes(filtres.numeroClient.trim().toLowerCase())) {
+    return false;
+  }
+  if (
+    filtres.etablissement !== "Toutes" &&
+    !(client.nomSociete ?? "").toLowerCase().includes(filtres.etablissement.toLowerCase())
+  ) {
+    return false;
+  }
+  const date = new Date(client.dateCreation);
+  if (filtres.du && date < new Date(`${filtres.du}T00:00:00`)) return false;
+  if (filtres.au && date > new Date(`${filtres.au}T23:59:59`)) return false;
+  if (filtres.statut === "Sélectionné" && !selectionne) return false;
+  if (filtres.statut === "Enregistré" && selectionne) return false;
+  return true;
 }
 
 function initials(nom: string) {

@@ -316,6 +316,8 @@ export async function listerClientsAdmin(_requete: RequeteAuthentifiee, reponse:
     succes: true,
     clients: clients.map((client) => ({
       id: client.id,
+      prenom: client.prenom,
+      nom: client.nom,
       nomComplet: `${client.prenom} ${client.nom}`,
       email: client.email,
       telephone: client.telephone,

@@ -1,21 +1,11 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Search, Upload } from "lucide-react";
+import { ChevronDown, Search, Upload, UserRound, X } from "lucide-react";
 import { appelerApi } from "@/lib/api";
 import type { ClientAdmin } from "@/types/modeles";
 
-const typesClient = [
-  "Hôpital",
-  "Clinique",
-  "Pharmacie",
-  "Laboratoire",
-  "Cabinet médical",
-  "ONG / Projet",
-  "Grossiste",
-  "Centre de santé",
-  "Autre",
-];
+const parcoursClients = ["Nouveau client", "Ancien client", "Commande urgente", "Rendez-vous"] as const;
 
 const etatsCivils = ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf(ve)"];
 const secteurs = ["Hôpital public", "Clinique privée", "Pharmacie", "Laboratoire", "ONG", "Grossiste", "Autre"];
@@ -68,16 +58,22 @@ const ficheVide: Fiche = {
 };
 
 export function FormulaireNouveauClient({
+  clientsExistants,
   onAnnuler,
   onCree,
+  onSelectionnerAncien,
 }: {
+  clientsExistants: ClientAdmin[];
   onAnnuler: () => void;
   onCree: (client: ClientAdmin, motDePasseTemporaire: string) => void;
+  onSelectionnerAncien: (client: ClientAdmin) => void;
 }) {
   const maintenant = useMemo(() => new Date(), []);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [rechercheType, setRechercheType] = useState("");
+  const [parcours, setParcours] = useState<(typeof parcoursClients)[number]>("Nouveau client");
+  const [listeParcoursOuverte, setListeParcoursOuverte] = useState(false);
+  const [rechercheAncien, setRechercheAncien] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [identite, setIdentite] = useState({
     nom: "",
@@ -94,7 +90,19 @@ export function FormulaireNouveauClient({
   const dateTexte = maintenant.toLocaleDateString("fr-FR");
   const heureTexte = maintenant.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
-  const typesFiltres = typesClient.filter((type) => type.toLowerCase().includes(rechercheType.toLowerCase()));
+  const anciens = useMemo(() => {
+    const terme = rechercheAncien.trim().toLowerCase();
+    if (terme.length < 2) return [];
+    return clientsExistants
+      .filter((client) =>
+        [client.nomComplet, client.prenom, client.nom, client.telephone, client.numeroClient, client.nomSociete]
+          .filter(Boolean)
+          .some((valeur) => String(valeur).toLowerCase().includes(terme)),
+      )
+      .slice(0, 8);
+  }, [clientsExistants, rechercheAncien]);
+
+  const ancienClient = parcours === "Ancien client";
 
   function mettreFiche<K extends keyof Fiche>(cle: K, valeur: Fiche[K]) {
     setFiche((actuelle) => {
@@ -144,7 +152,7 @@ export function FormulaireNouveauClient({
           adresse: identite.adresse || undefined,
           ville: identite.ville || undefined,
           photoProfil: photo || undefined,
-          fiche,
+          fiche: { ...fiche, typeClient: parcours },
         }),
       });
       onCree(donnees.client, donnees.motDePasseTemporaire);
@@ -158,7 +166,7 @@ export function FormulaireNouveauClient({
     <form onSubmit={soumettre} className="mb-6 space-y-5 rounded-2xl border border-bleu-hero bg-white p-4 sm:p-6">
       <div>
         <h2 className="text-lg font-semibold text-[#1e3a8a]">Informations personnelles</h2>
-        <p className="mt-1 text-sm text-violet-marque">Nouveau client</p>
+        <p className="mt-1 text-sm text-violet-marque">{parcours}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -167,44 +175,127 @@ export function FormulaireNouveauClient({
         <ChampLecture label="Heure" valeur={heureTexte} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <label className="block">
-          <span className={label}>Type de client</span>
-          <span className="relative mt-1.5 block">
-            <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-            <input
-              list="types-client"
-              value={rechercheType || fiche.typeClient}
-              onChange={(e) => {
-                setRechercheType(e.target.value);
-                mettreFiche("typeClient", e.target.value);
-              }}
-              placeholder="Rechercher un type..."
-              className={`${champ} pl-9`}
+      <div className={`grid gap-4 ${ancienClient ? "" : "md:grid-cols-3"}`}>
+        <div className="relative">
+          <p className={label}>Type de client</p>
+          {ancienClient ? (
+            <div className="mt-1.5">
+              <span className="relative block">
+                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  value={rechercheAncien}
+                  onChange={(e) => setRechercheAncien(e.target.value)}
+                  placeholder="Rechercher client (nom, n° client, téléphone)"
+                  className={`${champ} pl-9 pr-10`}
+                />
+                {rechercheAncien && (
+                  <button
+                    type="button"
+                    onClick={() => setRechercheAncien("")}
+                    className="absolute right-3 top-3 text-slate-400"
+                    aria-label="Effacer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </span>
+              {anciens.length > 0 && (
+                <ul className="mt-2 space-y-2">
+                  {anciens.map((client) => (
+                    <li key={client.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectionnerAncien(client);
+                          setRechercheAncien("");
+                        }}
+                        className="flex w-full items-center gap-3 rounded-2xl border border-bleu-hero bg-white px-3 py-2.5 text-left hover:bg-slate-50"
+                      >
+                        <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-500">
+                          <UserRound className="h-4 w-4" />
+                        </span>
+                        <span>
+                          <span className="block text-sm font-semibold uppercase text-slate-800">
+                            {client.nomComplet}
+                          </span>
+                          <span className="block text-xs text-slate-500">
+                            {client.numeroClient || "Sans n°"} · {client.telephone || "Sans téléphone"}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {rechercheAncien.trim().length >= 2 && anciens.length === 0 && (
+                <p className="mt-2 text-sm text-slate-400">Aucun ancien client trouvé.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setParcours("Nouveau client");
+                  setRechercheAncien("");
+                }}
+                className="mt-2 text-sm font-semibold text-[#1e3a8a]"
+              >
+                Nouveau client
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setListeParcoursOuverte((actuel) => !actuel)}
+                className={`${champ} flex items-center justify-between text-left`}
+              >
+                <span>{parcours}</span>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </button>
+              {listeParcoursOuverte && (
+                <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-bleu-hero bg-white shadow-lg">
+                  {parcoursClients.map((option) => (
+                    <li key={option}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setParcours(option);
+                          setListeParcoursOuverte(false);
+                        }}
+                        className={`block w-full px-3 py-2.5 text-left text-sm ${
+                          parcours === option ? "bg-bleu-hero text-white" : "text-slate-800 hover:bg-slate-50"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+        {!ancienClient && (
+          <>
+            <Champ
+              label="Nom"
+              requis
+              value={identite.nom}
+              placeholder="KABAMBA"
+              onChange={(valeur) => setIdentite({ ...identite, nom: valeur.toUpperCase() })}
             />
-            <datalist id="types-client">
-              {typesFiltres.map((type) => (
-                <option key={type} value={type} />
-              ))}
-            </datalist>
-          </span>
-        </label>
-        <Champ
-          label="Nom"
-          requis
-          value={identite.nom}
-          placeholder="KABAMBA"
-          onChange={(valeur) => setIdentite({ ...identite, nom: valeur.toUpperCase() })}
-        />
-        <Champ
-          label="Prénom"
-          requis
-          value={identite.prenom}
-          placeholder="Grâce"
-          onChange={(valeur) => setIdentite({ ...identite, prenom: valeur })}
-        />
+            <Champ
+              label="Prénom"
+              requis
+              value={identite.prenom}
+              placeholder="Grâce"
+              onChange={(valeur) => setIdentite({ ...identite, prenom: valeur })}
+            />
+          </>
+        )}
       </div>
 
+      {!ancienClient && (
+      <>
       <div className="grid gap-4 md:grid-cols-3">
         <Champ label="Post-nom" value={fiche.postNom} onChange={(valeur) => mettreFiche("postNom", valeur)} />
         <div>
@@ -355,6 +446,8 @@ export function FormulaireNouveauClient({
           {enCours ? "Enregistrement..." : "Enregistrer le client"}
         </button>
       </div>
+      </>
+      )}
     </form>
   );
 }
