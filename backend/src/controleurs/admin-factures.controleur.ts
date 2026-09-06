@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
-import { genererProformaPdf } from "../documents/generer-proforma";
+import { genererFacturesGroupeesPdf, genererProformaPdf } from "../documents/generer-proforma";
+import type { DonneesProforma } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { emettreTempsReel, emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
@@ -149,6 +150,61 @@ function montantPayeCommande(paiements: Array<{ montant: { toString(): string };
       .filter((paiement) => paiement.statut === "PAYE" || paiement.statut === "PARTIEL")
       .reduce((somme, paiement) => somme + Number(paiement.montant), 0),
   );
+}
+
+const includeFacturePdf = {
+  client: true,
+  lignes: { include: { produit: true } },
+  paiements: { orderBy: { datePaiement: "desc" as const } },
+};
+
+function dateFactureTexte(date: Date) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+    .format(date)
+    .replace(/^(\d+\s)([a-z])/, (_tout, prefixe: string, lettre: string) => `${prefixe}${lettre.toUpperCase()}`);
+}
+
+function donneesProformaDepuisCommande(
+  commande: {
+    numeroRecu: string | null;
+    numeroCommande: string;
+    dateCommande: Date;
+    montantTotal: { toString(): string } | number;
+    client: { prenom: string; nom: string; nomSociete: string | null; estInvite?: boolean };
+    lignes: Array<{ quantite: number; prixUnitaire: { toString(): string } | number; produit: { nom: string } }>;
+    paiements: Array<{
+      statut: string;
+      modePaiement: string;
+      montant: { toString(): string };
+    }>;
+  },
+  type: "PROFORMA" | "FACTURE",
+): DonneesProforma {
+  const paiement = commande.paiements[0];
+  const montantPaye = montantPayeCommande(commande.paiements);
+  const montantTotal = Number(commande.montantTotal);
+  return {
+    numero: commande.numeroRecu || commande.numeroCommande,
+    dateTexte: dateFactureTexte(commande.dateCommande),
+    nomClient: nomClient(commande.client),
+    titreDocument: type,
+    statutPaiement: paiement?.statut,
+    libellePaiement: paiement ? libelleStatutPaiement(paiement.statut) : "En attente",
+    libelleModePaiement: paiement ? libelleModePaiement(paiement.modePaiement) : undefined,
+    lignes: commande.lignes.map((ligne) => ({
+      quantite: ligne.quantite,
+      designation: ligne.produit.nom,
+      prixUnitaire: Number(ligne.prixUnitaire),
+      prixTotal: Number(ligne.prixUnitaire) * ligne.quantite,
+    })),
+    montantTotal,
+    montantPaye,
+    resteAPayer: arrondi(Math.max(0, montantTotal - montantPaye)),
+  };
 }
 
 export async function creerClientAdmin(requete: RequeteAuthentifiee, reponse: Response) {
@@ -688,11 +744,7 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
 export async function telechargerFactureAdmin(requete: RequeteAuthentifiee, reponse: Response) {
   const commande = await baseDeDonnees.commande.findUnique({
     where: { id: identifiantRoute(requete.params.id) },
-    include: {
-      client: true,
-      lignes: { include: { produit: true } },
-      paiements: { orderBy: { datePaiement: "desc" } },
-    },
+    include: includeFacturePdf,
   });
 
   if (!commande) {
@@ -701,40 +753,59 @@ export async function telechargerFactureAdmin(requete: RequeteAuthentifiee, repo
   }
 
   const type = requete.query.type === "proforma" ? "PROFORMA" : "FACTURE";
-  const dateTexte = new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
-    .format(commande.dateCommande)
-    .replace(/^(\d+\s)([a-z])/, (_tout, prefixe: string, lettre: string) => `${prefixe}${lettre.toUpperCase()}`);
-
-  const paiement = commande.paiements[0];
-  const montantPaye = montantPayeCommande(commande.paiements);
-  const montantTotal = Number(commande.montantTotal);
-  const pdf = await genererProformaPdf({
-    numero: commande.numeroRecu || commande.numeroCommande,
-    dateTexte,
-    nomClient: nomClient(commande.client),
-    titreDocument: type,
-    statutPaiement: paiement?.statut,
-    libellePaiement: paiement ? libelleStatutPaiement(paiement.statut) : "En attente",
-    libelleModePaiement: paiement ? libelleModePaiement(paiement.modePaiement) : undefined,
-    lignes: commande.lignes.map((ligne) => ({
-      quantite: ligne.quantite,
-      designation: ligne.produit.nom,
-      prixUnitaire: Number(ligne.prixUnitaire),
-      prixTotal: Number(ligne.prixUnitaire) * ligne.quantite,
-    })),
-    montantTotal,
-    montantPaye,
-    resteAPayer: arrondi(Math.max(0, montantTotal - montantPaye)),
-  });
+  const pdf = await genererProformaPdf(donneesProformaDepuisCommande(commande, type));
 
   reponse.setHeader("Content-Type", "application/pdf");
   reponse.setHeader(
     "Content-Disposition",
     `inline; filename="${type.toLowerCase()}-ELMED-${commande.numeroCommande}.pdf"`,
+  );
+  reponse.send(pdf);
+}
+
+export async function telechargerFacturesGroupeesAdmin(requete: RequeteAuthentifiee, reponse: Response) {
+  const ids = [
+    ...new Set(
+      String(requete.query.ids ?? "")
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => z.string().uuid().safeParse(id).success),
+    ),
+  ];
+
+  if (ids.length === 0) {
+    reponse.status(400).json({ succes: false, message: "Aucune facture sélectionnée." });
+    return;
+  }
+
+  if (ids.length > 50) {
+    reponse.status(400).json({ succes: false, message: "Trop de factures sélectionnées (maximum 50)." });
+    return;
+  }
+
+  const commandes = await baseDeDonnees.commande.findMany({
+    where: { id: { in: ids } },
+    include: includeFacturePdf,
+  });
+
+  const parId = new Map(commandes.map((commande) => [commande.id, commande]));
+  const ordonnees = ids.map((id) => parId.get(id)).filter((commande) => commande != null);
+
+  if (ordonnees.length === 0) {
+    reponse.status(404).json({ succes: false, message: "Factures introuvables." });
+    return;
+  }
+
+  const type = requete.query.type === "proforma" ? "PROFORMA" : "FACTURE";
+  const pdf = await genererFacturesGroupeesPdf(
+    ordonnees.map((commande) => donneesProformaDepuisCommande(commande, type)),
+  );
+  const nomClientFichier = nomClient(ordonnees[0].client).replace(/[^\p{L}\p{N}]+/gu, "-");
+
+  reponse.setHeader("Content-Type", "application/pdf");
+  reponse.setHeader(
+    "Content-Disposition",
+    `inline; filename="factures-ELMED-${nomClientFichier}-${ordonnees.length}.pdf"`,
   );
   reponse.send(pdf);
 }

@@ -69,14 +69,19 @@ function dessinerEntete(doc: PDFKit.PDFDocument, donnees: DonneesProforma) {
   doc.text(`N° ${donnees.numero}`, 360, 100, { width: 200, align: "right" });
 }
 
-export function genererProformaPdf(donnees: DonneesProforma): Promise<Buffer> {
+function finaliserPdf(dessiner: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 36 });
     const morceaux: Buffer[] = [];
     doc.on("data", (morceau: Buffer) => morceaux.push(morceau));
     doc.on("end", () => resolve(Buffer.concat(morceaux)));
     doc.on("error", reject);
+    dessiner(doc);
+    doc.end();
+  });
+}
 
+function dessinerPageFacture(doc: PDFKit.PDFDocument, donnees: DonneesProforma) {
     dessinerEntete(doc, donnees);
 
     doc.fillColor(bleuProforma).font("Helvetica").fontSize(11);
@@ -189,7 +194,17 @@ export function genererProformaPdf(donnees: DonneesProforma): Promise<Buffer> {
 
     doc.font("Helvetica-Oblique").fontSize(11).fillColor(bleuProforma);
     doc.text(infosElmed.merci, 36, 780, { width: 523, align: "center" });
+}
 
-    doc.end();
+export function genererProformaPdf(donnees: DonneesProforma): Promise<Buffer> {
+  return finaliserPdf((doc) => dessinerPageFacture(doc, donnees));
+}
+
+export function genererFacturesGroupeesPdf(factures: DonneesProforma[]): Promise<Buffer> {
+  return finaliserPdf((doc) => {
+    factures.forEach((donnees, index) => {
+      if (index > 0) doc.addPage();
+      dessinerPageFacture(doc, donnees);
+    });
   });
 }

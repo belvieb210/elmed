@@ -61,7 +61,7 @@ export function PageCommandesEnLigne() {
   const [pageCommandes, setPageCommandes] = useState(1);
   const [clientOuvertId, setClientOuvertId] = useState<string | null>(null);
   const [selectionIds, setSelectionIds] = useState<string[]>([]);
-  const [urlsFactures, setUrlsFactures] = useState<Array<{ id: string; url: string; numero: string }>>([]);
+  const [urlFacture, setUrlFacture] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
 
   const charger = useCallback(async () => {
@@ -137,35 +137,37 @@ export function PageCommandesEnLigne() {
     if (pageCommandes > pagesCommandes) setPageCommandes(pagesCommandes);
   }, [pageCommandes, pagesCommandes]);
 
+  const cheminPdfSelection = useMemo(() => {
+    if (selectionIds.length === 0) return null;
+    if (selectionIds.length === 1) return `/admin/factures/${selectionIds[0]}/pdf`;
+    return `/admin/factures/groupees/pdf?ids=${selectionIds.join(",")}`;
+  }, [selectionIds.join("|")]);
+
   useEffect(() => {
-    if (selectionnees.length === 0) {
-      setUrlsFactures([]);
+    if (!cheminPdfSelection) {
+      setUrlFacture(null);
       return;
     }
     let ignore = false;
-    const urls: string[] = [];
-    void Promise.all(
-      selectionnees.map(async (commande) => {
-        const url = await chargerUrlPdf(`/admin/factures/${commande.id}/pdf`);
-        urls.push(url);
-        return { id: commande.id, url, numero: commande.numeroCommande };
-      }),
-    )
-      .then((chargees) => {
+    let urlCreee: string | null = null;
+    setUrlFacture(null);
+    void chargerUrlPdf(cheminPdfSelection)
+      .then((url) => {
+        urlCreee = url;
         if (ignore) {
-          for (const item of chargees) URL.revokeObjectURL(item.url);
+          URL.revokeObjectURL(url);
           return;
         }
-        setUrlsFactures(chargees);
+        setUrlFacture(url);
       })
       .catch(() => {
-        if (!ignore) setUrlsFactures([]);
+        if (!ignore) setUrlFacture(null);
       });
     return () => {
       ignore = true;
-      for (const url of urls) URL.revokeObjectURL(url);
+      if (urlCreee) URL.revokeObjectURL(urlCreee);
     };
-  }, [selectionIds.join("|")]);
+  }, [cheminPdfSelection]);
 
   function ouvrirClient(groupe: (typeof groupes)[number]) {
     if (groupe.commandes.length === 1) {
@@ -370,10 +372,10 @@ export function PageCommandesEnLigne() {
                         : `Facture ${premiereSelection.numeroCommande}`}
                     </h2>
                   </div>
-                  {selectionnees.length === 1 && (
+                  {cheminPdfSelection && (
                     <button
                       type="button"
-                      onClick={() => void ouvrirPdf(`/admin/factures/${premiereSelection.id}/pdf`)}
+                      onClick={() => void ouvrirPdf(cheminPdfSelection)}
                       className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-3 py-1.5 text-xs font-semibold text-slate-700"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -381,35 +383,21 @@ export function PageCommandesEnLigne() {
                     </button>
                   )}
                 </div>
-                <div className="space-y-3 bg-slate-700 p-3">
-                  {urlsFactures.length === 0 ? (
+                <div className="bg-slate-700 p-3">
+                  {urlFacture ? (
+                    <iframe
+                      title={
+                        selectionnees.length > 1
+                          ? `Factures de ${premiereSelection.nomClient}`
+                          : `Facture ${premiereSelection.numeroCommande}`
+                      }
+                      src={urlFacture}
+                      className="h-[280px] w-full rounded-lg bg-white sm:h-[420px] xl:h-[520px]"
+                    />
+                  ) : (
                     <div className="grid h-[280px] place-items-center rounded-lg bg-slate-800 text-sm text-slate-300 sm:h-[420px]">
                       Chargement de la facture...
                     </div>
-                  ) : (
-                    urlsFactures.map((facture) => (
-                      <div key={facture.id}>
-                        {selectionnees.length > 1 && (
-                          <div className="mb-2 flex items-center justify-between text-xs text-white">
-                            <span>{facture.numero}</span>
-                            <button
-                              type="button"
-                              onClick={() => void ouvrirPdf(`/admin/factures/${facture.id}/pdf`)}
-                              className="rounded-lg border border-white/40 px-2 py-1"
-                            >
-                              Ouvrir
-                            </button>
-                          </div>
-                        )}
-                        <iframe
-                          title={`Facture ${facture.numero}`}
-                          src={facture.url}
-                          className={`w-full rounded-lg bg-white ${
-                            selectionnees.length > 1 ? "h-[280px]" : "h-[280px] sm:h-[420px] xl:h-[520px]"
-                          }`}
-                        />
-                      </div>
-                    ))
                   )}
                 </div>
               </section>
