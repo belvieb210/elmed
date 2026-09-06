@@ -44,7 +44,7 @@ export function PageProforma() {
         <div className="flex flex-wrap gap-2">
           <Link
             href="/panier"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
             Retour au panier
@@ -64,7 +64,7 @@ export function PageProforma() {
       {erreur && <p className="mb-3 text-sm text-red-600">{erreur}</p>}
 
       {articles.length === 0 ? (
-        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-sm text-slate-500">
+        <div className="rounded-2xl border border-bleu-hero bg-white p-8 text-sm text-slate-500">
           Votre panier est vide. Ajoutez des articles pour générer une proforma.
         </div>
       ) : (

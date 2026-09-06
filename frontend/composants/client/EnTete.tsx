@@ -20,8 +20,8 @@ export function EnTete() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b-2 border-bleu-hero bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur sm:px-4 lg:px-6">
-      <div className="flex items-center gap-3">
+    <header className="fixed inset-x-0 top-0 z-40 h-[var(--hauteur-en-tete)] border-b-2 border-bleu-hero bg-white px-3 pt-[env(safe-area-inset-top)] sm:px-4 lg:left-[270px] lg:px-6">
+      <div className="flex h-full items-center gap-3">
         <button
           type="button"
           className="rounded-xl border border-bleu-hero p-2 text-bleu-hero lg:hidden"

@@ -26,7 +26,7 @@ export default function PageUtilisateursAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Utilisateurs" sousTitre="Équipe et comptes clients">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-400">
@@ -39,7 +39,7 @@ export default function PageUtilisateursAdmin() {
             </thead>
             <tbody>
               {utilisateurs.map((utilisateur) => (
-                <tr key={utilisateur.id} className="border-t border-slate-50">
+                <tr key={utilisateur.id} className="border-t border-bleu-hero">
                   <td className="px-4 py-3 font-medium text-slate-800">{utilisateur.nomComplet}</td>
                   <td className="px-4 py-3 text-slate-500">{utilisateur.email}</td>
                   <td className="px-4 py-3">{libelleRole(utilisateur.role)}</td>

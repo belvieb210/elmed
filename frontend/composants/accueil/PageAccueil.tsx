@@ -97,7 +97,7 @@ export function PageAccueil() {
             </>
           ) : (
             <>
-              <article className="rounded-2xl border border-slate-100 bg-white px-5 py-4 sm:col-span-2">
+              <article className="rounded-2xl border border-bleu-hero bg-white px-5 py-4 sm:col-span-2">
                 <p className="text-sm font-semibold text-slate-800">Commander sans compte</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Ajoutez des produits au panier, passez commande et payez. Pour retrouver l&apos;historique et
@@ -107,7 +107,7 @@ export function PageAccueil() {
                   Ouvrir le panier
                 </Link>
               </article>
-              <article className="rounded-2xl border border-slate-100 bg-white px-5 py-4 sm:col-span-2">
+              <article className="rounded-2xl border border-bleu-hero bg-white px-5 py-4 sm:col-span-2">
                 <p className="text-sm font-semibold text-slate-800">Compte client</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Messagerie, notifications et liste de commandes : réservées aux comptes.
@@ -120,7 +120,7 @@ export function PageAccueil() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 xl:col-span-8">
+        <section className="rounded-2xl border border-bleu-hero bg-white p-5 xl:col-span-8">
           <h2 className="text-base font-semibold text-slate-800">Catégories populaires</h2>
           <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {categories.map((categorie) => {
@@ -142,7 +142,7 @@ export function PageAccueil() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 xl:col-span-4 xl:row-span-2">
+        <section className="rounded-2xl border border-bleu-hero bg-white p-5 xl:col-span-4 xl:row-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-800">
               {compteReel ? "Mes dernières commandes" : "Suivi des commandes"}
@@ -155,7 +155,7 @@ export function PageAccueil() {
           </div>
           <div className="space-y-3">
             {!compteReel && (
-              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm leading-6 text-slate-500">
+              <div className="rounded-xl border border-dashed border-bleu-hero px-4 py-6 text-sm leading-6 text-slate-500">
                 Connectez-vous pour voir l&apos;historique de vos commandes. Après un paiement sans compte, conservez
                 le lien de confirmation pour suivre cette commande.
                 <Link href="/connexion?suivant=%2Fcommandes" className="mt-3 block font-medium text-violet-marque hover:underline">
@@ -170,7 +170,7 @@ export function PageAccueil() {
               <Link
                 key={commande.id}
                 href={`/commandes/${commande.id}`}
-                className="block rounded-xl border border-slate-100 px-3 py-3 transition hover:border-violet-200 hover:bg-violet-50/40"
+                className="block rounded-xl border border-bleu-hero px-3 py-3 transition hover:border-bleu-hero hover:bg-violet-50/40"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -200,7 +200,7 @@ export function PageAccueil() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white p-5 xl:col-span-8">
+        <section className="rounded-2xl border border-bleu-hero bg-white p-5 xl:col-span-8">
           <h2 className="text-base font-semibold text-slate-800">Produits populaires</h2>
           <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             {produitsPopulaires.map((produit) => (
@@ -227,7 +227,7 @@ function CarteStat({
   libelleLien: string;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-100 bg-white px-5 py-4">
+    <article className="rounded-2xl border border-bleu-hero bg-white px-5 py-4">
       <p className="text-sm text-slate-500">{titre}</p>
       <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{valeur}</p>
       <Link href={lien} className="mt-2 inline-block text-sm font-medium text-violet-marque hover:underline">

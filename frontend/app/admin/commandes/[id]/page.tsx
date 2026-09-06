@@ -65,9 +65,9 @@ export default function PageDetailCommandeAdmin() {
         </Link>
       </div>
       <div className="grid gap-4 lg:grid-cols-12">
-        <section className="space-y-4 rounded-2xl border border-slate-100 bg-white p-5 lg:col-span-8">
+        <section className="space-y-4 rounded-2xl border border-bleu-hero bg-white p-5 lg:col-span-8">
           {commande.lignes.map((ligne) => (
-            <div key={ligne.id} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3">
+            <div key={ligne.id} className="flex items-center justify-between gap-3 border-b border-bleu-hero pb-3">
               <div>
                 <p className="font-medium text-slate-800">{ligne.nomProduit}</p>
                 <p className="text-xs text-slate-400">
@@ -80,7 +80,7 @@ export default function PageDetailCommandeAdmin() {
           <p className="text-right text-lg font-semibold">{formaterMontant(commande.montantTotal)}</p>
         </section>
         <aside className="space-y-4 lg:col-span-4">
-          <article className="rounded-2xl border border-slate-100 bg-white p-5">
+          <article className="rounded-2xl border border-bleu-hero bg-white p-5">
             <p className="text-sm text-slate-500">Statut</p>
             <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${classeStatut(commande.statut)}`}>
               {commande.libelleStatut}
@@ -90,7 +90,7 @@ export default function PageDetailCommandeAdmin() {
               <select
                 value={commande.statut}
                 onChange={(e) => void changerStatut(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-xl border border-bleu-hero px-3 py-2 text-sm"
               >
                 {statuts.map((statut) => (
                   <option key={statut} value={statut}>
@@ -100,7 +100,7 @@ export default function PageDetailCommandeAdmin() {
               </select>
             </label>
           </article>
-          <article className="rounded-2xl border border-slate-100 bg-white p-5">
+          <article className="rounded-2xl border border-bleu-hero bg-white p-5">
             <p className="text-sm font-semibold text-slate-800">Client</p>
             <p className="mt-2 text-sm text-slate-700">{commande.client.nomSociete || commande.client.nomComplet}</p>
             {commande.client.email && <p className="text-xs text-slate-500">{commande.client.email}</p>}

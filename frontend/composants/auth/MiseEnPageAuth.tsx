@@ -79,7 +79,7 @@ export function MiseEnPageAuth({
           </Link>
         </div>
         <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center">
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_20px_50px_rgba(31,41,55,0.08)] sm:p-8">
+          <div className="rounded-3xl border border-bleu-hero bg-white p-6 shadow-[0_20px_50px_rgba(31,41,55,0.08)] sm:p-8">
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{titre}</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">{sousTitre}</p>
             {children}

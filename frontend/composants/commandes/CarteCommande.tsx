@@ -71,14 +71,14 @@ export function CarteCommande({
   }
 
   return (
-    <article className="relative rounded-2xl border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
+    <article className="relative rounded-2xl border border-bleu-hero bg-white p-3 shadow-sm sm:p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
         <div className="flex min-w-0 items-center gap-3 pr-8 lg:w-64 lg:pr-0">
           <input
             type="checkbox"
             checked={selectionnee}
             onChange={(evenement) => onSelection(commande.id, evenement.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-bleu-hero"
+            className="h-4 w-4 rounded border-bleu-hero text-bleu-hero"
             aria-label={`Sélectionner ${commande.numeroCommande}`}
           />
           <img
@@ -157,7 +157,7 @@ export function CarteCommande({
       </div>
 
       {menuOuvert && (
-        <div className="absolute right-3 top-12 z-10 w-44 rounded-xl border border-slate-100 bg-white p-1 shadow-lg">
+        <div className="absolute right-3 top-12 z-10 w-44 rounded-xl border border-bleu-hero bg-white p-1 shadow-lg">
           <Link
             href={`/commandes/${commande.id}`}
             className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"

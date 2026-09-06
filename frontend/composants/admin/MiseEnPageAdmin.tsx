@@ -40,9 +40,9 @@ export function MiseEnPageAdmin({
         commandesAujourdhui={badges.commandesAujourdhui}
         messagesNonLus={badges.messagesNonLus}
       />
-      <div className="flex min-h-dvh min-w-0 flex-col lg:pl-[280px]">
-        <header className="sticky top-0 z-30 border-b-2 border-bleu-hero bg-white/95 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur sm:px-5 lg:px-6">
-          <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0 lg:pl-[280px]">
+        <header className="fixed inset-x-0 top-0 z-40 h-[var(--hauteur-en-tete)] border-b-2 border-bleu-hero bg-white px-3 pt-[env(safe-area-inset-top)] sm:px-5 lg:left-[280px] lg:px-6">
+          <div className="flex h-full items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
@@ -57,12 +57,13 @@ export function MiseEnPageAdmin({
                 {sousTitre && <p className="truncate text-sm text-slate-400">{sousTitre}</p>}
               </div>
             </div>
-            <div className="hidden shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 sm:block">
+            <div className="hidden shrink-0 rounded-xl border border-bleu-hero bg-white px-3 py-2 text-sm text-slate-600 sm:block">
               {formaterDateCourte()}
             </div>
           </div>
         </header>
-        <main className="flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 lg:px-6">
+        <div className="h-[var(--hauteur-en-tete)]" aria-hidden />
+        <main className="px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 lg:px-6">
           {children}
         </main>
       </div>

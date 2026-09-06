@@ -68,7 +68,7 @@ export function PageFactureCommande() {
           )}
           <Link
             href={`/commandes/${commande.id}`}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-bleu-hero bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
             Retour à la commande

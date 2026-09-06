@@ -97,7 +97,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <div className="flex w-fit items-center rounded-xl border border-slate-200">
+            <div className="flex w-fit items-center rounded-xl border border-bleu-hero">
               <button
                 type="button"
                 className="px-3 py-2 text-lg"
@@ -132,7 +132,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
       {produit.caracteristiques.length > 0 && (
         <section className="mt-10">
           <h2 className="text-lg font-semibold text-slate-900">Caractéristiques du produit</h2>
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-bleu-hero">
             <div className="grid md:grid-cols-2">
               <TableauCaracteristiques lignes={colonneGauche} />
               <TableauCaracteristiques lignes={colonneDroite} />
@@ -151,7 +151,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
               <button
                 type="button"
                 onClick={() => defiler(-1)}
-                className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white"
+                className="grid h-9 w-9 place-items-center rounded-full border border-bleu-hero bg-white"
                 aria-label="Précédent"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -159,7 +159,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
               <button
                 type="button"
                 onClick={() => defiler(1)}
-                className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white"
+                className="grid h-9 w-9 place-items-center rounded-full border border-bleu-hero bg-white"
                 aria-label="Suivant"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -189,7 +189,7 @@ function TableauCaracteristiques({
   return (
     <div>
       {lignes.map((ligne) => (
-        <div key={ligne.libelle} className="grid grid-cols-2 border-b border-slate-100 text-sm last:border-b-0">
+        <div key={ligne.libelle} className="grid grid-cols-2 border-b border-bleu-hero text-sm last:border-b-0">
           <p className="bg-slate-50 px-4 py-2.5 text-slate-500">{ligne.libelle}</p>
           <p className="px-4 py-2.5 font-medium text-slate-800">{ligne.valeur}</p>
         </div>

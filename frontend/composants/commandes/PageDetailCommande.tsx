@@ -122,7 +122,7 @@ export function PageDetailCommande() {
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link
           href={lienProtege("/commandes", compteReel)}
-          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          className="inline-flex items-center gap-1 rounded-xl border border-bleu-hero bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour
@@ -200,8 +200,8 @@ export function PageDetailCommande() {
             />
           </div>
 
-          <section ref={articlesRef} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <section ref={articlesRef} className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
+            <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
               <h2 className="inline-flex items-center gap-2 font-semibold text-slate-900">
                 <Box className="h-4 w-4 text-violet-marque" />
                 Articles de la commande
@@ -212,7 +212,7 @@ export function PageDetailCommande() {
             </div>
             <div className="space-y-3 p-3 md:hidden">
               {commande.lignes.map((ligne) => (
-                <article key={ligne.id} className="flex gap-3 rounded-xl border border-slate-100 p-3">
+                <article key={ligne.id} className="flex gap-3 rounded-xl border border-bleu-hero p-3">
                   <img src={ligne.image ?? ""} alt="" className="h-14 w-14 rounded-xl bg-slate-100 object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-800">{ligne.nomProduit}</p>
@@ -241,7 +241,7 @@ export function PageDetailCommande() {
                 </thead>
                 <tbody>
                   {commande.lignes.map((ligne) => (
-                    <tr key={ligne.id} className="border-t border-slate-100">
+                    <tr key={ligne.id} className="border-t border-bleu-hero">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <img src={ligne.image ?? ""} alt="" className="h-12 w-12 rounded-xl bg-slate-100 object-cover" />
@@ -269,7 +269,7 @@ export function PageDetailCommande() {
             </div>
           </section>
 
-          <section ref={suiviRef} className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5">
+          <section ref={suiviRef} className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
             <h2 className="mb-5 inline-flex items-center gap-2 font-semibold text-slate-900">
               <Download className="h-4 w-4 text-violet-marque" />
               Suivi de la commande
@@ -319,7 +319,7 @@ export function PageDetailCommande() {
         </div>
 
         <aside className="space-y-4">
-          <article className="rounded-2xl border border-slate-100 bg-white p-4">
+          <article className="rounded-2xl border border-bleu-hero bg-white p-4">
             <h3 className="mb-3 font-semibold text-slate-900">Détails de la commande</h3>
             <dl className="space-y-2 text-sm">
               <LigneDetail libelle="N° commande" valeur={`#${commande.numeroCommande}`} />
@@ -355,7 +355,7 @@ export function PageDetailCommande() {
           </article>
 
           {client && (
-            <article className="rounded-2xl border border-slate-100 bg-white p-4">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900">Informations du client</h3>
                 {compteReel && (
@@ -380,7 +380,7 @@ export function PageDetailCommande() {
             </article>
           )}
 
-          <article className="rounded-2xl border border-slate-100 bg-white p-4">
+          <article className="rounded-2xl border border-bleu-hero bg-white p-4">
             <h3 className="mb-3 font-semibold text-slate-900">Paiement</h3>
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm text-slate-700">{paiement?.libelleMode ?? "Paiement à la commande"}</p>
@@ -409,7 +409,7 @@ export function PageDetailCommande() {
             </Link>
           </article>
 
-          <article className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
+          <article className="space-y-2 rounded-2xl border border-bleu-hero bg-white p-4">
             <h3 className="mb-2 font-semibold text-slate-900">Actions</h3>
             {paiement?.statut !== "PAYE" && !["ANNULEE", "REFUSEE"].includes(commande.statut) && (
               <Link
@@ -431,14 +431,14 @@ export function PageDetailCommande() {
             <button
               type="button"
               onClick={() => suiviRef.current?.scrollIntoView({ behavior: "smooth" })}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-bleu-hero py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <Eye className="h-4 w-4" />
               Suivre la commande
             </button>
             <Link
               href={lienMessagerie(compteReel)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-bleu-hero py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <Headset className="h-4 w-4" />
               Contacter le support
@@ -465,7 +465,7 @@ function CarteMetrique({
   action?: ReactNode;
 }) {
   return (
-    <article className="rounded-2xl border border-slate-100 bg-white p-4">
+    <article className="rounded-2xl border border-bleu-hero bg-white p-4">
       <p className="inline-flex items-center gap-2 text-xs text-slate-500">
         {icone}
         {titre}

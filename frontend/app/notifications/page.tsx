@@ -56,7 +56,7 @@ export default function PageNotifications() {
             key={notification.id}
             href={notification.lien ?? "/"}
             className={`block rounded-2xl border p-4 ${
-              notification.lue ? "border-slate-100 bg-white" : "border-violet-100 bg-violet-50"
+              notification.lue ? "border-bleu-hero bg-white" : "border-bleu-hero bg-violet-50"
             }`}
           >
             <p className="font-semibold text-slate-800">{notification.titre}</p>

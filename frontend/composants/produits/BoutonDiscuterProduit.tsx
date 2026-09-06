@@ -33,9 +33,9 @@ export function BoutonDiscuterProduit({
   }
 
   const classeCarte =
-    "shrink-0 rounded-full border border-slate-900 bg-white px-2 py-1 text-[10px] font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 sm:px-2.5 sm:text-[11px]";
+    "shrink-0 rounded-full border border-bleu-hero bg-white px-2 py-1 text-[10px] font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 sm:px-2.5 sm:text-[11px]";
   const classeFiche =
-    "w-full rounded-full border border-slate-900 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 sm:w-auto sm:px-5";
+    "w-full rounded-full border border-bleu-hero bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 sm:w-auto sm:px-5";
 
   return (
     <button

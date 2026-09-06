@@ -59,7 +59,7 @@ export function PageTableauDeBordAdmin() {
           </section>
 
           <section className="grid gap-4 xl:grid-cols-12">
-            <article className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 xl:col-span-5">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5 xl:col-span-5">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-800">Commandes récentes</h2>
                 <Link href="/admin/commandes" className="text-sm font-medium text-violet-marque hover:underline">
@@ -78,7 +78,7 @@ export function PageTableauDeBordAdmin() {
                   </thead>
                   <tbody>
                     {tableau.commandesRecentes.map((commande) => (
-                      <tr key={commande.id} className="border-t border-slate-50">
+                      <tr key={commande.id} className="border-t border-bleu-hero">
                         <td className="px-2 py-3">
                           <Link href={`/admin/commandes/${commande.id}`} className="font-medium text-slate-800">
                             #{commande.numeroCommande}
@@ -98,7 +98,7 @@ export function PageTableauDeBordAdmin() {
               </div>
             </article>
 
-            <article className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 xl:col-span-4">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5 xl:col-span-4">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-800">Messages non lus</h2>
                 <Link href="/admin/messagerie" className="text-sm font-medium text-violet-marque hover:underline">
@@ -137,7 +137,7 @@ export function PageTableauDeBordAdmin() {
               </div>
             </article>
 
-            <article className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 xl:col-span-3">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5 xl:col-span-3">
               <h2 className="mb-4 text-base font-semibold text-slate-800">Statistiques des ventes</h2>
               <p className="mb-3 text-xs text-slate-400">7 derniers jours</p>
               <GraphiqueVentes points={tableau.ventes} />
@@ -145,7 +145,7 @@ export function PageTableauDeBordAdmin() {
           </section>
 
           <section className="grid gap-4 lg:grid-cols-12">
-            <article className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 lg:col-span-7">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5 lg:col-span-7">
               <h2 className="mb-4 text-base font-semibold text-slate-800">Activité récente</h2>
               <ol className="space-y-3">
                 {tableau.activites.map((activite) => (
@@ -161,7 +161,7 @@ export function PageTableauDeBordAdmin() {
               </ol>
             </article>
 
-            <article className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 lg:col-span-5">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5 lg:col-span-5">
               <h2 className="mb-4 text-base font-semibold text-slate-800">Répartition des commandes</h2>
               <RepartitionCommandes repartition={tableau.repartition} />
             </article>
@@ -186,7 +186,7 @@ function CarteStat({
   couleur: string;
 }) {
   return (
-    <article className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white px-4 py-4">
+    <article className="flex items-center gap-4 rounded-2xl border border-bleu-hero bg-white px-4 py-4">
       <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${couleur}`}>
         <Icone className="h-5 w-5" />
       </span>

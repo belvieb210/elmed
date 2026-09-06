@@ -97,7 +97,7 @@ function ListeCommandes() {
               className={`shrink-0 rounded-xl px-3 py-1.5 text-sm font-medium ${
                 onglet === item.id
                   ? "bg-bleu-hero text-white"
-                  : "border border-slate-200 bg-white text-slate-600"
+                  : "border border-bleu-hero bg-white text-slate-600"
               }`}
             >
               {item.libelle} ({item.compte})
@@ -112,7 +112,7 @@ function ListeCommandes() {
               setTri(evenement.target.value);
               setPage(1);
             }}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none"
+            className="rounded-xl border border-bleu-hero bg-white px-3 py-1.5 text-sm text-slate-700 outline-none"
           >
             <option value="recentes">Plus récentes</option>
             <option value="anciennes">Plus anciennes</option>
@@ -123,7 +123,7 @@ function ListeCommandes() {
       </div>
 
       {pageCommandes.length === 0 ? (
-        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-sm text-slate-500">
+        <div className="rounded-2xl border border-bleu-hero bg-white p-8 text-sm text-slate-500">
           Aucune commande dans cet onglet.
         </div>
       ) : (

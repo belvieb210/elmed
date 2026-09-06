@@ -10,6 +10,7 @@
   --texte-doux: #6b7280;
   --orange-paiement: #ff6a00;
   --orange-paiement-fonce: #e85f00;
+  --hauteur-en-tete: calc(4.5rem + env(safe-area-inset-top, 0px));
 }
 
 @theme inline {
@@ -48,6 +49,19 @@ body {
 
 .carte-douce {
   box-shadow: 0 8px 24px rgba(31, 41, 55, 0.04);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+textarea,
+select {
+  border-color: var(--bleu-hero);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus {
+  border-color: var(--bleu-hero);
+  box-shadow: 0 0 0 4px rgb(79 116 255 / 0.12);
 }
 
 @media (max-width: 1023px) {

@@ -18,7 +18,7 @@ export function BoutonRetourEtape({
   libelle?: string;
 }) {
   const classe =
-    "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50";
+    "inline-flex items-center gap-2 rounded-xl border border-bleu-hero bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50";
 
   if (href) {
     return (

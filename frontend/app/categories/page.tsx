@@ -40,7 +40,7 @@ export default function PageCategories() {
             <Link
               key={categorie.id}
               href={`/produits?categorie=${categorie.slug}`}
-              className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:border-violet-200"
+              className="rounded-2xl border border-bleu-hero bg-white p-5 transition hover:border-bleu-hero"
             >
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-clair text-violet-marque">
                 <Icone className="h-6 w-6" />

@@ -22,7 +22,7 @@ export function BarriereCompte({
   if (compteReel && children) return children;
 
   return (
-    <div className="mx-auto max-w-xl rounded-3xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">
+    <div className="mx-auto max-w-xl rounded-3xl border border-bleu-hero bg-white px-6 py-12 text-center shadow-sm">
       <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-violet-clair text-violet-marque">
         <LockKeyhole className="h-6 w-6" />
       </span>
@@ -37,7 +37,7 @@ export function BarriereCompte({
         </Link>
         <Link
           href={lienInscription(chemin)}
-          className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="rounded-xl border border-bleu-hero px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
           Créer un compte
         </Link>

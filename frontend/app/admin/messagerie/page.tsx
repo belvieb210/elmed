@@ -64,8 +64,8 @@ function MessagerieAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Messagerie" sousTitre="Toutes les conversations clients">
-      <div className="grid h-[calc(100dvh-10rem)] overflow-hidden rounded-2xl border border-slate-100 bg-white lg:grid-cols-[280px_1fr]">
-        <aside className="border-b border-slate-100 lg:border-b-0 lg:border-r">
+      <div className="grid h-[calc(100dvh-10rem)] overflow-hidden rounded-2xl border border-bleu-hero bg-white lg:grid-cols-[280px_1fr]">
+        <aside className="border-b border-bleu-hero lg:border-b-0 lg:border-r">
           <div className="max-h-48 overflow-y-auto lg:max-h-none lg:h-full">
             {conversations.map((conversation) => (
               <button
@@ -99,7 +99,7 @@ function MessagerieAdmin() {
         </aside>
 
         <section className="flex min-h-0 flex-col">
-          <div className="border-b border-slate-100 px-4 py-3">
+          <div className="border-b border-bleu-hero px-4 py-3">
             <p className="text-sm font-semibold text-slate-800">{nomClient}</p>
           </div>
           <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -108,7 +108,7 @@ function MessagerieAdmin() {
               return (
                 <div key={message.id} className={`flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
                   {fiche ? (
-                    <div className="max-w-[85%] rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                    <div className="max-w-[85%] rounded-2xl border border-bleu-hero bg-white p-3 text-sm">
                       <p className="font-semibold">{fiche.nom}</p>
                       <p className="text-slate-500">{formaterMontant(fiche.prix)}</p>
                     </div>
@@ -128,12 +128,12 @@ function MessagerieAdmin() {
               );
             })}
           </div>
-          <form onSubmit={envoyer} className="flex gap-2 border-t border-slate-100 p-3">
+          <form onSubmit={envoyer} className="flex gap-2 border-t border-bleu-hero p-3">
             <input
               value={contenu}
               onChange={(e) => setContenu(e.target.value)}
               placeholder="Répondre au client..."
-              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
+              className="flex-1 rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
             />
             <button type="submit" className="grid h-11 w-11 place-items-center rounded-xl bg-violet-marque text-white">
               <Send className="h-4 w-4" />

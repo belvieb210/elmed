@@ -27,7 +27,7 @@ export default function PageParametresAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Paramètres" sousTitre="Sécurité du compte gestionnaire">
-      <form onSubmit={changer} className="max-w-lg space-y-4 rounded-2xl border border-slate-100 bg-white p-6">
+      <form onSubmit={changer} className="max-w-lg space-y-4 rounded-2xl border border-bleu-hero bg-white p-6">
         <ChampMotDePasse
           label="Mot de passe actuel"
           value={motDePasseActuel}

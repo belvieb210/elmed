@@ -19,7 +19,7 @@ export default function PageClientsAdmin() {
     <MiseEnPageAdmin titre="Clients" sousTitre="Comptes clients inscrits">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {clients.map((client) => (
-          <article key={client.id} className="rounded-2xl border border-slate-100 bg-white p-4">
+          <article key={client.id} className="rounded-2xl border border-bleu-hero bg-white p-4">
             <div className="flex items-center gap-3">
               <img
                 src={client.photoProfil ?? "https://i.pravatar.cc/80?img=20"}

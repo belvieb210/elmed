@@ -58,8 +58,8 @@ export function GalerieProduit({
       <button
         type="button"
         onClick={() => setIndexActif(index)}
-        className={`${classe} relative overflow-hidden rounded-xl border-2 ${
-          index === indexActif ? "border-violet-marque" : "border-slate-200"
+        className={`${classe} relative overflow-hidden rounded-xl border-2 border-bleu-hero ${
+          index === indexActif ? "ring-2 ring-bleu-hero ring-offset-1" : ""
         }`}
       >
         <img src={urlVignette(media)} alt="" className="h-full w-full object-cover" />
@@ -96,7 +96,7 @@ export function GalerieProduit({
           <button
             type="button"
             onClick={() => setDebutVignettes((actuel) => Math.min(actuel + 1, Math.max(0, liste.length - visible)))}
-            className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 bg-white"
+            className="grid h-8 w-8 place-items-center rounded-full border border-bleu-hero bg-white"
             aria-label="Voir plus de médias"
           >
             <ChevronDown className="h-4 w-4" />

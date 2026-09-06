@@ -18,7 +18,7 @@ export default function PageCommandesAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Commandes" sousTitre="Toutes les commandes clients">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-400">
@@ -32,7 +32,7 @@ export default function PageCommandesAdmin() {
             </thead>
             <tbody>
               {commandes.map((commande) => (
-                <tr key={commande.id} className="border-t border-slate-50">
+                <tr key={commande.id} className="border-t border-bleu-hero">
                   <td className="px-4 py-3">
                     <Link href={`/admin/commandes/${commande.id}`} className="font-semibold text-violet-marque">
                       #{commande.numeroCommande}

@@ -47,7 +47,7 @@ function FormulaireConnexion() {
             autoComplete="email"
             placeholder="nina.v@example.com"
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
+            className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3.5 py-2.5 text-sm outline-none transition focus:border-bleu-hero focus:ring-4 focus:ring-bleu-hero/15"
             required
           />
         </label>

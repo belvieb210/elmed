@@ -25,7 +25,7 @@ export function CarteProduit({ produit }: { produit: Produit }) {
   }
 
   return (
-    <article className="carte-douce overflow-hidden rounded-2xl border border-slate-100 bg-white">
+    <article className="carte-douce overflow-hidden rounded-2xl border border-bleu-hero bg-white">
       <Link href={`/produits/${produit.id}`} className="block">
         <div className="aspect-[5/4] overflow-hidden bg-slate-100">
           <img

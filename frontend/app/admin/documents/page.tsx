@@ -25,7 +25,7 @@ export default function PageDocumentsAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Documents" sousTitre="Factures, proformas et pièces liées">
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-400">
@@ -39,7 +39,7 @@ export default function PageDocumentsAdmin() {
             </thead>
             <tbody>
               {documents.map((document) => (
-                <tr key={document.id} className="border-t border-slate-50">
+                <tr key={document.id} className="border-t border-bleu-hero">
                   <td className="px-4 py-3 font-medium">{document.numeroDocument}</td>
                   <td className="px-4 py-3 text-slate-500">{document.typeDocument}</td>
                   <td className="px-4 py-3 text-slate-600">{document.nomClient}</td>

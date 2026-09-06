@@ -74,7 +74,7 @@ export function BarreLaterale() {
           <div className="mb-4 grid grid-cols-2 gap-2 px-1 sm:hidden">
             <Link
               href={lienConnexion(chemin)}
-              className="rounded-xl border border-slate-200 px-2 py-2 text-center text-xs font-semibold text-slate-700"
+              className="rounded-xl border border-bleu-hero px-2 py-2 text-center text-xs font-semibold text-slate-700"
             >
               Connexion
             </Link>
@@ -146,7 +146,7 @@ export function BarreLaterale() {
                 </Link>
                 <Link
                   href={lienInscription("/messagerie")}
-                  className="flex w-full items-center justify-center rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-violet-marque"
+                  className="flex w-full items-center justify-center rounded-xl border border-bleu-hero bg-white px-3 py-2 text-sm font-medium text-violet-marque"
                 >
                   Créer un compte
                 </Link>

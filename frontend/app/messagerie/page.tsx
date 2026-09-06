@@ -103,7 +103,7 @@ function FilDiscussion() {
       />
 
       {!compteReel && (
-        <div className="mb-4 rounded-2xl border border-violet-100 bg-violet-clair px-4 py-3 text-sm leading-6 text-slate-700">
+        <div className="mb-4 rounded-2xl border border-bleu-hero bg-violet-clair px-4 py-3 text-sm leading-6 text-slate-700">
           Vous discutez sans compte. Pour revoir tous les messages plus tard,{" "}
           <Link href={lienInscription("/messagerie")} className="font-semibold text-violet-marque hover:underline">
             créez un compte
@@ -116,7 +116,7 @@ function FilDiscussion() {
         </div>
       )}
 
-      <div className="flex h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white sm:h-[68vh]">
+      <div className="flex h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
         <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
           {!pret && <p className="text-sm text-slate-400">Ouverture de la discussion...</p>}
           {pret &&
@@ -128,7 +128,7 @@ function FilDiscussion() {
                     <div className="max-w-[92%] sm:max-w-[80%]">
                       <Link
                         href={`/produits/${fiche.produitId}`}
-                        className="block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                        className="block overflow-hidden rounded-2xl border border-bleu-hero bg-white shadow-sm"
                       >
                         {fiche.image && (
                           <img src={fiche.image} alt={fiche.nom} className="h-36 w-full object-cover" />
@@ -159,12 +159,12 @@ function FilDiscussion() {
               );
             })}
         </div>
-        <form onSubmit={envoyer} className="flex gap-2 border-t border-slate-100 p-3">
+        <form onSubmit={envoyer} className="flex gap-2 border-t border-bleu-hero p-3">
           <input
             value={contenu}
             onChange={(e) => setContenu(e.target.value)}
             placeholder="Écrire un message sur ce produit..."
-            className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
+            className="flex-1 rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
           />
           <button
             type="submit"

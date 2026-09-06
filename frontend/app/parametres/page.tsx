@@ -35,7 +35,7 @@ export default function PageParametres() {
         description="La sécurité du compte (mot de passe) est disponible après inscription ou connexion."
       >
         <EnTetePage titre="Paramètres" description="Sécurité de votre compte client." />
-        <form onSubmit={changer} className="max-w-lg space-y-4 rounded-2xl border border-slate-100 bg-white p-6">
+        <form onSubmit={changer} className="max-w-lg space-y-4 rounded-2xl border border-bleu-hero bg-white p-6">
           <ChampMotDePasse
             label="Mot de passe actuel"
             value={motDePasseActuel}

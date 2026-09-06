@@ -75,7 +75,7 @@ export function BarreLateraleAdmin({
           </button>
         </div>
 
-        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-bleu-hero bg-slate-50 px-3 py-3">
           <img
             src={utilisateur?.photoProfil ?? "https://i.pravatar.cc/80?img=12"}
             alt={utilisateur?.nomComplet ?? "Gestionnaire"}

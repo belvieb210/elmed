@@ -57,7 +57,7 @@ export function PageLivraisonCommande() {
 
         {commande && (
           <div className="mt-6 grid items-start gap-6 lg:grid-cols-12">
-            <section className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm lg:col-span-7 xl:col-span-8">
+            <section className="rounded-2xl border border-bleu-hero bg-white p-6 text-center shadow-sm lg:col-span-7 xl:col-span-8">
               <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500 text-white">
                 <Check className="h-10 w-10" strokeWidth={3} />
               </span>
@@ -88,7 +88,7 @@ export function PageLivraisonCommande() {
                 </Link>
                 <Link
                   href={`/commandes/${commande.id}/facture`}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-bleu-hero px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   <FileText className="h-4 w-4" />
                   Voir la facture
@@ -109,7 +109,7 @@ export function PageLivraisonCommande() {
             </section>
 
             <aside className="space-y-4 lg:col-span-5 xl:col-span-4">
-              <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <article className="rounded-2xl border border-bleu-hero bg-white p-5 shadow-sm">
                 <h3 className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <Package className="h-4 w-4 text-orange-paiement" />
                   Livraison / retrait
@@ -129,7 +129,7 @@ export function PageLivraisonCommande() {
                   </div>
                 )}
               </article>
-              <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <article className="rounded-2xl border border-bleu-hero bg-white p-5 shadow-sm">
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">Articles</h3>
                 <ul className="space-y-2 text-sm">
                   {commande.lignes.map((ligne) => (
@@ -141,7 +141,7 @@ export function PageLivraisonCommande() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 border-t border-slate-100 pt-3 text-right text-base font-bold">
+                <p className="mt-3 border-t border-bleu-hero pt-3 text-right text-base font-bold">
                   {formaterMontant(commande.montantTotal)}
                 </p>
               </article>

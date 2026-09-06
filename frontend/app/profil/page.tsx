@@ -50,7 +50,7 @@ export default function PageProfil() {
         description="Le profil, l’adresse et les informations société sont liés à un compte MateMedical."
       >
       <EnTetePage titre="Mon profil" description="Informations de votre établissement." />
-      <form onSubmit={enregistrer} className="max-w-2xl space-y-4 rounded-2xl border border-slate-100 bg-white p-6">
+      <form onSubmit={enregistrer} className="max-w-2xl space-y-4 rounded-2xl border border-bleu-hero bg-white p-6">
         {Object.entries({
           prenom: "Prénom",
           nom: "Nom",
@@ -64,7 +64,7 @@ export default function PageProfil() {
             <input
               value={formulaire[cle as keyof typeof formulaire]}
               onChange={(e) => setFormulaire((actuel) => ({ ...actuel, [cle]: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
+              className="mt-1 w-full rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
             />
           </label>
         ))}
@@ -75,7 +75,7 @@ export default function PageProfil() {
           <button
             type="button"
             onClick={deconnecter}
-            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
+            className="rounded-xl border border-bleu-hero px-4 py-2.5 text-sm"
           >
             Déconnexion
           </button>

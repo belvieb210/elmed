@@ -36,7 +36,7 @@ export function ApercuProforma({
   const payee = paiement?.statut === "PAYE";
 
   return (
-    <section className="w-full overflow-x-auto rounded-2xl border border-slate-100 bg-white p-2 sm:p-5">
+    <section className="w-full overflow-x-auto rounded-2xl border border-bleu-hero bg-white p-2 sm:p-5">
       <div className="relative mx-auto w-full max-w-3xl border-[3px] border-[#2B6CB0] bg-white px-3 py-4 text-[#1E4B8A] sm:px-6 sm:py-5">
         <p className="pointer-events-none absolute inset-0 flex items-center justify-center -rotate-[28deg] select-none text-4xl font-bold tracking-widest text-[#8FB8DC]/30 sm:text-7xl">
           ELMED

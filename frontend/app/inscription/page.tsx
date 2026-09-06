@@ -61,7 +61,7 @@ function FormulaireInscription() {
               value={prenom}
               autoComplete="given-name"
               onChange={(e) => setPrenom(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
+              className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3.5 py-2.5 text-sm outline-none transition focus:border-bleu-hero focus:ring-4 focus:ring-bleu-hero/15"
               required
             />
           </label>
@@ -71,7 +71,7 @@ function FormulaireInscription() {
               value={nom}
               autoComplete="family-name"
               onChange={(e) => setNom(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
+              className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3.5 py-2.5 text-sm outline-none transition focus:border-bleu-hero focus:ring-4 focus:ring-bleu-hero/15"
               required
             />
           </label>
@@ -85,7 +85,7 @@ function FormulaireInscription() {
             autoComplete="email"
             placeholder="nina.v@example.com"
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
+            className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3.5 py-2.5 text-sm outline-none transition focus:border-bleu-hero focus:ring-4 focus:ring-bleu-hero/15"
             required
           />
         </label>
@@ -97,7 +97,7 @@ function FormulaireInscription() {
               value={telephone}
               autoComplete="tel"
               onChange={(e) => setTelephone(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
+              className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3.5 py-2.5 text-sm outline-none transition focus:border-bleu-hero focus:ring-4 focus:ring-bleu-hero/15"
             />
           </label>
           <label className="block text-sm font-medium text-slate-700">
@@ -106,7 +106,7 @@ function FormulaireInscription() {
               value={nomSociete}
               autoComplete="organization"
               onChange={(e) => setNomSociete(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-violet-marque focus:ring-4 focus:ring-violet-marque/10"
+              className="mt-1.5 w-full rounded-xl border border-bleu-hero px-3.5 py-2.5 text-sm outline-none transition focus:border-bleu-hero focus:ring-4 focus:ring-bleu-hero/15"
             />
           </label>
         </div>
