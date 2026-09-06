@@ -19,7 +19,7 @@ function StepperCommande({ statut }: { statut: string }) {
   const annulee = actif < 0;
 
   return (
-    <div className="min-w-[220px]">
+    <div className="w-full min-w-0">
       <div className="mb-2 flex items-center px-1">
         {etapesSuivi.map((etape, index) => {
           const complete = !annulee && index <= actif;
@@ -71,9 +71,9 @@ export function CarteCommande({
   }
 
   return (
-    <article className="relative rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+    <article className="relative rounded-2xl border border-slate-100 bg-white p-3 shadow-sm sm:p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-        <div className="flex min-w-0 items-center gap-3 lg:w-64">
+        <div className="flex min-w-0 items-center gap-3 pr-8 lg:w-64 lg:pr-0">
           <input
             type="checkbox"
             checked={selectionnee}

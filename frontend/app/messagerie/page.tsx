@@ -55,14 +55,14 @@ export default function PageMessagerie() {
   return (
     <MiseEnPageClient>
       <EnTetePage titre="Messagerie" description="Échanges directs avec l'équipe MateMedical." />
-      <div className="flex h-[68vh] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white">
+      <div className="flex h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white sm:h-[68vh]">
         <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
           {messages.map((message) => {
             const fiche = ficheDuMessage(message);
             return (
               <div key={message.id} className={`flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
                 {fiche ? (
-                  <div className="max-w-[80%]">
+                  <div className="max-w-[92%] sm:max-w-[80%]">
                     <Link
                       href={`/produits/${fiche.produitId}`}
                       className="block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
@@ -82,7 +82,7 @@ export default function PageMessagerie() {
                   </div>
                 ) : (
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                    className={`max-w-[92%] rounded-2xl px-4 py-2.5 text-sm sm:max-w-[80%] ${
                       message.estMoi ? "bg-violet-marque text-white" : "bg-slate-100 text-slate-800"
                     }`}
                   >

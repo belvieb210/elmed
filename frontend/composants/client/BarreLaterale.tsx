@@ -54,7 +54,7 @@ export function BarreLaterale() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[270px] flex-col border-r border-slate-100 bg-white px-4 py-5 transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(270px,86vw)] flex-col border-r border-slate-100 bg-white px-4 py-5 pt-[max(1.25rem,env(safe-area-inset-top))] transition-transform duration-200 lg:static lg:translate-x-0 ${
           menuMobileOuvert ? "translate-x-0" : "-translate-x-full"
         }`}
       >

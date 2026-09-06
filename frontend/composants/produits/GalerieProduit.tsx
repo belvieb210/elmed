@@ -106,7 +106,7 @@ export function GalerieProduit({
         )}
       </div>
 
-      <div className="relative min-h-[280px] flex-1 overflow-hidden rounded-2xl bg-slate-50">
+      <div className="relative min-h-[220px] flex-1 overflow-hidden rounded-2xl bg-slate-50 sm:min-h-[280px]">
         {estVideo ? (
           <video
             key={mediaActif.url}
@@ -117,7 +117,7 @@ export function GalerieProduit({
             playsInline
             muted
             autoPlay
-            className="h-full max-h-[460px] w-full bg-black object-contain"
+            className="h-full max-h-[320px] w-full bg-black object-contain sm:max-h-[460px]"
           >
             Votre navigateur ne peut pas lire cette vidéo.
           </video>
@@ -125,7 +125,7 @@ export function GalerieProduit({
           <img
             src={mediaActif.url}
             alt={nomProduit}
-            className="h-full max-h-[460px] w-full object-contain"
+            className="h-full max-h-[320px] w-full object-contain sm:max-h-[460px]"
           />
         )}
         <div className="absolute right-3 top-3 flex flex-col gap-2">

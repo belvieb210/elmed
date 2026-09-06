@@ -33,9 +33,9 @@ export function BoutonDiscuterProduit({
   }
 
   const classeCarte =
-    "shrink-0 rounded-full border border-slate-900 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60";
+    "shrink-0 rounded-full border border-slate-900 bg-white px-2 py-1 text-[10px] font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 sm:px-2.5 sm:text-[11px]";
   const classeFiche =
-    "rounded-full border border-slate-900 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60";
+    "w-full rounded-full border border-slate-900 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 sm:w-auto sm:px-5";
 
   return (
     <button
@@ -44,7 +44,7 @@ export function BoutonDiscuterProduit({
       disabled={enCours}
       className={variante === "carte" ? classeCarte : classeFiche}
     >
-      {enCours ? "..." : "Discuter ici"}
+      {enCours ? "..." : variante === "carte" ? "Discuter" : "Discuter ici"}
     </button>
   );
 }

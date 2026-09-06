@@ -96,8 +96,8 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
             Stock disponible : {produit.quantiteStock ?? 0} · Prix unitaire hors taxes
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <div className="flex items-center rounded-xl border border-slate-200">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="flex w-fit items-center rounded-xl border border-slate-200">
               <button
                 type="button"
                 className="px-3 py-2 text-lg"
@@ -119,7 +119,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
               type="button"
               onClick={ajouter}
               disabled={enCours}
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-marque px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-marque px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-fonce disabled:opacity-60 sm:w-auto"
             >
               <ShoppingCart className="h-4 w-4" />
               {enCours ? "Ajout..." : "Ajouter au panier"}
@@ -132,7 +132,7 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
       {produit.caracteristiques.length > 0 && (
         <section className="mt-10">
           <h2 className="text-lg font-semibold text-slate-900">Caractéristiques du produit</h2>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
             <div className="grid md:grid-cols-2">
               <TableauCaracteristiques lignes={colonneGauche} />
               <TableauCaracteristiques lignes={colonneDroite} />
@@ -144,7 +144,9 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
       {produit.produitsSimilaires.length > 0 && (
         <section className="mt-10">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Autres recommandations pour votre entreprise</h2>
+            <h2 className="pr-2 text-base font-semibold text-slate-900 sm:text-lg">
+              Autres recommandations pour votre entreprise
+            </h2>
             <div className="flex gap-2">
               <button
                 type="button"

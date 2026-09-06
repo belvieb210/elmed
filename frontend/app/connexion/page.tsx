@@ -31,7 +31,7 @@ export default function PageConnexion() {
     <div className="grid min-h-screen place-items-center bg-fond-page px-4">
       <form
         onSubmit={soumettre}
-        className="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-8 shadow-sm"
+        className="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-8"
       >
         <LogoMateMedical />
         <h1 className="mt-6 text-2xl font-semibold text-slate-900">Connexion client</h1>

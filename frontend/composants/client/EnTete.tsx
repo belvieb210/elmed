@@ -18,7 +18,7 @@ export function EnTete() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur lg:px-6">
+    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur sm:px-4 lg:px-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -35,14 +35,15 @@ export function EnTete() {
             <input
               value={texteRecherche}
               onChange={(e) => setTexteRecherche(e.target.value)}
-              placeholder="Rechercher un produit, un réactif, un équipement..."
-              className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-slate-400"
+              placeholder="Rechercher un produit..."
+              className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-slate-400 sm:h-11"
             />
             <button
               type="submit"
-              className="m-1 rounded-full bg-violet-marque px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-fonce sm:px-5"
+              className="m-1 rounded-full bg-violet-marque px-3 py-1.5 text-sm font-medium text-white transition hover:bg-violet-fonce sm:px-5 sm:py-2"
             >
-              Rechercher
+              <span className="sm:hidden">OK</span>
+              <span className="hidden sm:inline">Rechercher</span>
             </button>
           </div>
         </form>

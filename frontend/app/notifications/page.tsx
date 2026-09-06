@@ -31,12 +31,12 @@ export default function PageNotifications() {
 
   return (
     <MiseEnPageClient>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <EnTetePage titre="Notifications" description="Alertes commandes, messages et factures." />
         <button
           type="button"
           onClick={toutLire}
-          className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-violet-marque"
+          className="shrink-0 rounded-xl bg-white px-3 py-2 text-sm font-medium text-violet-marque"
         >
           Tout marquer lu
         </button>

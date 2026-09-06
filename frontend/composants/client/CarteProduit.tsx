@@ -41,16 +41,14 @@ export function CarteProduit({ produit }: { produit: Produit }) {
             {produit.nom}
           </h3>
         </Link>
-        <div className="mt-3 flex items-center gap-2">
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
-            {formaterMontant(produit.prix)}
-          </p>
+        <p className="mt-3 text-sm font-semibold text-slate-900">{formaterMontant(produit.prix)}</p>
+        <div className="mt-2 flex items-center justify-between gap-2">
           <BoutonDiscuterProduit produitId={produit.id} variante="carte" />
           <button
             type="button"
             onClick={ajouter}
             disabled={enCours}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-violet-marque text-white transition hover:bg-violet-fonce disabled:opacity-60"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-marque text-white transition hover:bg-violet-fonce disabled:opacity-60"
             aria-label={`Ajouter ${produit.nom} au panier`}
           >
             <ShoppingCart className="h-4 w-4" />

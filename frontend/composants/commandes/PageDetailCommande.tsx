@@ -98,7 +98,7 @@ export function PageDetailCommande() {
       </p>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Commande #{commande.numeroCommande}</h1>
+        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">Commande #{commande.numeroCommande}</h1>
         <button
           type="button"
           onClick={copierNumero}
@@ -179,8 +179,26 @@ export function PageDetailCommande() {
                 {nombreArticles} article{nombreArticles > 1 ? "s" : ""}
               </span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-sm">
+            <div className="space-y-3 p-3 md:hidden">
+              {commande.lignes.map((ligne) => (
+                <article key={ligne.id} className="flex gap-3 rounded-xl border border-slate-100 p-3">
+                  <img src={ligne.image ?? ""} alt="" className="h-14 w-14 rounded-xl bg-slate-100 object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-800">{ligne.nomProduit}</p>
+                    <p className="text-xs text-slate-400">
+                      {ligne.sku ? `SKU : ${ligne.sku}` : ""}
+                      {ligne.numeroLot ? ` · Lot : ${ligne.numeroLot}` : ""}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {ligne.quantite} × {formaterMontant(ligne.prixUnitaire)}
+                    </p>
+                    <p className="text-sm font-semibold">{formaterMontant(ligne.sousTotal)}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-slate-500">
                   <tr>
                     <th className="px-4 py-2 font-medium">Produit</th>
@@ -220,7 +238,7 @@ export function PageDetailCommande() {
             </div>
           </section>
 
-          <section ref={suiviRef} className="rounded-2xl border border-slate-100 bg-white p-5">
+          <section ref={suiviRef} className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5">
             <h2 className="mb-5 inline-flex items-center gap-2 font-semibold text-slate-900">
               <Download className="h-4 w-4 text-violet-marque" />
               Suivi de la commande

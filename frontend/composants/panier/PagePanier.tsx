@@ -166,7 +166,7 @@ export function PagePanier() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="mb-3 flex items-center justify-between rounded-xl bg-slate-100 px-4 py-2.5 text-sm">
+            <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-slate-100 px-3 py-2.5 text-xs sm:px-4 sm:text-sm">
               <label className="flex items-center gap-2 text-slate-600">
                 <input
                   type="checkbox"
@@ -181,10 +181,10 @@ export function PagePanier() {
               <button
                 type="button"
                 onClick={supprimerSelection}
-                className="inline-flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-600"
+                className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600 sm:text-sm"
               >
                 <Trash2 className="h-4 w-4" />
-                Supprimer tout
+                Supprimer
               </button>
             </div>
 
@@ -212,11 +212,11 @@ export function PagePanier() {
                 <ArrowLeft className="h-4 w-4" />
                 Continuer mes achats
               </Link>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => setProformaOuverte(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
                   <FileText className="h-4 w-4" />
                   Facture proforma
@@ -323,16 +323,16 @@ export function PagePanier() {
       )}
 
       {proformaOuverte && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4">
-          <div className="mx-auto max-w-4xl rounded-2xl bg-white p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Facture proforma</h2>
-              <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-2 sm:p-4">
+          <div className="mx-auto max-w-4xl rounded-2xl bg-white p-3 shadow-xl sm:p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">Facture proforma</h2>
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={ouvrirPdfProforma}
                   disabled={pdfEnCours}
-                  className="rounded-xl bg-violet-marque px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="rounded-xl bg-violet-marque px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-60 sm:px-3 sm:text-sm"
                 >
                   {pdfEnCours ? "PDF..." : "Télécharger le PDF"}
                 </button>
@@ -382,49 +382,55 @@ function LigneArticle({
   }
 
   return (
-    <article className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 md:flex-row md:items-center">
-      <input
-        type="checkbox"
-        checked={selectionne}
-        onChange={(evenement) => onSelection(evenement.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-violet-marque"
-        aria-label={`Sélectionner ${article.nomProduit}`}
-      />
-      <img src={article.image ?? ""} alt="" className="h-20 w-20 rounded-xl bg-slate-100 object-cover" />
-      <div className="min-w-0 flex-1">
-        {article.nomCategorie && (
-          <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${classeCategorie(article.slugCategorie)}`}>
-            {article.nomCategorie}
-          </span>
-        )}
-        <h2 className="mt-1 font-medium text-slate-800">{article.nomProduit}</h2>
-        <p className="text-xs text-slate-400">
-          SKU : {article.sku}
-          {article.numeroLot ? ` · Lot : ${article.numeroLot}` : ""}
-        </p>
-        <p className={`mt-1 text-xs font-medium ${(article.quantiteStock ?? 0) > 0 ? "text-emerald-600" : "text-red-500"}`}>
-          {(article.quantiteStock ?? 0) > 0 ? `En stock (${article.quantiteStock})` : "Rupture de stock"}
-        </p>
+    <article className="rounded-2xl border border-slate-100 bg-white p-3 sm:p-4">
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={selectionne}
+          onChange={(evenement) => onSelection(evenement.target.checked)}
+          className="mt-2 h-4 w-4 rounded border-slate-300 text-violet-marque"
+          aria-label={`Sélectionner ${article.nomProduit}`}
+        />
+        <img src={article.image ?? ""} alt="" className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover sm:h-20 sm:w-20" />
+        <div className="min-w-0 flex-1">
+          {article.nomCategorie && (
+            <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${classeCategorie(article.slugCategorie)}`}>
+              {article.nomCategorie}
+            </span>
+          )}
+          <h2 className="mt-1 text-sm font-medium text-slate-800 sm:text-base">{article.nomProduit}</h2>
+          <p className="text-xs text-slate-400">
+            SKU : {article.sku}
+            {article.numeroLot ? ` · Lot : ${article.numeroLot}` : ""}
+          </p>
+          <p className={`mt-1 text-xs font-medium ${(article.quantiteStock ?? 0) > 0 ? "text-emerald-600" : "text-red-500"}`}>
+            {(article.quantiteStock ?? 0) > 0 ? `En stock (${article.quantiteStock})` : "Rupture de stock"}
+          </p>
+        </div>
       </div>
-      <div className="text-sm text-slate-600 md:w-40">
-        <p className="font-medium text-slate-800">{formaterMontant(article.prixUnitaire)}</p>
-        <p className="text-xs text-slate-400">
-          ({article.quantite} × {formaterMontant(article.prixUnitaire)})
-        </p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-slate-600">
+          <p className="font-medium text-slate-800">{formaterMontant(article.prixUnitaire)}</p>
+          <p className="text-xs text-slate-400">
+            ({article.quantite} × {formaterMontant(article.prixUnitaire)})
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center rounded-xl border border-slate-200">
+            <button type="button" className="px-2.5 py-1.5" disabled={attente} onClick={() => changer(article.quantite - 1)}>
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="w-8 text-center text-sm font-semibold">{article.quantite}</span>
+            <button type="button" className="px-2.5 py-1.5" disabled={attente} onClick={() => changer(article.quantite + 1)}>
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="min-w-16 text-right text-sm font-semibold">{formaterMontant(article.sousTotal)}</p>
+          <button type="button" className="text-red-500" onClick={() => changer(0)} aria-label="Retirer">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-      <div className="flex items-center rounded-xl border border-slate-200">
-        <button type="button" className="px-2.5 py-1.5" disabled={attente} onClick={() => changer(article.quantite - 1)}>
-          <Minus className="h-4 w-4" />
-        </button>
-        <span className="w-8 text-center text-sm font-semibold">{article.quantite}</span>
-        <button type="button" className="px-2.5 py-1.5" disabled={attente} onClick={() => changer(article.quantite + 1)}>
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
-      <p className="text-sm font-semibold md:w-24 md:text-right">{formaterMontant(article.sousTotal)}</p>
-      <button type="button" className="text-red-500" onClick={() => changer(0)} aria-label="Retirer">
-        <Trash2 className="h-4 w-4" />
-      </button>
     </article>
   );
 }

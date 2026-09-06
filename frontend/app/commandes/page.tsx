@@ -83,13 +83,13 @@ function ListeCommandes() {
       <EnTetePage titre="Mes commandes" description="Suivez le statut de chaque commande en temps réel." />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {onglets.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => changerOnglet(item.id)}
-              className={`rounded-xl px-3 py-1.5 text-sm font-medium ${
+              className={`shrink-0 rounded-xl px-3 py-1.5 text-sm font-medium ${
                 onglet === item.id
                   ? "bg-bleu-hero text-white"
                   : "border border-slate-200 bg-white text-slate-600"

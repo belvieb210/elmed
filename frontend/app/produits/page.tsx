@@ -49,11 +49,11 @@ function ContenuProduits() {
         description="Catalogue MateMedical : réactifs, équipements, consommables et plus."
       />
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1">
         <button
           type="button"
           onClick={() => setFiltreCategorie("")}
-          className={`rounded-full px-3 py-1.5 text-sm ${
+          className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${
             !filtreCategorie ? "bg-violet-marque text-white" : "bg-white text-slate-600"
           }`}
         >
@@ -64,7 +64,7 @@ function ContenuProduits() {
             key={categorie.id}
             type="button"
             onClick={() => setFiltreCategorie(categorie.slug)}
-            className={`rounded-full px-3 py-1.5 text-sm ${
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${
               filtreCategorie === categorie.slug
                 ? "bg-violet-marque text-white"
                 : "bg-white text-slate-600"
