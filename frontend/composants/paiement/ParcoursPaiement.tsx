@@ -109,6 +109,7 @@ export function ParcoursPaiement({
   articles,
   entrepot,
   utilisateur,
+  commandeId,
   onFermer,
   onSucces,
 }: {
@@ -116,6 +117,7 @@ export function ParcoursPaiement({
   articles: ArticlePanier[];
   entrepot?: EntrepotResume | null;
   utilisateur: Utilisateur | null;
+  commandeId?: string;
   onFermer: () => void;
   onSucces: (commande: ReponsePaiement["commande"]) => void;
 }) {
@@ -169,6 +171,7 @@ export function ParcoursPaiement({
         method: "POST",
         body: JSON.stringify({
           canal,
+          commandeId,
           telephone: extras?.telephone,
           marqueCarte: extras?.carte?.marque,
           derniersChiffres: extras?.carte?.derniers,

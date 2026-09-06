@@ -123,6 +123,14 @@ export function CarteCommande({
         </div>
 
         <div className="flex items-center gap-2 lg:w-36 lg:flex-col lg:items-stretch">
+          {paiement?.statut !== "PAYE" && !["ANNULEE", "REFUSEE"].includes(commande.statut) && (
+            <Link
+              href={`/commandes/${commande.id}/paiement`}
+              className="rounded-xl bg-orange-paiement px-3 py-2 text-center text-sm font-bold text-white hover:bg-orange-paiement-fonce"
+            >
+              Payer
+            </Link>
+          )}
           <Link
             href={`/commandes/${commande.id}`}
             className="rounded-xl bg-bleu-hero px-3 py-2 text-center text-sm font-semibold text-white hover:bg-blue-600"

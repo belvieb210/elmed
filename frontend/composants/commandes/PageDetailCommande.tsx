@@ -142,13 +142,23 @@ export function PageDetailCommande() {
         </span>
       </div>
 
-      {paiement?.statut === "PAYE" && (
+      {paiement?.statut === "PAYE" ? (
         <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
           Cette commande est payée
           {paiement.libelleMode ? ` · ${paiement.libelleMode}` : ""}
           {paiement.reference ? ` · réf. ${paiement.reference}` : ""}.
         </p>
-      )}
+      ) : !["ANNULEE", "REFUSEE"].includes(commande.statut) ? (
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-orange-900">Cette commande n&apos;est pas encore payée.</p>
+          <Link
+            href={`/commandes/${commande.id}/paiement`}
+            className="inline-flex items-center justify-center rounded-xl bg-orange-paiement px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-paiement-fonce"
+          >
+            Payer maintenant
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -377,6 +387,14 @@ export function PageDetailCommande() {
             {paiement?.datePaiement && (
               <p className="text-xs text-slate-400">{formaterDateHeure(paiement.datePaiement)}</p>
             )}
+            {paiement?.statut !== "PAYE" && !["ANNULEE", "REFUSEE"].includes(commande.statut) && (
+              <Link
+                href={`/commandes/${commande.id}/paiement`}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-orange-paiement py-2.5 text-sm font-bold text-white hover:bg-orange-paiement-fonce"
+              >
+                Payer maintenant
+              </Link>
+            )}
             <Link
               href={`/commandes/${commande.id}/facture`}
               className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-bleu-hero"
@@ -388,6 +406,14 @@ export function PageDetailCommande() {
 
           <article className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4">
             <h3 className="mb-2 font-semibold text-slate-900">Actions</h3>
+            {paiement?.statut !== "PAYE" && !["ANNULEE", "REFUSEE"].includes(commande.statut) && (
+              <Link
+                href={`/commandes/${commande.id}/paiement`}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-paiement py-2.5 text-sm font-bold text-white hover:bg-orange-paiement-fonce"
+              >
+                Payer maintenant
+              </Link>
+            )}
             <button
               type="button"
               onClick={telechargerFacture}

@@ -79,3 +79,84 @@ export async function enregistrerCommandeDepuisPanier(params: {
     return creee;
   });
 }
+
+export async function encaisserCommandeExistante(params: {
+  clientId: string;
+  commandeId: string;
+  modePaiement: ModePaiement;
+  statutPaiement: StatutPaiement;
+  reference?: string | null;
+  notes?: string | null;
+}) {
+  const commande = await baseDeDonnees.commande.findFirst({
+    where: { id: params.commandeId, clientId: params.clientId },
+    include: { paiements: { orderBy: { datePaiement: "desc" } } },
+  });
+
+  if (!commande) {
+    throw new Error("Commande introuvable.");
+  }
+  if (["ANNULEE", "REFUSEE"].includes(commande.statut)) {
+    throw new Error("Cette commande ne peut plus être payée.");
+  }
+  if (commande.paiements[0]?.statut === StatutPaiement.PAYE) {
+    throw new Error("Cette commande est déjà payée.");
+  }
+
+  const paiement = commande.paiements[0];
+  const notes = [commande.notes, params.notes].filter(Boolean).join(" · ") || null;
+
+  const miseAJour = await baseDeDonnees.$transaction(async (transaction) => {
+    if (paiement) {
+      await transaction.paiement.update({
+        where: { id: paiement.id },
+        data: {
+          modePaiement: params.modePaiement,
+          statut: params.statutPaiement,
+          reference: params.reference ?? paiement.reference,
+          datePaiement: new Date(),
+        },
+      });
+    } else {
+      await transaction.paiement.create({
+        data: {
+          commandeId: commande.id,
+          montant: commande.montantTotal,
+          modePaiement: params.modePaiement,
+          statut: params.statutPaiement,
+          reference: params.reference ?? null,
+        },
+      });
+    }
+
+    const commandeMaj = await transaction.commande.update({
+      where: { id: commande.id },
+      data: {
+        notes,
+        statut:
+          params.statutPaiement === StatutPaiement.PAYE && commande.statut === "EN_ATTENTE"
+            ? "VALIDEE"
+            : commande.statut,
+      },
+    });
+
+    await transaction.notification.create({
+      data: {
+        utilisateurId: params.clientId,
+        titre: params.statutPaiement === StatutPaiement.PAYE ? "Paiement confirmé" : "Paiement enregistré",
+        contenu:
+          params.statutPaiement === StatutPaiement.PAYE
+            ? `Le paiement de la commande ${commande.numeroCommande} a été confirmé.`
+            : `Un paiement a été enregistré pour la commande ${commande.numeroCommande}.`,
+        typeNotif: "COMMANDE",
+        lien: `/commandes/${commande.id}`,
+      },
+    });
+
+    return commandeMaj;
+  });
+
+  emettreTempsReel(params.clientId, "commande", { commandeId: commande.id });
+  emettreTempsReel(params.clientId, "notification");
+  return miseAJour;
+}
