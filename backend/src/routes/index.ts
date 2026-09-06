@@ -24,6 +24,7 @@ import {
   obtenirCommande,
   telechargerFactureCommande,
 } from "../controleurs/commandes.controleur";
+import { confirmerPaiementEnLigne, obtenirConfigurationPaiement } from "../controleurs/paiements.controleur";
 import { envoyerMessage, obtenirConversation } from "../controleurs/messages.controleur";
 import {
   listerNotifications,
@@ -61,6 +62,9 @@ routeurPrincipal.get("/commandes", listerCommandes);
 routeurPrincipal.get("/commandes/:id/facture", telechargerFactureCommande);
 routeurPrincipal.get("/commandes/:id", obtenirCommande);
 routeurPrincipal.post("/commandes", creerCommandeDepuisPanier);
+
+routeurPrincipal.get("/paiements/configuration", obtenirConfigurationPaiement);
+routeurPrincipal.post("/paiements/confirmer", confirmerPaiementEnLigne);
 
 routeurPrincipal.get("/messagerie", obtenirConversation);
 routeurPrincipal.post("/messagerie", envoyerMessage);

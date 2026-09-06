@@ -17,6 +17,7 @@ import {
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { ApercuProforma } from "@/composants/documents/ApercuProforma";
+import { ParcoursPaiement } from "@/composants/paiement/ParcoursPaiement";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi, ouvrirPdf } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
@@ -54,6 +55,7 @@ export function PagePanier() {
   const [modePaiement, setModePaiement] = useState("CARTE_BANCAIRE");
   const [enCours, setEnCours] = useState(false);
   const [proformaOuverte, setProformaOuverte] = useState(false);
+  const [paiementOuvert, setPaiementOuvert] = useState(false);
   const [pdfEnCours, setPdfEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -106,6 +108,10 @@ export function PagePanier() {
 
   async function envoyerCommande() {
     if (articles.length === 0) return;
+    if (modePaiement === "CARTE_BANCAIRE") {
+      setPaiementOuvert(true);
+      return;
+    }
     setEnCours(true);
     setMessage(null);
     try {
@@ -321,6 +327,16 @@ export function PagePanier() {
           </aside>
         </div>
       )}
+
+      <ParcoursPaiement
+        ouvert={paiementOuvert}
+        montantCommande={sousTotal}
+        utilisateur={utilisateur}
+        onFermer={() => setPaiementOuvert(false)}
+        onSucces={() => {
+          void Promise.all([chargerPanier(), chargerTableauDeBord()]);
+        }}
+      />
 
       {proformaOuverte && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-2 sm:p-4">

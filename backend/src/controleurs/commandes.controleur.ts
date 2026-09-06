@@ -1,5 +1,6 @@
 import type { Response } from "express";
 import { ModePaiement } from "@prisma/client";
+import { enregistrerCommandeDepuisPanier } from "../commandes/enregistrer-depuis-panier";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
@@ -51,12 +52,6 @@ function libelleStatut(statut: string) {
     CLOTUREE: "Clôturée",
   };
   return libelles[statut] ?? statut;
-}
-
-async function genererNumeroCommande() {
-  const annee = new Date().getFullYear();
-  const total = await baseDeDonnees.commande.count();
-  return `CMD-${annee}-${String(total + 1).padStart(5, "0")}`;
 }
 
 export async function listerCommandes(requete: RequeteAuthentifiee, reponse: Response) {
@@ -196,78 +191,33 @@ export async function obtenirCommande(requete: RequeteAuthentifiee, reponse: Res
 }
 
 export async function creerCommandeDepuisPanier(requete: RequeteAuthentifiee, reponse: Response) {
-  const clientId = requete.utilisateurId!;
   const modesValides = new Set<string>(Object.values(ModePaiement));
   const modeDemande = typeof requete.body?.modePaiement === "string" ? requete.body.modePaiement : "";
   const modePaiement = modesValides.has(modeDemande) ? (modeDemande as ModePaiement) : ModePaiement.PAIEMENT_LIVRAISON;
 
-  const lignesPanier = await baseDeDonnees.lignePanier.findMany({
-    where: { clientId },
-    include: { produit: true },
-  });
+  try {
+    const commande = await enregistrerCommandeDepuisPanier({
+      clientId: requete.utilisateurId!,
+      modePaiement,
+      notes: typeof requete.body?.notes === "string" ? requete.body.notes : null,
+    });
 
-  if (lignesPanier.length === 0) {
-    reponse.status(400).json({ succes: false, message: "Votre panier est vide." });
-    return;
+    reponse.status(201).json({
+      succes: true,
+      message: "Commande envoyée. Notre équipe va la traiter.",
+      commande: {
+        id: commande.id,
+        numeroCommande: commande.numeroCommande,
+        montantTotal: Number(commande.montantTotal),
+        statut: commande.statut,
+      },
+    });
+  } catch (erreur) {
+    reponse.status(400).json({
+      succes: false,
+      message: erreur instanceof Error ? erreur.message : "Commande impossible.",
+    });
   }
-
-  const montantTotal = lignesPanier.reduce(
-    (somme, ligne) => somme + Number(ligne.produit.prix) * ligne.quantite,
-    0,
-  );
-
-  const commande = await baseDeDonnees.$transaction(async (transaction) => {
-    const creee = await transaction.commande.create({
-      data: {
-        numeroCommande: await genererNumeroCommande(),
-        clientId,
-        statut: "EN_ATTENTE",
-        montantTotal,
-        notes: typeof requete.body?.notes === "string" ? requete.body.notes : null,
-        lignes: {
-          create: lignesPanier.map((ligne) => ({
-            produitId: ligne.produitId,
-            quantite: ligne.quantite,
-            prixUnitaire: ligne.produit.prix,
-          })),
-        },
-      },
-    });
-
-    await transaction.paiement.create({
-      data: {
-        commandeId: creee.id,
-        montant: montantTotal,
-        modePaiement,
-        statut: "EN_ATTENTE",
-      },
-    });
-
-    await transaction.lignePanier.deleteMany({ where: { clientId } });
-
-    await transaction.notification.create({
-      data: {
-        utilisateurId: clientId,
-        titre: "Commande envoyée",
-        contenu: `Votre commande ${creee.numeroCommande} a été transmise à MateMedical.`,
-        typeNotif: "COMMANDE",
-        lien: `/commandes/${creee.id}`,
-      },
-    });
-
-    return creee;
-  });
-
-  reponse.status(201).json({
-    succes: true,
-    message: "Commande envoyée. Notre équipe va la traiter.",
-    commande: {
-      id: commande.id,
-      numeroCommande: commande.numeroCommande,
-      montantTotal: Number(commande.montantTotal),
-      statut: commande.statut,
-    },
-  });
 }
 
 export async function telechargerFactureCommande(requete: RequeteAuthentifiee, reponse: Response) {

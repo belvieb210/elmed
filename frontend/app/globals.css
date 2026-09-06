@@ -8,6 +8,8 @@
   --fond-page: #f3f4f8;
   --texte: #1f2937;
   --texte-doux: #6b7280;
+  --orange-paiement: #ff6a00;
+  --orange-paiement-fonce: #e85f00;
 }
 
 @theme inline {
@@ -18,6 +20,8 @@
   --color-fond-page: var(--fond-page);
   --color-texte: var(--texte);
   --color-texte-doux: var(--texte-doux);
+  --color-orange-paiement: var(--orange-paiement);
+  --color-orange-paiement-fonce: var(--orange-paiement-fonce);
   --font-sans: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 }
 
