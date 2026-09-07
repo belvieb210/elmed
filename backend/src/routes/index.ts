@@ -4,6 +4,7 @@ import {
   middlewareAuthentificationSouple,
   middlewareCompteReel,
   middlewarePersonnel,
+  middlewareSuperAdmin,
 } from "../middlewares/authentification";
 import {
   listerClientsAdmin,
@@ -77,6 +78,7 @@ export const routeurPrincipal = Router();
 const sessionInvite = [middlewareAuthentificationSouple, assurerClientOuInvite];
 const compteClient = [middlewareAuthentificationSouple, middlewareCompteReel];
 const espaceAdmin = [middlewareAuthentificationSouple, middlewarePersonnel];
+const espaceSuperAdmin = [...espaceAdmin, middlewareSuperAdmin];
 
 routeurPrincipal.get("/sante", (_requete, reponse) => {
   reponse.json({ succes: true, service: "MateMedical API", statut: "ok" });
@@ -141,5 +143,5 @@ routeurPrincipal.get("/admin/utilisateurs", ...espaceAdmin, listerUtilisateursAd
 routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdminComplet);
 routeurPrincipal.post("/admin/produits", ...espaceAdmin, creerProduitAdmin);
 routeurPrincipal.get("/admin/produits/:id", ...espaceAdmin, obtenirProduitAdmin);
-routeurPrincipal.put("/admin/produits/:id", ...espaceAdmin, mettreAJourProduitAdmin);
-routeurPrincipal.delete("/admin/produits/:id", ...espaceAdmin, supprimerProduitAdmin);
+routeurPrincipal.put("/admin/produits/:id", ...espaceSuperAdmin, mettreAJourProduitAdmin);
+routeurPrincipal.delete("/admin/produits/:id", ...espaceSuperAdmin, supprimerProduitAdmin);

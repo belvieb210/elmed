@@ -123,6 +123,21 @@ export function middlewarePersonnel(
   suivant();
 }
 
+export function middlewareSuperAdmin(
+  requete: RequeteAuthentifiee,
+  reponse: Response,
+  suivant: NextFunction,
+) {
+  if (!requete.utilisateurId || requete.estInvite || requete.roleUtilisateur !== "SUPER_ADMIN") {
+    reponse.status(403).json({
+      succes: false,
+      message: "Seuls les super admins peuvent modifier ou supprimer un produit.",
+    });
+    return;
+  }
+  suivant();
+}
+
 export function creerJeton(utilisateurId: string, roleUtilisateur: string) {
   return jwt.sign({ utilisateurId, roleUtilisateur }, environnement.jwtSecret, {
     expiresIn: environnement.jwtExpiration as SignOptions["expiresIn"],

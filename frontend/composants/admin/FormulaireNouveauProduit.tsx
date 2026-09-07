@@ -51,6 +51,7 @@ function lireFichier(fichier: File, maxMo: number): Promise<string> {
 export function FormulaireNouveauProduit({
   categories,
   produitAModifier,
+  peutModifier = false,
   onApercu,
   onAnnuler,
   onCree,
@@ -58,6 +59,7 @@ export function FormulaireNouveauProduit({
 }: {
   categories: Categorie[];
   produitAModifier?: ProduitAdmin | null;
+  peutModifier?: boolean;
   onApercu: (apercu: ApercuProduit) => void;
   onAnnuler: () => void;
   onCree: (produit: ProduitAdmin) => void;
@@ -86,6 +88,7 @@ export function FormulaireNouveauProduit({
   ]);
 
   const enModification = Boolean(produitAModifier);
+  const lectureSeule = enModification && !peutModifier;
   const categorieActive = useMemo(
     () => categories.find((categorie) => categorie.id === categorieId),
     [categories, categorieId],
@@ -245,6 +248,14 @@ export function FormulaireNouveauProduit({
 
   async function soumettre(evenement: FormEvent) {
     evenement.preventDefault();
+    if (lectureSeule) {
+      setErreur("Seul un Super Admin peut modifier un produit.");
+      return;
+    }
+    if (enModification && !peutModifier) {
+      setErreur("Seul un Super Admin peut modifier un produit.");
+      return;
+    }
     if (!nom.trim() || !sku.trim()) {
       setErreur("Le nom et le SKU sont obligatoires.");
       return;
@@ -328,10 +339,16 @@ export function FormulaireNouveauProduit({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-[#1e3a8a]">
-            {enModification ? "Modifier le produit" : "Publier un produit"}
+            {enModification
+              ? lectureSeule
+                ? "Détails du produit (lecture seule)"
+                : "Modifier le produit"
+              : "Publier un produit"}
           </h2>
           <p className="mt-1 text-sm text-violet-marque">
-            Identité, médias (4 images + vidéo) et caractéristiques — comme sur la fiche client
+            {lectureSeule
+              ? "Consultation complète — modification réservée au Super Admin"
+              : "Identité, médias (4 images + vidéo) et caractéristiques — comme sur la fiche client"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -466,6 +483,7 @@ export function FormulaireNouveauProduit({
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   className="hidden"
+                  disabled={lectureSeule}
                   onChange={(e) => void chargerImage(index, e.target.files?.[0])}
                 />
                 {image ? (
@@ -478,7 +496,7 @@ export function FormulaireNouveauProduit({
                   </>
                 )}
               </label>
-              {image && (
+              {image && !lectureSeule && (
                 <button
                   type="button"
                   onClick={() => setImages((actuels) => actuels.map((item, i) => (i === index ? null : item)))}
@@ -501,13 +519,15 @@ export function FormulaireNouveauProduit({
           <input
             className={champ}
             value={urlImageManuelle}
+            disabled={lectureSeule}
             onChange={(e) => setUrlImageManuelle(e.target.value)}
             placeholder="Ou coller une URL d’image…"
           />
           <button
             type="button"
+            disabled={lectureSeule}
             onClick={ajouterImageParUrl}
-            className="mt-1.5 shrink-0 rounded-2xl border border-bleu-hero px-4 py-2.5 text-sm font-semibold text-[#1e3a8a]"
+            className="mt-1.5 shrink-0 rounded-2xl border border-bleu-hero px-4 py-2.5 text-sm font-semibold text-[#1e3a8a] disabled:opacity-50"
           >
             Ajouter URL
           </button>
@@ -520,23 +540,20 @@ export function FormulaireNouveauProduit({
                 type="file"
                 accept="video/mp4,video/webm"
                 className="hidden"
+                disabled={lectureSeule}
                 onChange={(e) => void chargerVideo(e.target.files?.[0])}
               />
               {videoUrl ? (
-                videoUrl.startsWith("data:") || videoUrl.endsWith(".mp4") || videoUrl.includes("video") ? (
-                  <video src={videoUrl} className="max-h-44 w-full object-contain" controls muted />
-                ) : (
-                  <img src={videoCouverture || videoUrl} alt="" className="max-h-44 w-full object-cover" />
-                )
+                <video src={videoUrl} className="max-h-44 w-full object-contain" controls muted playsInline />
               ) : (
                 <>
                   <Video className="mb-2 h-7 w-7 text-violet-marque" />
-                  Vidéo de présentation
+                  Upload vidéo
                   <span className="mt-1 text-[10px] text-slate-400">MP4 / WEBM — max 10 Mo</span>
                 </>
               )}
             </label>
-            {videoUrl && (
+            {videoUrl && !lectureSeule && (
               <button
                 type="button"
                 onClick={() => {
@@ -557,6 +574,7 @@ export function FormulaireNouveauProduit({
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 className="hidden"
+                disabled={lectureSeule}
                 onChange={(e) => void chargerCouverture(e.target.files?.[0])}
               />
               {videoCouverture ? (
@@ -565,6 +583,7 @@ export function FormulaireNouveauProduit({
                 <>
                   <Upload className="mb-2 h-5 w-5 text-bleu-hero" />
                   Miniature / couverture vidéo
+                  <span className="mt-1 text-[10px] text-slate-400">Upload image — max 2 Mo</span>
                 </>
               )}
             </label>
@@ -572,15 +591,17 @@ export function FormulaireNouveauProduit({
               <input
                 className={champ}
                 value={urlVideoManuelle}
+                disabled={lectureSeule}
                 onChange={(e) => setUrlVideoManuelle(e.target.value)}
-                placeholder="Ou coller une URL vidéo…"
+                placeholder="Ou coller une URL de vidéo (comme pour les photos)…"
               />
               <button
                 type="button"
+                disabled={lectureSeule}
                 onClick={ajouterVideoParUrl}
-                className="mt-1.5 shrink-0 rounded-2xl border border-bleu-hero px-4 py-2.5 text-sm font-semibold text-[#1e3a8a]"
+                className="mt-1.5 shrink-0 rounded-2xl border border-bleu-hero px-4 py-2.5 text-sm font-semibold text-[#1e3a8a] disabled:opacity-50"
               >
-                URL vidéo
+                Ajouter URL
               </button>
             </div>
           </div>
@@ -668,13 +689,19 @@ export function FormulaireNouveauProduit({
       </section>
 
       <div className="flex flex-wrap gap-3 border-t border-bleu-hero pt-5">
-        <button
-          type="submit"
-          disabled={enCours}
-          className="rounded-2xl bg-[#1e3a8a] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1e3a8a]/90 disabled:opacity-60"
-        >
-          {enCours ? "Enregistrement..." : enModification ? "Mettre à jour le produit" : "Enregistrer le produit"}
-        </button>
+        {!lectureSeule && (
+          <button
+            type="submit"
+            disabled={enCours}
+            className="rounded-2xl bg-[#1e3a8a] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1e3a8a]/90 disabled:opacity-60"
+          >
+            {enCours
+              ? "Enregistrement..."
+              : enModification
+                ? "Mettre à jour le produit"
+                : "Enregistrer le produit"}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -683,7 +710,7 @@ export function FormulaireNouveauProduit({
           }}
           className="rounded-2xl border border-bleu-hero px-6 py-3 text-sm font-semibold text-slate-600"
         >
-          Annuler
+          {lectureSeule ? "Fermer" : "Annuler"}
         </button>
       </div>
     </form>
