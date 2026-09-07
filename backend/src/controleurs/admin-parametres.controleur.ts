@@ -124,36 +124,46 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
       ? normaliserImagesAccueil(donnees.imagesAccueil)
       : normaliserImagesAccueil(actuel.imagesAccueil, actuel.imageAccueilUrl);
 
-  const misAJour = await baseDeDonnees.parametreEntreprise.update({
-    where: { id: actuel.id },
-    data: {
-      nomCommercial: valeurOuExistante(donnees.nomCommercial, actuel.nomCommercial),
-      raisonSociale: valeurOuExistante(donnees.raisonSociale, actuel.raisonSociale),
-      activite1: valeurOuExistante(donnees.activite1, actuel.activite1),
-      activite2:
-        donnees.activite2 === undefined
-          ? actuel.activite2
-          : donnees.activite2.trim() || actuel.activite2,
-      rccm: valeurOuExistante(donnees.rccm, actuel.rccm),
-      idNational: valeurOuExistante(donnees.idNational, actuel.idNational),
-      adresse: valeurOuExistante(donnees.adresse, actuel.adresse),
-      telephone: valeurOuExistante(donnees.telephone, actuel.telephone),
-      ville: valeurOuExistante(donnees.ville, actuel.ville),
-      emailContact:
-        donnees.emailContact === undefined
-          ? actuel.emailContact
-          : donnees.emailContact.trim() || null,
-      siteWeb:
-        donnees.siteWeb === undefined ? actuel.siteWeb : donnees.siteWeb.trim() || null,
-      messagePied: valeurOuExistante(donnees.messagePied, actuel.messagePied),
-      logoUrl:
-        donnees.logoUrl === undefined
-          ? actuel.logoUrl
-          : donnees.logoUrl.trim() || null,
-      imageAccueilUrl: imagesAccueil[0] || null,
-      imagesAccueil: imagesAccueil as Prisma.InputJsonValue,
-    },
-  });
+  const donneesCommunes = {
+    nomCommercial: valeurOuExistante(donnees.nomCommercial, actuel.nomCommercial),
+    raisonSociale: valeurOuExistante(donnees.raisonSociale, actuel.raisonSociale),
+    activite1: valeurOuExistante(donnees.activite1, actuel.activite1),
+    activite2:
+      donnees.activite2 === undefined
+        ? actuel.activite2
+        : donnees.activite2.trim() || actuel.activite2,
+    rccm: valeurOuExistante(donnees.rccm, actuel.rccm),
+    idNational: valeurOuExistante(donnees.idNational, actuel.idNational),
+    adresse: valeurOuExistante(donnees.adresse, actuel.adresse),
+    telephone: valeurOuExistante(donnees.telephone, actuel.telephone),
+    ville: valeurOuExistante(donnees.ville, actuel.ville),
+    emailContact:
+      donnees.emailContact === undefined
+        ? actuel.emailContact
+        : donnees.emailContact.trim() || null,
+    siteWeb: donnees.siteWeb === undefined ? actuel.siteWeb : donnees.siteWeb.trim() || null,
+    messagePied: valeurOuExistante(donnees.messagePied, actuel.messagePied),
+    logoUrl:
+      donnees.logoUrl === undefined ? actuel.logoUrl : donnees.logoUrl.trim() || null,
+    imageAccueilUrl: imagesAccueil[0] || null,
+  };
+
+  let misAJour;
+  try {
+    misAJour = await baseDeDonnees.parametreEntreprise.update({
+      where: { id: actuel.id },
+      data: {
+        ...donneesCommunes,
+        imagesAccueil: imagesAccueil as Prisma.InputJsonValue,
+      },
+    });
+  } catch {
+    // Migration images_accueil pas encore appliquée
+    misAJour = await baseDeDonnees.parametreEntreprise.update({
+      where: { id: actuel.id },
+      data: donneesCommunes,
+    });
+  }
 
   invaliderCacheInfosEntreprise();
 

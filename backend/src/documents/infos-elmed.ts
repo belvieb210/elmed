@@ -126,21 +126,28 @@ export async function assurerParametresEntreprise() {
   try {
     const existant = await baseDeDonnees.parametreEntreprise.findFirst();
     if (existant) {
-      const images = normaliserImagesAccueil(existant.imagesAccueil, existant.imageAccueilUrl);
-      const maj: Prisma.ParametreEntrepriseUpdateInput = {};
-      if (!existant.logoUrl) maj.logoUrl = LOGO_DEFAUT;
-      if (!existant.imageAccueilUrl) maj.imageAccueilUrl = images[0] || IMAGE_ACCUEIL_DEFAUT;
-      const actuelVide =
-        !Array.isArray(existant.imagesAccueil) ||
-        (existant.imagesAccueil as unknown[]).length === 0;
-      if (actuelVide) {
-        maj.imagesAccueil = images as Prisma.InputJsonValue;
-      }
-      if (Object.keys(maj).length > 0) {
-        return await baseDeDonnees.parametreEntreprise.update({
-          where: { id: existant.id },
-          data: maj,
-        });
+      try {
+        const images = normaliserImagesAccueil(
+          (existant as { imagesAccueil?: unknown }).imagesAccueil,
+          existant.imageAccueilUrl,
+        );
+        const maj: Prisma.ParametreEntrepriseUpdateInput = {};
+        if (!existant.logoUrl) maj.logoUrl = LOGO_DEFAUT;
+        if (!existant.imageAccueilUrl) maj.imageAccueilUrl = images[0] || IMAGE_ACCUEIL_DEFAUT;
+        const imagesActuelles = (existant as { imagesAccueil?: unknown }).imagesAccueil;
+        const actuelVide =
+          !Array.isArray(imagesActuelles) || (imagesActuelles as unknown[]).length === 0;
+        if (actuelVide) {
+          maj.imagesAccueil = images as Prisma.InputJsonValue;
+        }
+        if (Object.keys(maj).length > 0) {
+          return await baseDeDonnees.parametreEntreprise.update({
+            where: { id: existant.id },
+            data: maj,
+          });
+        }
+      } catch {
+        // Colonnes images pas encore migrées : on renvoie la ligne telle quelle.
       }
       return existant;
     }

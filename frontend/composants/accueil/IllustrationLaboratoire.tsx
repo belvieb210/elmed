@@ -9,73 +9,79 @@ const IMAGES_DEFAUT = [
   "/medias/logo-microscope.png",
 ];
 
+function normaliserListe(images?: string[] | null, unique?: string | null) {
+  const multi = (images ?? []).filter((item) => typeof item === "string" && item.trim().length > 0);
+  if (multi.length > 0) return multi.slice(0, 6);
+  if (unique?.trim()) return [unique.trim()];
+  return [...IMAGES_DEFAUT];
+}
+
 export function IllustrationLaboratoire({
   images,
 }: {
   images?: string[] | null;
 }) {
-  const [liste, setListe] = useState<string[]>(images?.length ? images : IMAGES_DEFAUT);
+  const [liste, setListe] = useState<string[]>(() => normaliserListe(images));
 
   useEffect(() => {
     if (images?.length) {
-      setListe(images);
+      setListe(normaliserListe(images));
       return;
     }
+
+    let ignore = false;
     function charger() {
       appelerApi<{
         entreprise: { imagesAccueil?: string[] | null; imageAccueilUrl?: string | null };
       }>("/entreprise")
         .then((donnees) => {
-          const multi = donnees.entreprise.imagesAccueil?.filter(Boolean) ?? [];
-          if (multi.length > 0) {
-            setListe(multi);
-            return;
-          }
-          if (donnees.entreprise.imageAccueilUrl) {
-            setListe([donnees.entreprise.imageAccueilUrl]);
-            return;
-          }
-          setListe(IMAGES_DEFAUT);
+          if (ignore) return;
+          setListe(
+            normaliserListe(donnees.entreprise.imagesAccueil, donnees.entreprise.imageAccueilUrl),
+          );
         })
-        .catch(() => setListe(IMAGES_DEFAUT));
+        .catch(() => {
+          if (!ignore) setListe([...IMAGES_DEFAUT]);
+        });
     }
+
     charger();
     window.addEventListener("mm-entreprise-maj", charger);
-    return () => window.removeEventListener("mm-entreprise-maj", charger);
+    return () => {
+      ignore = true;
+      window.removeEventListener("mm-entreprise-maj", charger);
+    };
   }, [images]);
 
   const affichees = liste.slice(0, 6);
 
-  if (affichees.length === 1) {
-    return (
-      <img
-        src={affichees[0]}
-        alt=""
-        className="h-36 w-auto max-w-[min(100%,280px)] object-contain drop-shadow-[0_12px_24px_rgba(15,23,42,0.25)] sm:h-44 md:h-48"
-      />
-    );
-  }
-
   return (
-    <div className="relative flex h-36 w-[min(100%,300px)] items-end justify-center sm:h-44 md:h-48">
-      {affichees.map((src, index) => {
-        const total = affichees.length;
-        const decalage = (index - (total - 1) / 2) * 28;
-        const rotation = (index - (total - 1) / 2) * 4;
-        const z = 10 + index;
-        return (
+    <div
+      className="flex min-h-[8.5rem] w-full max-w-[320px] items-end justify-center gap-2 rounded-2xl bg-white/10 px-2 py-2 backdrop-blur-[1px] sm:min-h-[10.5rem] sm:max-w-[380px] sm:gap-3 sm:px-3 md:max-w-[420px]"
+      aria-hidden
+    >
+      {affichees.map((src, index) => (
+        <div
+          key={`${index}-${src.slice(0, 48)}`}
+          className="flex h-28 flex-1 items-end justify-center sm:h-36 md:h-40"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            key={`${src}-${index}`}
             src={src}
             alt=""
-            style={{
-              transform: `translateX(${decalage}px) rotate(${rotation}deg)`,
-              zIndex: z,
+            className="max-h-full max-w-full object-contain drop-shadow-[0_10px_20px_rgba(15,23,42,0.28)]"
+            onError={(evenement) => {
+              const cible = evenement.currentTarget;
+              if (cible.dataset.fallback === "1") {
+                cible.style.display = "none";
+                return;
+              }
+              cible.dataset.fallback = "1";
+              cible.src = IMAGES_DEFAUT[index % IMAGES_DEFAUT.length];
             }}
-            className="absolute bottom-0 h-[78%] w-auto max-w-[42%] object-contain drop-shadow-[0_10px_18px_rgba(15,23,42,0.28)]"
           />
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

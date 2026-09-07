@@ -35,8 +35,8 @@ export function PageAccueil() {
     <div className="mx-auto max-w-[1400px]">
       <div className="grid gap-4 xl:grid-cols-12">
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#4f74ff] to-[#5b63f5] px-5 py-6 text-white shadow-sm sm:px-6 sm:py-7 xl:col-span-8">
-          <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-xl">
+          <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(220px,0.9fr)] lg:items-end">
+            <div className="min-w-0 max-w-xl">
               <h1 className="text-2xl font-semibold sm:text-3xl">
                 {compteReel ? `Bienvenue ${prenomNom}` : "Fournitures médicales professionnelles"}
               </h1>
@@ -62,7 +62,7 @@ export function PageAccueil() {
                 )}
               </div>
             </div>
-            <div className="pointer-events-none relative mx-auto shrink-0 sm:mx-0 sm:self-end">
+            <div className="relative z-10 flex justify-center lg:justify-end">
               <IllustrationLaboratoire />
             </div>
           </div>
