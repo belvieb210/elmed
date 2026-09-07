@@ -31,18 +31,18 @@ export function MenuActionsMessage({
   ];
 
   return (
-    <div className="absolute z-20 w-48 overflow-hidden rounded-2xl border border-bleu-hero bg-white py-1 shadow-lg">
+    <div className="w-52 rounded-2xl border border-bleu-hero bg-white py-1 shadow-[0_12px_32px_rgba(30,58,138,0.16)]">
       {actions.map((action) => (
         <button
           key={action.id}
           type="button"
           onClick={action.onClick}
-          className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm ${
+          className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm ${
             action.danger ? "text-rose-600 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-50"
           }`}
         >
-          <action.icone className="h-4 w-4" />
-          {action.label}
+          <action.icone className="h-4 w-4 shrink-0" />
+          <span>{action.label}</span>
         </button>
       ))}
     </div>

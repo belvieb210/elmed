@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, FileText, Pin } from "lucide-react";
 import { CarteProduitMessage } from "@/composants/messagerie/CarteProduitMessage";
 import { MenuActionsMessage } from "@/composants/messagerie/MenuActionsMessage";
-import { formaterHeure, formaterTailleFichier } from "@/lib/formatage";
+import { formaterHeure, formaterMontant, formaterTailleFichier } from "@/lib/formatage";
+import { resumeMessage } from "@/lib/messagerie";
 import type { MessageChat } from "@/types/modeles";
 
 export function BulleMessage({
@@ -89,7 +91,7 @@ export function BulleMessage({
         {message.reponseA && (
           <div className="mb-1 rounded-lg border-l-2 border-bleu-hero bg-slate-50 px-2 py-1 text-[11px] text-slate-500">
             <span className="font-semibold">{message.reponseA.nomAuteur}</span>
-            <span className="ml-1">{message.reponseA.contenu}</span>
+            <span className="ml-1 line-clamp-1">{resumeMessage({ contenu: message.reponseA.contenu })}</span>
           </div>
         )}
         <div
@@ -166,48 +168,71 @@ function BoutonMenu({
   onSupprimer: (message: MessageChat) => void;
   onFermer: () => void;
 }) {
+  const boutonRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!ouvert || !boutonRef.current) return;
+    const cadre = boutonRef.current.getBoundingClientRect();
+    const largeur = 208;
+    const hauteur = 280;
+    const left =
+      cadre.right + largeur > window.innerWidth - 12 ? Math.max(8, cadre.right - largeur) : cadre.left;
+    const top =
+      cadre.bottom + hauteur > window.innerHeight - 12 ? Math.max(8, cadre.top - hauteur) : cadre.bottom + 6;
+    setPosition({ top, left });
+  }, [ouvert]);
+
   return (
-    <div className={`absolute -top-2 ${alignerDroite ? "right-2" : "left-2"}`}>
+    <>
       <button
+        ref={boutonRef}
         type="button"
         onClick={onOuvrir}
-        className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+        className={`absolute -top-2 z-10 grid h-7 w-7 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 ${
+          alignerDroite ? "right-2" : "left-2"
+        } opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100`}
         aria-label="Actions du message"
       >
         <ChevronDown className="h-3.5 w-3.5" />
       </button>
-      {ouvert && (
-        <div className={`${alignerDroite ? "left-0" : "right-0"} relative`}>
-          <MenuActionsMessage
-            peutModifier={Boolean(message.estMoi && message.typeMessage === "TEXTE" && !message.supprime)}
-            epingle={message.epingle}
-            onRepondre={() => {
-              onRepondre(message);
-              onFermer();
-            }}
-            onCopier={() => {
-              void navigator.clipboard.writeText(message.contenu || message.fichierNom || "");
-              onFermer();
-            }}
-            onTransferer={() => {
-              onTransferer(message);
-              onFermer();
-            }}
-            onEpingler={() => {
-              onEpingler(message);
-              onFermer();
-            }}
-            onModifier={() => {
-              onModifier(message);
-              onFermer();
-            }}
-            onSupprimer={() => {
-              onSupprimer(message);
-              onFermer();
-            }}
-          />
-        </div>
-      )}
-    </div>
+      {ouvert &&
+        createPortal(
+          <div className="fixed z-[80]" style={{ top: position.top, left: position.left }}>
+            <MenuActionsMessage
+              peutModifier={Boolean(message.estMoi && message.typeMessage === "TEXTE" && !message.supprime)}
+              epingle={message.epingle}
+              onRepondre={() => {
+                onRepondre(message);
+                onFermer();
+              }}
+              onCopier={() => {
+                const fiche = message.ficheProduit;
+                void navigator.clipboard.writeText(
+                  fiche ? `${fiche.nom} — ${formaterMontant(fiche.prix)}` : resumeMessage(message),
+                );
+                onFermer();
+              }}
+              onTransferer={() => {
+                onTransferer(message);
+                onFermer();
+              }}
+              onEpingler={() => {
+                onEpingler(message);
+                onFermer();
+              }}
+              onModifier={() => {
+                onModifier(message);
+                onFermer();
+              }}
+              onSupprimer={() => {
+                onSupprimer(message);
+                onFermer();
+              }}
+            />
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

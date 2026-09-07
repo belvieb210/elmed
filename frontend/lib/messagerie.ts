@@ -36,3 +36,51 @@ export async function lirePiecesJointes(liste: FileList | File[]): Promise<Piece
 export function estImage(type: string) {
   return type.startsWith("image/") || type === "IMAGE";
 }
+
+export function ficheDepuisContenu(contenu?: string | null) {
+  if (!contenu?.trim().startsWith("{")) return null;
+  try {
+    const fiche = JSON.parse(contenu) as { produitId?: string; nom?: string; prix?: number; image?: string | null; sku?: string };
+    if (!fiche.nom) return null;
+    return {
+      produitId: fiche.produitId ?? "",
+      nom: fiche.nom,
+      prix: Number(fiche.prix ?? 0),
+      image: fiche.image ?? null,
+      sku: fiche.sku ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function resumeMessage(message: {
+  contenu?: string | null;
+  fichierNom?: string | null;
+  typeMessage?: string;
+  ficheProduit?: { nom: string; prix: number; image?: string | null; sku?: string } | null;
+}) {
+  const fiche = message.ficheProduit ?? ficheDepuisContenu(message.contenu);
+  if (fiche) return fiche.nom;
+  if (message.fichierNom) return message.fichierNom;
+  const texte = (message.contenu ?? "").trim();
+  if (!texte || texte.startsWith("{")) return "Message";
+  return texte.length > 80 ? `${texte.slice(0, 79)}…` : texte;
+}
+
+export function apercuReponse(message: {
+  id: string;
+  contenu?: string | null;
+  fichierNom?: string | null;
+  nomAuteur: string;
+  ficheProduit?: { produitId: string; nom: string; prix: number; image: string | null; sku: string } | null;
+}) {
+  const fiche = message.ficheProduit ?? ficheDepuisContenu(message.contenu);
+  return {
+    id: message.id,
+    contenu: resumeMessage(message),
+    nomAuteur: message.nomAuteur,
+    ficheProduit: fiche ?? undefined,
+    fichierNom: message.fichierNom ?? undefined,
+  };
+}

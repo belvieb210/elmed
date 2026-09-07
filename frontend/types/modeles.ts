@@ -155,6 +155,8 @@ export interface ReponseMessage {
   id: string;
   contenu: string;
   nomAuteur: string;
+  ficheProduit?: FicheProduitMessage;
+  fichierNom?: string;
 }
 
 export interface FichierConversation {

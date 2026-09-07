@@ -10,7 +10,8 @@ import { BulleMessage } from "@/composants/messagerie/BulleMessage";
 import { ComposerMessage } from "@/composants/messagerie/ComposerMessage";
 import { appelerApi } from "@/lib/api";
 import { lienInscription } from "@/lib/compte";
-import type { PieceJointeBrouillon } from "@/lib/messagerie";
+import { apercuReponse, resumeMessage, type PieceJointeBrouillon } from "@/lib/messagerie";
+import { formaterMontant } from "@/lib/formatage";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
 import type { FichierConversation, MessageChat, ReponseMessage } from "@/types/modeles";
@@ -131,7 +132,7 @@ function FilDiscussion() {
         </div>
       )}
 
-      <div className="flex h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
+      <div className="flex h-[calc(100dvh-11rem)] min-h-[24rem] flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
         {fichiers.length > 0 && (
           <div className="border-b border-bleu-hero px-4 py-2 text-xs text-slate-500">
             {fichiers.length} fichier{fichiers.length > 1 ? "s" : ""} joint{fichiers.length > 1 ? "s" : ""} dans cette
@@ -147,18 +148,17 @@ function FilDiscussion() {
                 message={message}
                 onRepondre={(cible) => {
                   setEdition(null);
-                  setReponse({
-                    id: cible.id,
-                    contenu: cible.contenu || cible.fichierNom || "Message",
-                    nomAuteur: cible.nomAuteur,
+                  setReponse(apercuReponse(cible));
+                }}
+                onTransferer={(cible) => {
+                  const fiche = cible.ficheProduit;
+                  void envoyer({
+                    contenu: fiche
+                      ? `Transféré : ${fiche.nom} — ${formaterMontant(fiche.prix)}`
+                      : `Transféré : ${resumeMessage(cible)}`,
+                    fichiers: [],
                   });
                 }}
-                onTransferer={(cible) =>
-                  void envoyer({
-                    contenu: cible.contenu ? `Transféré : ${cible.contenu}` : cible.fichierNom || "Fichier transféré",
-                    fichiers: [],
-                  })
-                }
                 onEpingler={(cible) => void agir(cible, { epingle: !cible.epingle })}
                 onModifier={(cible) => {
                   setReponse(null);
