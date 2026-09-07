@@ -57,7 +57,8 @@ async function remplir() {
       telephone: "+243 890 000 100",
       motDePasse: motDePasseAdmin,
       role: RoleUtilisateur.SUPPORT,
-      photoProfil: "/avatars/support.jpg",
+      photoProfil:
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80",
     },
   });
 

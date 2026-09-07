@@ -31,7 +31,7 @@ export function MenuActionsMessage({
   ];
 
   return (
-    <div className="w-52 rounded-2xl border border-bleu-hero bg-white py-1 shadow-[0_12px_32px_rgba(30,58,138,0.16)]">
+    <div className="w-full rounded-xl border border-bleu-hero bg-white py-1 shadow-[0_8px_24px_rgba(30,58,138,0.14)]">
       {actions.map((action) => (
         <button
           key={action.id}

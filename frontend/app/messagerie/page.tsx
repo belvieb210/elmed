@@ -139,7 +139,7 @@ function FilDiscussion() {
             discussion
           </div>
         )}
-        <div ref={listeRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
+        <div ref={listeRef} className="min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto p-3 sm:p-4">
           {!pret && <p className="text-sm text-slate-400">Ouverture de la discussion...</p>}
           {pret &&
             messages.map((message) => (

@@ -25,6 +25,16 @@ export function libelleRolePersonnel(role: string) {
   return libellesRole[role] ?? role;
 }
 
+const photosLocales: Record<string, string> = {
+  "/avatars/support.jpg":
+    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80",
+};
+
+export function resoudrePhotoProfil(url?: string | null) {
+  if (!url) return null;
+  return photosLocales[url] ?? url;
+}
+
 export function extraireFicheProduit(contenu: string, typeMessage: TypeMessage): FicheProduitMessage | undefined {
   if (typeMessage !== TypeMessage.PRODUIT) return undefined;
   try {
@@ -98,7 +108,10 @@ export function formaterMessageChat(
     nomAuteur: `${message.auteur.prenom} ${message.auteur.nom}`.trim(),
     roleAuteur: libelleRolePersonnel(message.auteur.role),
     initialsAuteur: `${message.auteur.prenom.charAt(0)}${message.auteur.nom.charAt(0)}`.toUpperCase(),
-    photoProfilAuteur: message.auteur.role === "CLIENT" && message.auteur.estInvite ? null : message.auteur.photoProfil ?? null,
+    photoProfilAuteur:
+      message.auteur.role === "CLIENT" && message.auteur.estInvite
+        ? null
+        : resoudrePhotoProfil(message.auteur.photoProfil),
     ficheProduit: message.supprime ? undefined : extraireFicheProduit(message.contenu, message.typeMessage),
   };
 }

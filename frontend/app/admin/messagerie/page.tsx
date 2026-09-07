@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BulleMessage } from "@/composants/messagerie/BulleMessage";
+import { PhotoProfil } from "@/composants/messagerie/PhotoProfil";
 import { ComposerMessage } from "@/composants/messagerie/ComposerMessage";
 import { PanneauFicheClient } from "@/composants/messagerie/PanneauFicheClient";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
@@ -128,10 +129,11 @@ function MessagerieAdmin() {
                   active === conversation.id ? "bg-violet-clair" : "hover:bg-slate-50"
                 }`}
               >
-                <img
-                  src={conversation.photoProfil ?? "https://i.pravatar.cc/80?img=15"}
+                <PhotoProfil
+                  src={conversation.photoProfil}
                   alt={conversation.nomClient}
-                  className="h-10 w-10 rounded-full object-cover"
+                  initials={conversation.nomClient}
+                  className="h-10 w-10"
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
@@ -173,7 +175,7 @@ function MessagerieAdmin() {
               </button>
             )}
           </div>
-          <div ref={listeRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
+          <div ref={listeRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
             {messages.map((message) => (
               <BulleMessage
                 key={message.id}

@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { LogoMateMedical } from "@/composants/LogoMateMedical";
+import { PhotoProfil } from "@/composants/messagerie/PhotoProfil";
 import { libelleRole } from "@/lib/formatage";
 import { useClient } from "@/store/contexteClient";
 
@@ -81,10 +82,11 @@ export function BarreLateraleAdmin({
         </div>
 
         <div className="mb-5 flex items-center gap-3 rounded-2xl border border-bleu-hero bg-slate-50 px-3 py-3">
-          <img
-            src={utilisateur?.photoProfil ?? "https://i.pravatar.cc/80?img=12"}
+          <PhotoProfil
+            src={utilisateur?.photoProfil}
             alt={utilisateur?.nomComplet ?? "Gestionnaire"}
-            className="h-11 w-11 rounded-full object-cover"
+            initials={utilisateur?.nomComplet ?? "EL"}
+            className="h-11 w-11"
           />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-slate-800">

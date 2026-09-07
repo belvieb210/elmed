@@ -89,7 +89,7 @@ export function ComposerMessage({
       )}
       <ApercuPiecesJointes fichiers={fichiers} onRetirer={(id) => setFichiers((actuels) => actuels.filter((f) => f.id !== id))} />
       {erreur && <p className="text-xs text-rose-600">{erreur}</p>}
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1 rounded-full border border-bleu-hero bg-white px-1.5 py-1">
         <input
           ref={inputFichier}
           type="file"
@@ -101,7 +101,7 @@ export function ComposerMessage({
         <button
           type="button"
           onClick={() => inputFichier.current?.click()}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-bleu-hero bg-white text-slate-600 sm:h-11 sm:w-11"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-slate-100"
           aria-label="Joindre un fichier"
         >
           <Paperclip className="h-4 w-4" />
@@ -110,12 +110,12 @@ export function ComposerMessage({
           value={contenu}
           onChange={(e) => setContenu(e.target.value)}
           placeholder={placeholder}
-          className="min-w-0 flex-1 rounded-full border border-bleu-hero px-3 py-2.5 text-sm outline-none sm:px-4"
+          className="min-w-0 flex-1 border-0 bg-transparent px-1 py-2 text-sm outline-none"
         />
         <button
           type="submit"
           disabled={enCours}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#1e3a8a] text-white disabled:opacity-60 sm:h-11 sm:w-11"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1e3a8a] text-white disabled:opacity-60"
           aria-label="Envoyer"
         >
           <Send className="h-4 w-4" />
