@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useState } from "react";
 import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { appelerApi } from "@/lib/api";
 import { useClient } from "@/store/contexteClient";
 import type { Utilisateur } from "@/types/modeles";
@@ -82,7 +81,6 @@ export default function PageProfil() {
         </div>
         {message && <p className="text-sm text-emerald-600">{message}</p>}
       </form>
-      <BandeauMessagerie />
       </BarriereCompte>
     </MiseEnPageClient>
   );

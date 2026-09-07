@@ -5,7 +5,6 @@ import Link from "next/link";
 import { FlaskConical, Layers, Microscope, Package, Pill, ShieldCheck } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { appelerApi } from "@/lib/api";
 import type { Categorie } from "@/types/modeles";
 
@@ -54,7 +53,6 @@ export default function PageCategories() {
           );
         })}
       </div>
-      <BandeauMessagerie />
     </MiseEnPageClient>
   );
 }

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
-
 export default function PageAide() {
   return (
     <MiseEnPageClient>
@@ -23,7 +21,6 @@ export default function PageAide() {
           </p>
         </article>
       </div>
-      <BandeauMessagerie />
     </MiseEnPageClient>
   );
 }

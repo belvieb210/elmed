@@ -5,7 +5,6 @@ import Link from "next/link";
 import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { appelerApi } from "@/lib/api";
 import { formaterDate } from "@/lib/formatage";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
@@ -65,7 +64,6 @@ export default function PageNotifications() {
           </Link>
         ))}
       </div>
-      <BandeauMessagerie />
       </BarriereCompte>
     </MiseEnPageClient>
   );

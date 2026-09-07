@@ -2,25 +2,55 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MessageCircle, X } from "lucide-react";
 import { lienMessagerie } from "@/lib/compte";
 import { useClient } from "@/store/contexteClient";
 
-const CLE_FERMETURE = "mm_bandeau_msg";
+const CLE_ANCIENNE = "mm_bandeau_msg";
+const CLE_MASQUAGE = "mm_bandeau_msg_jusqua";
+const DUREE_MASQUAGE_MS = 5 * 60 * 1000;
+
+function lireMasqueJusqua() {
+  if (typeof window === "undefined") return 0;
+  window.sessionStorage.removeItem(CLE_ANCIENNE);
+  const jusqua = Number(window.localStorage.getItem(CLE_MASQUAGE) ?? 0);
+  return Number.isFinite(jusqua) ? jusqua : 0;
+}
 
 export function BandeauMessagerie() {
+  const chemin = usePathname();
   const { compteReel, menuMobileOuvert } = useClient();
-  const [ferme, setFerme] = useState(false);
+  const [masqueJusqua, setMasqueJusqua] = useState(0);
+  const [pret, setPret] = useState(false);
 
   useEffect(() => {
-    setFerme(sessionStorage.getItem(CLE_FERMETURE) === "1");
+    setMasqueJusqua(lireMasqueJusqua());
+    setPret(true);
   }, []);
 
-  if (menuMobileOuvert || ferme) return null;
+  useEffect(() => {
+    if (!pret) return;
+    const reste = masqueJusqua - Date.now();
+    if (reste <= 0) {
+      window.localStorage.removeItem(CLE_MASQUAGE);
+      return;
+    }
+    const minuteur = window.setTimeout(() => {
+      window.localStorage.removeItem(CLE_MASQUAGE);
+      setMasqueJusqua(0);
+    }, reste);
+    return () => window.clearTimeout(minuteur);
+  }, [masqueJusqua, pret]);
+
+  const visible = pret && masqueJusqua <= Date.now();
+
+  if (chemin === "/messagerie" || menuMobileOuvert || !visible) return null;
 
   function masquer() {
-    setFerme(true);
-    sessionStorage.setItem(CLE_FERMETURE, "1");
+    const jusqua = Date.now() + DUREE_MASQUAGE_MS;
+    window.localStorage.setItem(CLE_MASQUAGE, String(jusqua));
+    setMasqueJusqua(jusqua);
   }
 
   return (
@@ -42,7 +72,7 @@ export function BandeauMessagerie() {
           type="button"
           onClick={masquer}
           className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-          aria-label="Fermer le bandeau"
+          aria-label="Masquer le bandeau pendant 5 minutes"
         >
           <X className="h-4 w-4" />
         </button>

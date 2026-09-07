@@ -9,7 +9,6 @@ import {
   Pill,
   ShieldCheck,
 } from "lucide-react";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { CarteProduit } from "@/composants/client/CarteProduit";
 import { IllustrationLaboratoire } from "@/composants/accueil/IllustrationLaboratoire";
 import { classeBadgePaiement } from "@/composants/commandes/suivi";
@@ -210,7 +209,6 @@ export function PageAccueil() {
         </section>
       </div>
 
-      <BandeauMessagerie />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { CarteProduit } from "@/composants/client/CarteProduit";
 import { BoutonDiscuterProduit } from "@/composants/produits/BoutonDiscuterProduit";
 import { GalerieProduit } from "@/composants/produits/GalerieProduit";
@@ -176,7 +175,6 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
         </section>
       )}
 
-      <BandeauMessagerie />
     </MiseEnPageClient>
   );
 }

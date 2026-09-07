@@ -5,7 +5,6 @@ import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { appelerApi } from "@/lib/api";
 
 export default function PageParametres() {
@@ -54,7 +53,6 @@ export default function PageParametres() {
           </button>
           {message && <p className="text-sm text-slate-600">{message}</p>}
         </form>
-        <BandeauMessagerie />
       </BarriereCompte>
     </MiseEnPageClient>
   );

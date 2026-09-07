@@ -14,7 +14,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { BoutonRetourEtape, EtapesParcoursCommande } from "@/composants/panier/EtapesParcoursCommande";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
@@ -302,7 +301,6 @@ export function PagePanier() {
         </div>
       )}
 
-      <BandeauMessagerie />
     </MiseEnPageClient>
   );
 }

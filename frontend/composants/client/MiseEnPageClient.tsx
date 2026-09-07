@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { BarreLaterale } from "@/composants/client/BarreLaterale";
 import { EnTete } from "@/composants/client/EnTete";
 import { useClient } from "@/store/contexteClient";
@@ -29,6 +30,7 @@ export function MiseEnPageClient({ children }: { children: ReactNode }) {
               children
             )}
           </main>
+          <BandeauMessagerie />
         </div>
       </div>
     </CoquilleOuverte.Provider>

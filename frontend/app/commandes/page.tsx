@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { CarteCommande } from "@/composants/commandes/CarteCommande";
 import {
   commandeDansOnglet,
@@ -171,7 +170,6 @@ function ListeCommandes() {
           )}
         </div>
       </div>
-      <BandeauMessagerie />
     </>
   );
 }

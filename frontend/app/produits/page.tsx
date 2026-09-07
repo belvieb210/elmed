@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
 import { CarteProduit } from "@/composants/client/CarteProduit";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import { appelerApi } from "@/lib/api";
 import type { Categorie, Produit } from "@/types/modeles";
 
@@ -84,7 +83,6 @@ function ContenuProduits() {
           ))}
         </div>
       )}
-      <BandeauMessagerie />
     </>
   );
 }

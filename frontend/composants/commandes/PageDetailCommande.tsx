@@ -20,7 +20,6 @@ import {
   Wallet,
 } from "lucide-react";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
-import { BandeauMessagerie } from "@/composants/client/BandeauMessagerie";
 import {
   classeBadgePaiement,
   classeBadgeStatut,
@@ -446,7 +445,6 @@ export function PageDetailCommande() {
           </article>
         </aside>
       </div>
-      <BandeauMessagerie />
     </MiseEnPageClient>
   );
 }
