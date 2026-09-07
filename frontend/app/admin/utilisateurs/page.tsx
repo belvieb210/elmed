@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { KeyRound, Pencil, Power, Upload, UserPlus } from "lucide-react";
+import { KeyRound, Pencil, Power, Trash2, Upload, UserPlus } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { ModalConfirmation } from "@/composants/admin/ModalConfirmation";
 import { libelleRole } from "@/lib/formatage";
@@ -57,10 +57,12 @@ export default function PageUtilisateursAdmin() {
   const [motDePasseAffiche, setMotDePasseAffiche] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<{
-    type: "mdp" | "actif";
+    type: "mdp" | "actif" | "supprimer";
     personne: PersonnelAdmin;
   } | null>(null);
   const [confirmationEnCours, setConfirmationEnCours] = useState(false);
+
+  const editionSurSoi = Boolean(aModifier && utilisateur && aModifier.id === utilisateur.id);
 
   const rolesDisponibles = useMemo(() => {
     const liste = [...rolesBase];
@@ -139,7 +141,7 @@ export default function PageUtilisateursAdmin() {
               nom: formulaire.nom,
               email: formulaire.email,
               telephone: formulaire.telephone,
-              role: formulaire.role,
+              role: editionSurSoi ? aModifier.role : formulaire.role,
               photoProfil: formulaire.photoProfil,
               actif: aModifier.actif,
             }),
@@ -148,7 +150,11 @@ export default function PageUtilisateursAdmin() {
         setUtilisateurs((actuels) =>
           actuels.map((item) => (item.id === reponse.utilisateur.id ? reponse.utilisateur : item)),
         );
-        setMessage("Compte personnel mis à jour.");
+        setMessage(
+          editionSurSoi
+            ? "Compte mis à jour. Pour changer un rôle Super Admin, éditez l’autre compte."
+            : "Compte personnel mis à jour (rôle inclus).",
+        );
         reinitialiser();
       } else {
         const reponse = await appelerApi<{
@@ -193,7 +199,7 @@ export default function PageUtilisateursAdmin() {
         );
         setMotDePasseAffiche(reponse.motDePasseTemporaire);
         setMessage(`${reponse.message} (${personne.email})`);
-      } else {
+      } else if (type === "actif") {
         const reponse = await appelerApi<{ utilisateur: PersonnelAdmin; message: string }>(
           `/admin/utilisateurs/${personne.id}/actif`,
           { method: "PATCH", body: JSON.stringify({}) },
@@ -201,6 +207,13 @@ export default function PageUtilisateursAdmin() {
         setUtilisateurs((actuels) =>
           actuels.map((item) => (item.id === reponse.utilisateur.id ? reponse.utilisateur : item)),
         );
+        setMessage(reponse.message);
+      } else {
+        const reponse = await appelerApi<{ message: string }>(`/admin/utilisateurs/${personne.id}`, {
+          method: "DELETE",
+        });
+        setUtilisateurs((actuels) => actuels.filter((item) => item.id !== personne.id));
+        if (aModifier?.id === personne.id) reinitialiser();
         setMessage(reponse.message);
       }
       setConfirmation(null);
@@ -259,7 +272,7 @@ export default function PageUtilisateursAdmin() {
                 {aModifier ? "Modifier le personnel" : "Ajouter un membre de l’équipe"}
               </h2>
               <p className="mt-1 text-sm text-violet-marque">
-                Rôles : Admin, Super Admin, Support (et autres postes)
+                Vous pouvez changer le rôle d’un autre Super Admin, ou le supprimer définitivement.
               </p>
             </div>
             <UserPlus className="h-5 w-5 text-bleu-hero" />
@@ -307,6 +320,7 @@ export default function PageUtilisateursAdmin() {
               <select
                 className={champ}
                 value={formulaire.role}
+                disabled={editionSurSoi}
                 onChange={(e) => setFormulaire((a) => ({ ...a, role: e.target.value }))}
               >
                 {rolesDisponibles.map((role) => (
@@ -315,6 +329,17 @@ export default function PageUtilisateursAdmin() {
                   </option>
                 ))}
               </select>
+              {editionSurSoi ? (
+                <p className="mt-1 text-xs text-amber-700">
+                  Vous ne pouvez pas changer votre propre rôle. Ouvrez « Modifier » sur l’autre
+                  Super Admin.
+                </p>
+              ) : aModifier?.role === "SUPER_ADMIN" ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Super Admin : vous pouvez le rétrograder (Admin, Support…) tant qu’il reste un
+                  autre Super Admin actif.
+                </p>
+              ) : null}
             </label>
             {!aModifier && (
               <label className="block">
@@ -390,64 +415,82 @@ export default function PageUtilisateursAdmin() {
               </tr>
             </thead>
             <tbody>
-              {utilisateurs.map((personne) => (
-                <tr key={personne.id} className="border-t border-bleu-hero">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {personne.photoProfil ? (
-                        <img
-                          src={personne.photoProfil}
-                          alt=""
-                          className="h-9 w-9 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="grid h-9 w-9 place-items-center rounded-full bg-[#1e3a8a] text-xs text-white">
-                          {personne.prenom[0]}
-                          {personne.nom[0]}
-                        </span>
-                      )}
-                      <span className="font-medium text-slate-800">{personne.nomComplet}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{personne.email}</td>
-                  <td className="px-4 py-3">{libelleRole(personne.role)}</td>
-                  <td className="px-4 py-3">
-                    <span className={personne.actif ? "text-emerald-600" : "text-slate-400"}>
-                      {personne.actif ? "Actif" : "Inactif"}
-                    </span>
-                  </td>
-                  {peutGerer && (
+              {utilisateurs.map((personne) => {
+                const estSoi = utilisateur?.id === personne.id;
+                return (
+                  <tr key={personne.id} className="border-t border-bleu-hero">
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => preparerEdition(personne)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Modifier
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmation({ type: "mdp", personne })}
-                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
-                        >
-                          <KeyRound className="h-3.5 w-3.5" />
-                          MDP
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmation({ type: "actif", personne })}
-                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
-                        >
-                          <Power className="h-3.5 w-3.5" />
-                          {personne.actif ? "Désactiver" : "Activer"}
-                        </button>
+                      <div className="flex items-center gap-3">
+                        {personne.photoProfil ? (
+                          <img
+                            src={personne.photoProfil}
+                            alt=""
+                            className="h-9 w-9 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#1e3a8a] text-xs text-white">
+                            {personne.prenom[0]}
+                            {personne.nom[0]}
+                          </span>
+                        )}
+                        <span className="font-medium text-slate-800">
+                          {personne.nomComplet}
+                          {estSoi ? (
+                            <span className="ml-2 text-xs font-normal text-slate-400">(vous)</span>
+                          ) : null}
+                        </span>
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-4 py-3 text-slate-500">{personne.email}</td>
+                    <td className="px-4 py-3">{libelleRole(personne.role)}</td>
+                    <td className="px-4 py-3">
+                      <span className={personne.actif ? "text-emerald-600" : "text-slate-400"}>
+                        {personne.actif ? "Actif" : "Inactif"}
+                      </span>
+                    </td>
+                    {peutGerer && (
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => preparerEdition(personne)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmation({ type: "mdp", personne })}
+                            className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
+                            MDP
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmation({ type: "actif", personne })}
+                            disabled={estSoi}
+                            className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600 disabled:opacity-40"
+                          >
+                            <Power className="h-3.5 w-3.5" />
+                            {personne.actif ? "Désactiver" : "Activer"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmation({ type: "supprimer", personne })}
+                            disabled={estSoi}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-semibold uppercase text-rose-700 disabled:opacity-40"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Supprimer
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -458,25 +501,34 @@ export default function PageUtilisateursAdmin() {
         titre={
           confirmation?.type === "mdp"
             ? "Réinitialiser le mot de passe"
-            : confirmation?.personne.actif
-              ? "Désactiver le compte"
-              : "Réactiver le compte"
+            : confirmation?.type === "supprimer"
+              ? "Supprimer définitivement"
+              : confirmation?.personne.actif
+                ? "Désactiver le compte"
+                : "Réactiver le compte"
         }
         message={
           confirmation?.type === "mdp"
             ? `Générer un nouveau mot de passe temporaire pour ${confirmation.personne.nomComplet} ? Il devra le changer dans Profil / Paramètres.`
-            : confirmation?.personne.actif
-              ? `Désactiver le compte de ${confirmation.personne.nomComplet} ? Cette personne ne pourra plus se connecter.`
-              : `Réactiver le compte de ${confirmation?.personne.nomComplet} ?`
+            : confirmation?.type === "supprimer"
+              ? `Supprimer définitivement ${confirmation.personne.nomComplet} (${libelleRole(confirmation.personne.role)}) ? Cette action est irréversible.`
+              : confirmation?.personne.actif
+                ? `Désactiver le compte de ${confirmation.personne.nomComplet} ? Cette personne ne pourra plus se connecter.`
+                : `Réactiver le compte de ${confirmation?.personne.nomComplet} ?`
         }
         confirmerLibelle={
           confirmation?.type === "mdp"
             ? "Réinitialiser"
-            : confirmation?.personne.actif
-              ? "Désactiver"
-              : "Réactiver"
+            : confirmation?.type === "supprimer"
+              ? "Supprimer définitivement"
+              : confirmation?.personne.actif
+                ? "Désactiver"
+                : "Réactiver"
         }
-        danger={confirmation?.type === "actif" && Boolean(confirmation.personne.actif)}
+        danger={
+          confirmation?.type === "supprimer" ||
+          (confirmation?.type === "actif" && Boolean(confirmation.personne.actif))
+        }
         enCours={confirmationEnCours}
         onAnnuler={() => {
           if (!confirmationEnCours) setConfirmation(null);

@@ -303,3 +303,67 @@ export async function desactiverPersonnelAdmin(requete: RequeteAuthentifiee, rep
     message: misAJour.actif ? "Compte réactivé." : "Compte désactivé.",
   });
 }
+
+export async function supprimerPersonnelAdmin(requete: RequeteAuthentifiee, reponse: Response) {
+  const identifiant = identifiantRoute(requete.params.id);
+  if (identifiant === requete.utilisateurId) {
+    reponse.status(400).json({
+      succes: false,
+      message: "Vous ne pouvez pas supprimer votre propre compte.",
+    });
+    return;
+  }
+
+  const utilisateur = await baseDeDonnees.utilisateur.findFirst({
+    where: { id: identifiant, estInvite: false, role: { not: "CLIENT" } },
+  });
+  if (!utilisateur) {
+    reponse.status(404).json({ succes: false, message: "Personnel introuvable." });
+    return;
+  }
+
+  if (utilisateur.role === "SUPER_ADMIN") {
+    const autres = await baseDeDonnees.utilisateur.count({
+      where: { role: "SUPER_ADMIN", actif: true, id: { not: utilisateur.id } },
+    });
+    if (autres === 0) {
+      reponse.status(400).json({
+        succes: false,
+        message: "Impossible de supprimer le dernier Super Admin actif.",
+      });
+      return;
+    }
+  }
+
+  try {
+    await baseDeDonnees.$transaction(async (tx) => {
+      await tx.journalAudit.updateMany({
+        where: { utilisateurId: identifiant },
+        data: { utilisateurId: null },
+      });
+      await tx.message.deleteMany({ where: { auteurId: identifiant } });
+      await tx.lignePanier.deleteMany({ where: { clientId: identifiant } });
+      await tx.utilisateur.delete({ where: { id: identifiant } });
+    });
+  } catch {
+    reponse.status(409).json({
+      succes: false,
+      message:
+        "Suppression impossible : ce compte est encore lié à des données (commandes, conversations…). Désactivez-le plutôt.",
+    });
+    return;
+  }
+
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "SUPPRESSION_PERSONNEL",
+    tableCible: "utilisateurs",
+    details: `Personnel supprimé définitivement : ${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.email}) — rôle ${utilisateur.role}`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
+  reponse.json({
+    succes: true,
+    message: `Compte de ${utilisateur.prenom} ${utilisateur.nom} supprimé définitivement.`,
+  });
+}

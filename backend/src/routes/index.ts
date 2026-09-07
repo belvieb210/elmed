@@ -40,6 +40,7 @@ import {
   listerPersonnelAdmin,
   mettreAJourPersonnelAdmin,
   reinitialiserMotDePassePersonnel,
+  supprimerPersonnelAdmin,
 } from "../controleurs/admin-utilisateurs.controleur";
 import {
   obtenirEntrepriseAdmin,
@@ -164,6 +165,7 @@ routeurPrincipal.post(
   reinitialiserMotDePassePersonnel,
 );
 routeurPrincipal.patch("/admin/utilisateurs/:id/actif", ...espaceSuperAdmin, desactiverPersonnelAdmin);
+routeurPrincipal.delete("/admin/utilisateurs/:id", ...espaceSuperAdmin, supprimerPersonnelAdmin);
 routeurPrincipal.get("/admin/parametres/entreprise", ...espaceAdmin, obtenirEntrepriseAdmin);
 routeurPrincipal.put("/admin/parametres/entreprise", ...espaceAdminOuSuper, mettreAJourEntrepriseAdmin);
 routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdminComplet);
