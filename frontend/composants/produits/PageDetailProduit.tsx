@@ -13,20 +13,27 @@ import { useClient } from "@/store/contexteClient";
 import type { DetailProduit } from "@/types/modeles";
 
 export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: string }) {
-  const { ajouterProduitAuPanier } = useClient();
+  const { ajouterProduitAuPanier, personnel } = useClient();
   const [produit, setProduit] = useState<DetailProduit | null>(null);
   const [quantite, setQuantite] = useState(1);
   const [enCours, setEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [introuvable, setIntrouvable] = useState(false);
   const bandeauSimilaires = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setProduit(null);
-    appelerApi<{ produit: DetailProduit }>(`/produits/${identifiantProduit}`).then((donnees) => {
-      setProduit(donnees.produit);
-      setQuantite(1);
-      setMessage(null);
-    });
+    setIntrouvable(false);
+    appelerApi<{ produit: DetailProduit }>(`/produits/${identifiantProduit}`)
+      .then((donnees) => {
+        setProduit(donnees.produit);
+        setQuantite(1);
+        setMessage(null);
+      })
+      .catch(() => {
+        setProduit(null);
+        setIntrouvable(true);
+      });
   }, [identifiantProduit]);
 
   async function ajouter() {
@@ -46,6 +53,19 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
     bandeauSimilaires.current?.scrollBy({ left: direction * 260, behavior: "smooth" });
   }
 
+  if (introuvable) {
+    return (
+      <MiseEnPageClient>
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+          Produit introuvable ou retiré du catalogue.
+        </p>
+        <Link href="/produits" className="mt-4 inline-block text-sm font-medium text-violet-marque">
+          Retour aux produits
+        </Link>
+      </MiseEnPageClient>
+    );
+  }
+
   if (!produit) {
     return (
       <MiseEnPageClient>
@@ -60,6 +80,15 @@ export function PageDetailProduit({ identifiantProduit }: { identifiantProduit: 
 
   return (
     <MiseEnPageClient>
+      {personnel && (
+        <p className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+          Aperçu fiche publique — vous consultez le catalogue en tant qu’administrateur.
+          <Link href="/admin/produits" className="ml-2 font-semibold underline">
+            Retour admin produits
+          </Link>
+        </p>
+      )}
+
       <p className="mb-4 text-sm text-slate-500">
         <Link href="/produits" className="hover:text-violet-marque">
           Produits

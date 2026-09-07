@@ -140,6 +140,7 @@ export function PanneauLateralProduit({
             <Link
               href={`/produits/${apercu.id}`}
               target="_blank"
+              rel="noopener noreferrer"
               className="col-span-2 flex min-h-16 items-center justify-center gap-2 rounded-xl border border-bleu-hero bg-slate-50 px-3 py-3 text-xs font-semibold text-[#1e3a8a] hover:bg-white"
             >
               <Eye className="h-4 w-4" />

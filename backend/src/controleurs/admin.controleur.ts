@@ -463,24 +463,94 @@ export async function listerClientsAdmin(_requete: RequeteAuthentifiee, reponse:
   });
 }
 
-export async function listerDocumentsAdmin(_requete: RequeteAuthentifiee, reponse: Response) {
-  const documents = await baseDeDonnees.document.findMany({
-    include: { commande: { include: { client: true } } },
-    orderBy: { dateCreation: "desc" },
-    take: 80,
-  });
+export async function listerDocumentsAdmin(requete: RequeteAuthentifiee, reponse: Response) {
+  const type = String(requete.query.type ?? "").trim().toUpperCase();
+  const recherche = String(requete.query.recherche ?? "").trim();
+  const limite = Math.min(100, Math.max(1, Number(requete.query.limite) || 40));
+  const page = Math.max(1, Number(requete.query.page) || 1);
+
+  const where = {
+    ...(type && ["PROFORMA", "FACTURE", "BON_LIVRAISON", "BON_CAISSE", "AUTRE"].includes(type)
+      ? { typeDocument: type as "PROFORMA" | "FACTURE" | "BON_LIVRAISON" | "BON_CAISSE" | "AUTRE" }
+      : {}),
+    ...(recherche
+      ? {
+          OR: [
+            { numeroDocument: { contains: recherche, mode: "insensitive" as const } },
+            {
+              commande: {
+                OR: [
+                  { numeroCommande: { contains: recherche, mode: "insensitive" as const } },
+                  {
+                    client: {
+                      OR: [
+                        { prenom: { contains: recherche, mode: "insensitive" as const } },
+                        { nom: { contains: recherche, mode: "insensitive" as const } },
+                        { nomSociete: { contains: recherche, mode: "insensitive" as const } },
+                        { email: { contains: recherche, mode: "insensitive" as const } },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const [total, documents, repartition] = await Promise.all([
+    baseDeDonnees.document.count({ where }),
+    baseDeDonnees.document.findMany({
+      where,
+      include: {
+        commande: {
+          include: {
+            client: true,
+            paiements: { orderBy: { datePaiement: "desc" }, take: 1 },
+          },
+        },
+      },
+      orderBy: { dateCreation: "desc" },
+      skip: (page - 1) * limite,
+      take: limite,
+    }),
+    baseDeDonnees.document.groupBy({
+      by: ["typeDocument"],
+      _count: { _all: true },
+    }),
+  ]);
 
   reponse.json({
     succes: true,
-    documents: documents.map((document) => ({
-      id: document.id,
-      typeDocument: document.typeDocument,
-      numeroDocument: document.numeroDocument,
-      dateCreation: document.dateCreation,
-      commandeId: document.commandeId,
-      numeroCommande: document.commande?.numeroCommande ?? null,
-      nomClient: document.commande ? nomClient(document.commande.client) : "—",
-    })),
+    total,
+    page,
+    limite,
+    pages: Math.max(1, Math.ceil(total / limite)),
+    statistiques: {
+      total: repartition.reduce((somme, item) => somme + item._count._all, 0),
+      parType: Object.fromEntries(
+        repartition.map((item) => [item.typeDocument, item._count._all]),
+      ) as Record<string, number>,
+    },
+    documents: documents.map((document) => {
+      const paiement = document.commande?.paiements[0];
+      return {
+        id: document.id,
+        typeDocument: document.typeDocument,
+        numeroDocument: document.numeroDocument,
+        dateCreation: document.dateCreation,
+        commandeId: document.commandeId,
+        numeroCommande: document.commande?.numeroCommande ?? null,
+        montantTotal: document.commande ? Number(document.commande.montantTotal) : null,
+        statutCommande: document.commande?.statut ?? null,
+        statutPaiement: paiement?.statut ?? null,
+        modePaiement: paiement?.modePaiement ?? null,
+        nomClient: document.commande ? nomClient(document.commande.client) : "—",
+        numeroClient: document.commande?.client.numeroClient ?? null,
+        emailClient: document.commande?.client.email ?? null,
+      };
+    }),
   });
 }
 

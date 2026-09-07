@@ -84,6 +84,28 @@ export function libelleModeFacture(mode?: string) {
   return libelles[mode ?? ""] ?? mode ?? "Cash";
 }
 
+export function libelleTypeDocument(type?: string) {
+  const libelles: Record<string, string> = {
+    PROFORMA: "Proforma",
+    FACTURE: "Facture",
+    BON_LIVRAISON: "Bon de livraison",
+    BON_CAISSE: "Bon de caisse",
+    AUTRE: "Autre",
+  };
+  return libelles[type ?? ""] ?? type ?? "Document";
+}
+
+export function libelleStatutPaiement(statut?: string) {
+  const libelles: Record<string, string> = {
+    EN_ATTENTE: "En attente",
+    PARTIEL: "Partiel",
+    PAYE: "Payé",
+    ECHEC: "Échec",
+    REMBOURSE: "Remboursé",
+  };
+  return libelles[statut ?? ""] ?? statut ?? "—";
+}
+
 export function libelleRole(role?: string) {
   const libelles: Record<string, string> = {
     CLIENT: "Client",

@@ -197,7 +197,9 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (chargement) return;
     const espaceAdmin = chemin.startsWith("/admin");
-    if (personnel && !espaceAdmin) {
+    const apercuCatalogue =
+      chemin === "/produits" || chemin.startsWith("/produits/");
+    if (personnel && !espaceAdmin && !apercuCatalogue) {
       routeur.replace("/admin");
       return;
     }
