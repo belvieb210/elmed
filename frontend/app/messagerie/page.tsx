@@ -132,14 +132,14 @@ function FilDiscussion() {
         </div>
       )}
 
-      <div className="flex h-[calc(100dvh-11rem)] min-h-[24rem] flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
+      <div className="flex h-[calc(100dvh-var(--hauteur-en-tete)-8rem)] min-h-0 flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
         {fichiers.length > 0 && (
           <div className="border-b border-bleu-hero px-4 py-2 text-xs text-slate-500">
             {fichiers.length} fichier{fichiers.length > 1 ? "s" : ""} joint{fichiers.length > 1 ? "s" : ""} dans cette
             discussion
           </div>
         )}
-        <div ref={listeRef} className="flex-1 space-y-4 overflow-y-auto p-4">
+        <div ref={listeRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
           {!pret && <p className="text-sm text-slate-400">Ouverture de la discussion...</p>}
           {pret &&
             messages.map((message) => (
@@ -168,17 +168,19 @@ function FilDiscussion() {
               />
             ))}
         </div>
-        <ComposerMessage
-          key={`${edition?.id ?? "nouveau"}-${reponse?.id ?? ""}`}
-          placeholder="Écrire un message..."
-          reponse={reponse}
-          texteInitial={edition?.contenu ?? ""}
-          onAnnulerReponse={() => {
-            setReponse(null);
-            setEdition(null);
-          }}
-          onEnvoyer={envoyer}
-        />
+        <div className="shrink-0 bg-white">
+          <ComposerMessage
+            key={`${edition?.id ?? "nouveau"}-${reponse?.id ?? ""}`}
+            placeholder="Écrire un message..."
+            reponse={reponse}
+            texteInitial={edition?.contenu ?? ""}
+            onAnnulerReponse={() => {
+              setReponse(null);
+              setEdition(null);
+            }}
+            onEnvoyer={envoyer}
+          />
+        </div>
       </div>
     </>
   );

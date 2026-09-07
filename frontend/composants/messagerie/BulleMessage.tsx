@@ -42,7 +42,6 @@ export function BulleMessage({
       <div ref={zone} className={`group relative ${message.estMoi ? "ml-auto" : ""} w-fit max-w-[92%] sm:max-w-[320px]`}>
         <CarteProduitMessage fiche={message.ficheProduit} message={message} lienProduit={lienProduit} />
         <BoutonMenu
-          alignerDroite={message.estMoi}
           ouvert={ouvert}
           onOuvrir={() => setOuvert((actuel) => !actuel)}
           message={message}
@@ -69,25 +68,15 @@ export function BulleMessage({
   const fichier = message.fichierUrl && !image;
 
   return (
-    <div ref={zone} className={`group relative flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
-      {!message.estMoi && (
-        <span className="mr-2 mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full bg-violet-marque">
-          {message.photoProfilAuteur ? (
-            <img src={message.photoProfilAuteur} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="grid h-full w-full place-items-center text-[10px] font-semibold text-white">
-              {message.initialsAuteur || message.nomAuteur.slice(0, 2).toUpperCase()}
-            </span>
-          )}
-        </span>
-      )}
+    <div ref={zone} className={`group relative flex items-start ${message.estMoi ? "justify-end" : "justify-start"}`}>
+      {!message.estMoi && <AvatarAuteur message={message} className="mr-2" />}
       <div className="relative max-w-[88%] sm:max-w-[78%]">
-        {!message.estMoi && (
-          <p className="mb-1 text-xs font-semibold text-slate-800">
-            {message.nomAuteur}
-            {message.roleAuteur ? <span className="font-normal text-slate-400"> ({message.roleAuteur})</span> : null}
-          </p>
-        )}
+        <p className={`mb-1 text-xs font-semibold text-slate-800 ${message.estMoi ? "text-right" : ""}`}>
+          {message.nomAuteur}
+          {message.roleAuteur ? (
+            <span className="font-normal text-slate-400"> ({message.roleAuteur})</span>
+          ) : null}
+        </p>
         {message.reponseA && (
           <div className="mb-1 rounded-lg border-l-2 border-bleu-hero bg-slate-50 px-2 py-1 text-[11px] text-slate-500">
             <span className="font-semibold">{message.reponseA.nomAuteur}</span>
@@ -128,7 +117,6 @@ export function BulleMessage({
             {message.dateModification ? " · modifié" : ""}
           </p>
           <BoutonMenu
-            alignerDroite={message.estMoi}
             ouvert={ouvert}
             onOuvrir={() => setOuvert((actuel) => !actuel)}
             message={message}
@@ -141,12 +129,26 @@ export function BulleMessage({
           />
         </div>
       </div>
+      {message.estMoi && <AvatarAuteur message={message} className="ml-2" />}
     </div>
   );
 }
 
+function AvatarAuteur({ message, className = "" }: { message: MessageChat; className?: string }) {
+  return (
+    <span className={`mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full bg-violet-marque ${className}`}>
+      {message.photoProfilAuteur ? (
+        <img src={message.photoProfilAuteur} alt={message.nomAuteur} className="h-full w-full object-cover" />
+      ) : (
+        <span className="grid h-full w-full place-items-center text-[10px] font-semibold text-white">
+          {message.initialsAuteur || message.nomAuteur.slice(0, 2).toUpperCase()}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function BoutonMenu({
-  alignerDroite,
   ouvert,
   onOuvrir,
   message,
@@ -157,7 +159,6 @@ function BoutonMenu({
   onSupprimer,
   onFermer,
 }: {
-  alignerDroite: boolean;
   ouvert: boolean;
   onOuvrir: () => void;
   message: MessageChat;
@@ -176,8 +177,7 @@ function BoutonMenu({
     const cadre = boutonRef.current.getBoundingClientRect();
     const largeur = 208;
     const hauteur = 280;
-    const left =
-      cadre.right + largeur > window.innerWidth - 12 ? Math.max(8, cadre.right - largeur) : cadre.left;
+    const left = Math.max(8, cadre.right - largeur);
     const top =
       cadre.bottom + hauteur > window.innerHeight - 12 ? Math.max(8, cadre.top - hauteur) : cadre.bottom + 6;
     setPosition({ top, left });
@@ -189,9 +189,7 @@ function BoutonMenu({
         ref={boutonRef}
         type="button"
         onClick={onOuvrir}
-        className={`absolute -top-2 z-10 grid h-7 w-7 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 ${
-          alignerDroite ? "right-2" : "left-2"
-        } opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100`}
+        className="absolute -left-1 -top-2 z-10 grid h-7 w-7 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus:opacity-100"
         aria-label="Actions du message"
       >
         <ChevronDown className="h-3.5 w-3.5" />

@@ -59,7 +59,7 @@ export function ComposerMessage({
   }
 
   return (
-    <form onSubmit={(e) => void envoyer(e)} className="space-y-2 border-t border-bleu-hero p-2 sm:p-3">
+    <form onSubmit={(e) => void envoyer(e)} className="shrink-0 space-y-2 border-t border-bleu-hero bg-white p-3 sm:p-4">
       {reponse && (
         <div className="flex items-start gap-3 rounded-xl border border-bleu-hero bg-slate-50 px-3 py-2">
           {reponse.ficheProduit?.image && (

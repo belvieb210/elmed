@@ -113,9 +113,9 @@ function MessagerieAdmin() {
 
   return (
     <MiseEnPageAdmin titre="Messagerie" sousTitre="Échanges avec les clients — sans groupes">
-      <div className="grid h-[calc(100dvh-8rem)] min-h-[28rem] overflow-hidden rounded-2xl border border-bleu-hero bg-white md:h-[calc(100dvh-10rem)] lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_280px]">
-        <aside className={`border-bleu-hero lg:block lg:border-b-0 lg:border-r ${vueMobile === "liste" ? "block" : "hidden"}`}>
-          <div className="max-h-[40vh] overflow-y-auto lg:h-full lg:max-h-none">
+      <div className="grid h-[calc(100dvh-var(--hauteur-en-tete)-2rem)] min-h-0 overflow-hidden rounded-2xl border border-bleu-hero bg-white lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_280px]">
+        <aside className={`min-h-0 overflow-hidden border-bleu-hero lg:block lg:border-b-0 lg:border-r ${vueMobile === "liste" ? "block" : "hidden"}`}>
+          <div className="h-full max-h-[36vh] overflow-y-auto lg:max-h-none">
             {conversations.map((conversation) => (
               <button
                 key={conversation.id}
@@ -150,8 +150,8 @@ function MessagerieAdmin() {
           </div>
         </aside>
 
-        <section className={`min-h-0 flex-col ${vueMobile === "fil" ? "flex" : "hidden"} lg:flex`}>
-          <div className="flex items-center justify-between gap-2 border-b border-bleu-hero px-3 py-3 sm:px-4">
+        <section className={`h-full min-h-0 flex-col overflow-hidden ${vueMobile === "fil" ? "flex" : "hidden"} lg:flex`}>
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-bleu-hero px-3 py-3 sm:px-4">
             <div className="min-w-0">
               <button
                 type="button"
@@ -173,7 +173,7 @@ function MessagerieAdmin() {
               </button>
             )}
           </div>
-          <div ref={listeRef} className="flex-1 space-y-4 overflow-y-auto p-4">
+          <div ref={listeRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
             {messages.map((message) => (
               <BulleMessage
                 key={message.id}
@@ -203,21 +203,23 @@ function MessagerieAdmin() {
               />
             ))}
           </div>
-          <ComposerMessage
-            key={`${edition?.id ?? "nouveau"}-${reponse?.id ?? ""}`}
-            placeholder="Écrire un message..."
-            reponse={reponse}
-            texteInitial={edition?.contenu ?? ""}
-            onAnnulerReponse={() => {
-              setReponse(null);
-              setEdition(null);
-            }}
-            onEnvoyer={envoyer}
-          />
+          <div className="shrink-0 bg-white">
+            <ComposerMessage
+              key={`${edition?.id ?? "nouveau"}-${reponse?.id ?? ""}`}
+              placeholder="Écrire un message..."
+              reponse={reponse}
+              texteInitial={edition?.contenu ?? ""}
+              onAnnulerReponse={() => {
+                setReponse(null);
+                setEdition(null);
+              }}
+              onEnvoyer={envoyer}
+            />
+          </div>
         </section>
 
         {client ? (
-          <div className={`${vueMobile === "fiche" ? "flex min-h-0 flex-col" : "hidden"} xl:flex`}>
+          <div className={`min-h-0 overflow-hidden ${vueMobile === "fiche" ? "flex flex-col" : "hidden"} xl:flex`}>
             <button
               type="button"
               onClick={() => setVueMobile("fil")}
