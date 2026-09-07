@@ -386,9 +386,16 @@ export interface ProduitAdmin {
   id: string;
   nom: string;
   sku: string;
+  description?: string | null;
   prix: number;
   image: string | null;
+  images?: string[];
+  medias?: MediaProduit[];
   quantiteStock: number;
   disponible: boolean;
+  populaire?: boolean;
+  categorieId?: string;
   nomCategorie: string;
+  slugCategorie?: string;
+  caracteristiques?: CaracteristiqueProduit[];
 }

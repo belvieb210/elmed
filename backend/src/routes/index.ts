@@ -9,7 +9,6 @@ import {
   listerClientsAdmin,
   listerCommandesAdmin,
   listerDocumentsAdmin,
-  listerProduitsAdmin,
   listerUtilisateursAdmin,
   mettreAJourStatutCommande,
   obtenirBadgesAdmin,
@@ -27,6 +26,13 @@ import {
   telechargerFactureAdmin,
   telechargerFacturesGroupeesAdmin,
 } from "../controleurs/admin-factures.controleur";
+import {
+  creerProduitAdmin,
+  listerProduitsAdminComplet,
+  mettreAJourProduitAdmin,
+  obtenirProduitAdmin,
+  supprimerProduitAdmin,
+} from "../controleurs/admin-produits.controleur";
 import {
   agirSurMessageAdmin,
   listerConversationsAdmin,
@@ -132,4 +138,8 @@ routeurPrincipal.get("/admin/conversations/:id", ...espaceAdmin, obtenirConversa
 routeurPrincipal.post("/admin/conversations/:id", ...espaceAdmin, repondreConversationAdmin);
 routeurPrincipal.get("/admin/documents", ...espaceAdmin, listerDocumentsAdmin);
 routeurPrincipal.get("/admin/utilisateurs", ...espaceAdmin, listerUtilisateursAdmin);
-routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdmin);
+routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdminComplet);
+routeurPrincipal.post("/admin/produits", ...espaceAdmin, creerProduitAdmin);
+routeurPrincipal.get("/admin/produits/:id", ...espaceAdmin, obtenirProduitAdmin);
+routeurPrincipal.put("/admin/produits/:id", ...espaceAdmin, mettreAJourProduitAdmin);
+routeurPrincipal.delete("/admin/produits/:id", ...espaceAdmin, supprimerProduitAdmin);

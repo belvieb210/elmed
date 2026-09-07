@@ -113,8 +113,9 @@ function dessinerPageFacture(doc: PDFKit.PDFDocument, donnees: DonneesProforma) 
     const hauteurEntete = 22;
     const hauteurLigne = 22;
     const nombreLignes = 18;
+    const hauteurTotal = 36;
     const yTotal = yDepart + hauteurEntete + nombreLignes * hauteurLigne;
-    const yBas = yTotal + 24;
+    const yBas = yTotal + hauteurTotal;
 
     doc.save();
     doc.fillColor(bleuFiligrane).opacity(0.22);
@@ -147,31 +148,52 @@ function dessinerPageFacture(doc: PDFKit.PDFDocument, donnees: DonneesProforma) 
       doc.text(formaterMontant(ligne.prixTotal), colonnes[3] + 4, y + 6, { width: largeurs[3] - 8, align: "right" });
     }
 
-    largeurs.slice(0, 3).reduce((abscisse, largeur) => {
-      const suivante = abscisse + largeur;
-      doc.moveTo(suivante, yDepart).lineTo(suivante, yBas).stroke();
-      return suivante;
-    }, x);
+    // Séparateurs verticaux : Qté|Désignation s'arrête avant la ligne total (fusion des 2 colonnes)
+    doc.strokeColor(bleuProforma);
+    doc.moveTo(colonnes[1], yDepart).lineTo(colonnes[1], yTotal).stroke();
+    doc.moveTo(colonnes[2], yDepart).lineTo(colonnes[2], yBas).stroke();
+    doc.moveTo(colonnes[3], yDepart).lineTo(colonnes[3], yBas).stroke();
 
     doc.moveTo(x, yTotal).lineTo(x + largeurTable, yTotal).stroke();
-    doc.font("Helvetica-Bold").fontSize(11).fillColor(bleuProforma);
-    doc.text("TOTAL GENERAL  →", x + 8, yTotal + 7, { width: largeurs[0] + largeurs[1] + largeurs[2] - 16, align: "right" });
-    doc.text(formaterMontant(donnees.montantTotal), colonnes[3] + 4, yTotal + 7, {
+
+    const largeurFusion = largeurs[0] + largeurs[1];
+    const paye = donnees.montantPaye ?? 0;
+    const reste = donnees.resteAPayer ?? Math.max(0, donnees.montantTotal - paye);
+    const payee = donnees.statutPaiement === "PAYE";
+    const afficherPaiement =
+      paye > 0 || reste > 0 || Boolean(donnees.libellePaiement || donnees.libelleModePaiement);
+
+    if (afficherPaiement) {
+      doc.font("Helvetica").fontSize(7).fillColor(bleuProforma);
+      doc.text(
+        `Montant payé : ${formaterMontant(paye)}   Reste à payer : ${formaterMontant(reste)}`,
+        x + 5,
+        yTotal + 6,
+        { width: largeurFusion - 10, align: "left" },
+      );
+      if (donnees.libellePaiement || donnees.libelleModePaiement) {
+        doc.font("Helvetica-Bold").fontSize(7).fillColor(payee ? "#047857" : "#c2410c");
+        doc.text(
+          `Paiement : ${donnees.libellePaiement ?? "En attente"}${
+            donnees.libelleModePaiement ? ` — ${donnees.libelleModePaiement}` : ""
+          }`,
+          x + 5,
+          yTotal + 19,
+          { width: largeurFusion - 10, align: "left" },
+        );
+      }
+    }
+
+    doc.font("Helvetica-Bold").fontSize(9).fillColor(bleuProforma);
+    doc.text("TOTAL GENERAL →", colonnes[2] + 2, yTotal + 12, {
+      width: largeurs[2] - 4,
+      align: "right",
+    });
+    doc.font("Helvetica-Bold").fontSize(11);
+    doc.text(formaterMontant(donnees.montantTotal), colonnes[3] + 4, yTotal + 11, {
       width: largeurs[3] - 8,
       align: "right",
     });
-
-    if ((donnees.montantPaye ?? 0) > 0 || (donnees.resteAPayer ?? 0) > 0) {
-      const paye = donnees.montantPaye ?? 0;
-      const reste = donnees.resteAPayer ?? Math.max(0, donnees.montantTotal - paye);
-      doc.font("Helvetica").fontSize(10).fillColor(bleuProforma);
-      doc.text(
-        `Montant payé : ${formaterMontant(paye)}     Reste à payer : ${formaterMontant(reste)}`,
-        36,
-        yBas + 10,
-        { width: 523, align: "center" },
-      );
-    }
 
     if (donnees.lignes.length > nombreLignes) {
       doc.addPage();
@@ -183,17 +205,6 @@ function dessinerPageFacture(doc: PDFKit.PDFDocument, donnees: DonneesProforma) 
         doc.fillColor("#1a365d").font("Helvetica").fontSize(9);
         doc.text(`${ligne.quantite}  ${ligne.designation}    ${formaterMontant(ligne.prixTotal)}`, 36, y, { width: 523 });
       });
-    }
-
-    const payee = donnees.statutPaiement === "PAYE";
-    if (donnees.libellePaiement || donnees.libelleModePaiement) {
-      doc.font("Helvetica-Bold").fontSize(11).fillColor(payee ? "#047857" : "#c2410c");
-      doc.text(
-        `Paiement : ${donnees.libellePaiement ?? "En attente"}${donnees.libelleModePaiement ? ` — ${donnees.libelleModePaiement}` : ""}`,
-        36,
-        752,
-        { width: 523, align: "center" },
-      );
     }
 
     if (payee) {

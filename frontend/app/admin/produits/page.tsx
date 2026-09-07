@@ -1,58 +1,295 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Eye, Pencil, Trash2 } from "lucide-react";
+import { FormulaireNouveauProduit } from "@/composants/admin/FormulaireNouveauProduit";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
+import {
+  PanneauLateralProduit,
+  type ApercuProduit,
+} from "@/composants/admin/PanneauLateralProduit";
 import { formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
+import type { Categorie, ProduitAdmin } from "@/types/modeles";
+
+const apercuVide: ApercuProduit = {
+  nom: "",
+  sku: "",
+  description: "",
+  prix: 0,
+  quantiteStock: 0,
+  nomCategorie: "",
+  disponible: true,
+  populaire: false,
+  images: [],
+  videoUrl: null,
+  videoCouverture: null,
+  caracteristiques: [],
+};
 
 export default function PageProduitsAdmin() {
-  const [produits, setProduits] = useState<
-    Array<{
-      id: string;
-      nom: string;
-      sku: string;
-      prix: number;
-      image: string | null;
-      quantiteStock: number;
-      disponible: boolean;
-      nomCategorie: string;
-    }>
-  >([]);
+  const [produits, setProduits] = useState<ProduitAdmin[]>([]);
+  const [categories, setCategories] = useState<Categorie[]>([]);
+  const [apercu, setApercu] = useState<ApercuProduit>(apercuVide);
+  const [produitAModifier, setProduitAModifier] = useState<ProduitAdmin | null>(null);
+  const [produitAfficheId, setProduitAfficheId] = useState<string | null>(null);
+  const [cleFormulaire, setCleFormulaire] = useState(0);
+  const [message, setMessage] = useState<string | null>(null);
+  const [suppressionEnCours, setSuppressionEnCours] = useState<string | null>(null);
 
-  useEffect(() => {
-    appelerApi<{ produits: typeof produits }>("/admin/produits")
+  const enregistrerApercu = useCallback((suivant: ApercuProduit) => {
+    setApercu((actuel) => {
+      if (!actuel.id) return suivant;
+      if (suivant.id && suivant.id === actuel.id) return suivant;
+      return actuel;
+    });
+  }, []);
+
+  const chargerProduits = useCallback(() => {
+    appelerApi<{ produits: ProduitAdmin[] }>("/admin/produits")
       .then((donnees) => setProduits(donnees.produits))
       .catch(() => setProduits([]));
   }, []);
 
+  useEffect(() => {
+    chargerProduits();
+    appelerApi<{ categories: Categorie[] }>("/categories")
+      .then((donnees) => setCategories(donnees.categories))
+      .catch(() => setCategories([]));
+  }, [chargerProduits]);
+
+  function afficherProduit(produit: ProduitAdmin) {
+    setProduitAfficheId(produit.id);
+    setApercu(apercuDepuisProduit(produit));
+  }
+
+  function reinitialiser() {
+    setCleFormulaire((actuel) => actuel + 1);
+    setApercu(apercuVide);
+    setProduitAfficheId(null);
+    setProduitAModifier(null);
+    setMessage(null);
+  }
+
+  async function supprimerProduit(produit: ProduitAdmin) {
+    if (!window.confirm(`Retirer « ${produit.nom} » du catalogue ?`)) return;
+    setSuppressionEnCours(produit.id);
+    try {
+      const reponse = await appelerApi<{ message: string; desactive?: boolean }>(
+        `/admin/produits/${produit.id}`,
+        { method: "DELETE" },
+      );
+      setMessage(reponse.message);
+      if (reponse.desactive) {
+        setProduits((actuels) =>
+          actuels.map((item) => (item.id === produit.id ? { ...item, disponible: false } : item)),
+        );
+      } else {
+        setProduits((actuels) => actuels.filter((item) => item.id !== produit.id));
+      }
+      if (produitAModifier?.id === produit.id || produitAfficheId === produit.id) {
+        reinitialiser();
+      }
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Suppression impossible.");
+    } finally {
+      setSuppressionEnCours(null);
+    }
+  }
+
   return (
-    <MiseEnPageAdmin titre="Produits" sousTitre="Catalogue MateMedical">
-      <div className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
+    <MiseEnPageAdmin
+      titre="Produits"
+      sousTitre="Publier le catalogue : médias, prix et caractéristiques"
+    >
+      {message && (
+        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {message}
+        </p>
+      )}
+
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-8">
+          <FormulaireNouveauProduit
+            key={cleFormulaire}
+            categories={categories}
+            produitAModifier={produitAModifier}
+            onApercu={enregistrerApercu}
+            onAnnuler={reinitialiser}
+            onCree={(produit) => {
+              setProduits((actuels) => [produit, ...actuels.filter((item) => item.id !== produit.id)]);
+              afficherProduit(produit);
+              setMessage("Produit publié. Visible sur /produits dès qu’il est disponible.");
+              setCleFormulaire((actuel) => actuel + 1);
+            }}
+            onModifie={(produit) => {
+              setProduits((actuels) =>
+                actuels.map((item) => (item.id === produit.id ? produit : item)),
+              );
+              setProduitAModifier(null);
+              afficherProduit(produit);
+              setMessage("Produit mis à jour.");
+              setCleFormulaire((actuel) => actuel + 1);
+            }}
+          />
+        </div>
+        <div className="xl:col-span-4">
+          <PanneauLateralProduit apercu={apercu} onNouveau={reinitialiser} onAnnuler={reinitialiser} />
+        </div>
+      </div>
+
+      <section className="mt-6 overflow-hidden rounded-2xl border border-bleu-hero bg-white">
+        <div className="border-b border-bleu-hero px-4 py-3">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Catalogue ({produits.length})
+          </h2>
+          <p className="mt-1 text-xs text-slate-400">
+            Modifier un produit remplit le formulaire ci-dessus avec images, vidéo et specs.
+          </p>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-400">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Produit</th>
                 <th className="px-4 py-3 font-medium">SKU</th>
-                <th className="px-4 py-3 font-medium">Catégorie</th>
+                <th className="hidden px-4 py-3 font-medium md:table-cell">Catégorie</th>
                 <th className="px-4 py-3 font-medium">Prix</th>
                 <th className="px-4 py-3 font-medium">Stock</th>
+                <th className="px-4 py-3 font-medium">Statut</th>
+                <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {produits.map((produit) => (
-                <tr key={produit.id} className="border-t border-bleu-hero">
-                  <td className="px-4 py-3 font-medium text-slate-800">{produit.nom}</td>
-                  <td className="px-4 py-3 text-slate-500">{produit.sku}</td>
-                  <td className="px-4 py-3 text-slate-500">{produit.nomCategorie}</td>
-                  <td className="px-4 py-3">{formaterMontant(produit.prix)}</td>
-                  <td className="px-4 py-3">{produit.quantiteStock}</td>
-                </tr>
-              ))}
+              {produits.map((produit) => {
+                const affiche = produitAfficheId === produit.id;
+                return (
+                  <tr
+                    key={produit.id}
+                    onClick={() => afficherProduit(produit)}
+                    className={`cursor-pointer border-t border-bleu-hero ${
+                      affiche ? "bg-sky-50" : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        {produit.image ? (
+                          <img
+                            src={produit.image}
+                            alt=""
+                            className="h-10 w-10 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400">
+                            —
+                          </span>
+                        )}
+                        <span className="font-medium text-slate-800">{produit.nom}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{produit.sku}</td>
+                    <td className="hidden px-4 py-3 text-slate-500 md:table-cell">
+                      {produit.nomCategorie}
+                    </td>
+                    <td className="px-4 py-3">{formaterMontant(produit.prix)}</td>
+                    <td className="px-4 py-3">{produit.quantiteStock}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                          produit.disponible
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {produit.disponible ? "Publié" : "Masqué"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            afficherProduit(produit);
+                          }}
+                          className="rounded-lg border border-bleu-hero p-1.5 text-slate-600"
+                          aria-label="Voir le résumé"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProduitAModifier(produit);
+                            afficherProduit(produit);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Modifier
+                        </button>
+                        <Link
+                          href={`/produits/${produit.id}`}
+                          target="_blank"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                        >
+                          Fiche
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={suppressionEnCours === produit.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void supprimerProduit(produit);
+                          }}
+                          className="rounded-lg border border-rose-200 p-1.5 text-rose-600 disabled:opacity-50"
+                          aria-label="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+        {produits.length === 0 && (
+          <p className="px-4 py-6 text-sm text-slate-400">
+            Aucun produit. Remplissez le formulaire pour publier le premier article du catalogue.
+          </p>
+        )}
+      </section>
     </MiseEnPageAdmin>
   );
+}
+
+function apercuDepuisProduit(produit: ProduitAdmin): ApercuProduit {
+  const images =
+    produit.images?.length
+      ? produit.images
+      : produit.medias?.filter((m) => m.type === "IMAGE").map((m) => m.url) ??
+        (produit.image ? [produit.image] : []);
+  const video = produit.medias?.find((m) => m.type === "VIDEO");
+
+  return {
+    id: produit.id,
+    nom: produit.nom,
+    sku: produit.sku,
+    description: produit.description ?? "",
+    prix: produit.prix,
+    quantiteStock: produit.quantiteStock,
+    nomCategorie: produit.nomCategorie,
+    disponible: produit.disponible,
+    populaire: Boolean(produit.populaire),
+    images,
+    videoUrl: video?.url ?? null,
+    videoCouverture: video?.urlCouverture ?? null,
+    caracteristiques: produit.caracteristiques ?? [],
+  };
 }
