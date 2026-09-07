@@ -5,7 +5,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MateMedical",
-  description: "Catalogue, commande et paiement de produits médicaux. Compte facultatif pour le suivi et la messagerie.",
+  description:
+    "Catalogue, commande et paiement de produits médicaux. Compte facultatif pour le suivi et la messagerie.",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }, { url: "/medias/logo-microscope.png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+  },
 };
 
 export const viewport: Viewport = {
