@@ -120,8 +120,13 @@ export default function PageParametresAdmin() {
         siteWeb: reponse.entreprise.siteWeb ?? "",
         logoUrl: reponse.entreprise.logoUrl ?? "",
       });
-      setMessage(reponse.message);
+      setMessage(
+        `Paramètres enregistrés. L’application s’affiche désormais sous « ${reponse.entreprise.nomCommercial} ».`,
+      );
       window.dispatchEvent(new Event("mm-entreprise-maj"));
+      if (typeof document !== "undefined") {
+        document.title = `Administration — ${reponse.entreprise.nomCommercial || "MateMedical"}`;
+      }
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Enregistrement impossible.");
     } finally {
@@ -226,10 +231,47 @@ export default function PageParametresAdmin() {
                 Ces informations alimentent les factures, proformas, filigranes et l’interface.
               </p>
             </div>
+
+            <div className="rounded-2xl border border-violet-marque/30 bg-violet-marque/5 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-marque">
+                Nom de l’application
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Affiché dans le menu, la connexion et l’aperçu « App ». Ex. MateMedical, Elmed Shop…
+              </p>
+              <label className="mt-3 block">
+                <span className={label}>App (nom commercial) *</span>
+                <input
+                  className={champ}
+                  disabled={!peutModifierEntreprise}
+                  value={entreprise.nomCommercial}
+                  placeholder="MateMedical"
+                  onChange={(e) =>
+                    setEntreprise((actuel) => ({ ...actuel, nomCommercial: e.target.value }))
+                  }
+                  required
+                />
+              </label>
+              <div className="mt-3 flex items-center gap-3 rounded-xl border border-bleu-hero bg-white px-3 py-2.5">
+                {entreprise.logoUrl ? (
+                  <img src={entreprise.logoUrl} alt="" className="h-9 w-9 rounded-lg object-contain" />
+                ) : (
+                  <span className="grid h-9 w-9 place-items-center rounded-lg bg-violet-marque text-xs font-bold text-white">
+                    {(entreprise.nomCommercial || "MM").slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-violet-marque">
+                    {entreprise.nomCommercial || "MateMedical"}
+                  </p>
+                  <p className="text-[11px] text-slate-400">Aperçu menu latéral</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               {(
                 [
-                  ["nomCommercial", "Nom commercial (app)", "MateMedical"],
                   ["raisonSociale", "Raison sociale (factures)", "ELMED"],
                   ["activite1", "Activité 1", "Vente des Matériels Médicaux"],
                   ["activite2", "Activité 2", "Réactifs de Labo…"],
@@ -301,9 +343,24 @@ export default function PageParametresAdmin() {
             </article>
             <article className="rounded-2xl border border-bleu-hero bg-white p-5">
               <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Aperçu facture
+                Aperçu application & facture
               </h3>
-              <p className="mt-3 text-2xl font-bold text-[#2B6CB0]">
+              <div className="mt-3 flex items-center gap-3 rounded-xl border border-bleu-hero bg-slate-50 px-3 py-3">
+                {entreprise.logoUrl ? (
+                  <img src={entreprise.logoUrl} alt="" className="h-10 w-10 rounded-lg object-contain" />
+                ) : (
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-violet-marque text-sm font-bold text-white">
+                    {(entreprise.nomCommercial || "MM").slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">App</p>
+                  <p className="text-base font-semibold text-violet-marque">
+                    {entreprise.nomCommercial || "MateMedical"}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-[#2B6CB0]">
                 {entreprise.raisonSociale || "ELMED"}
               </p>
               <p className="mt-1 text-xs text-slate-500">{entreprise.activite1}</p>
@@ -311,9 +368,6 @@ export default function PageParametresAdmin() {
               <p className="mt-3 text-xs text-slate-600">RCCM : {entreprise.rccm || "—"}</p>
               <p className="text-xs text-slate-600">Id. Nat. {entreprise.idNational || "—"}</p>
               <p className="text-xs text-slate-600">{entreprise.adresse || "—"}</p>
-              <p className="mt-2 text-xs font-medium text-violet-marque">
-                App : {entreprise.nomCommercial || "MateMedical"}
-              </p>
             </article>
           </aside>
         </form>

@@ -4,20 +4,44 @@ import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import type { ParametreEntreprise } from "@/types/modeles";
 
-export function LogoMateMedical({ taille = "md" }: { taille?: "sm" | "md" }) {
+const NOM_DEFAUT = "MateMedical";
+
+export function LogoMateMedical({
+  taille = "md",
+  clair = false,
+}: {
+  taille?: "sm" | "md";
+  clair?: boolean;
+}) {
   const dimension = taille === "sm" ? "h-8 w-8" : "h-10 w-10";
   const texte = taille === "sm" ? "text-lg" : "text-xl";
-  const [marque, setMarque] = useState({ nom: "MateMedical", logoUrl: null as string | null });
+  const [marque, setMarque] = useState({ nom: NOM_DEFAUT, logoUrl: null as string | null });
 
   useEffect(() => {
+    function appliquerTitre(nom: string) {
+      if (typeof document === "undefined") return;
+      const actuel = document.title;
+      if (actuel.includes("Administration")) {
+        document.title = `Administration — ${nom}`;
+      } else if (actuel.includes("Connexion")) {
+        document.title = `Connexion — ${nom}`;
+      } else if (actuel.includes("Créer un compte") || actuel.includes("Inscription")) {
+        document.title = `Créer un compte — ${nom}`;
+      } else if (!actuel || actuel === NOM_DEFAUT || actuel.includes("MateMedical")) {
+        document.title = nom;
+      }
+    }
+
     function charger() {
       appelerApi<{ entreprise: ParametreEntreprise }>("/entreprise")
-        .then((donnees) =>
+        .then((donnees) => {
+          const nom = donnees.entreprise.nomCommercial?.trim() || NOM_DEFAUT;
           setMarque({
-            nom: donnees.entreprise.nomCommercial || "MateMedical",
+            nom,
             logoUrl: donnees.entreprise.logoUrl || null,
-          }),
-        )
+          });
+          appliquerTitre(nom);
+        })
         .catch(() => undefined);
     }
     charger();
@@ -35,7 +59,9 @@ export function LogoMateMedical({ taille = "md" }: { taille?: "sm" | "md" }) {
         />
       ) : (
         <span
-          className={`${dimension} grid place-items-center rounded-xl bg-violet-marque text-white shadow-sm`}
+          className={`${dimension} grid place-items-center rounded-xl ${
+            clair ? "bg-white/15 text-white" : "bg-violet-marque text-white shadow-sm"
+          }`}
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
             <path
@@ -49,7 +75,13 @@ export function LogoMateMedical({ taille = "md" }: { taille?: "sm" | "md" }) {
           </svg>
         </span>
       )}
-      <span className={`${texte} font-semibold tracking-tight text-violet-marque`}>{marque.nom}</span>
+      <span
+        className={`${texte} font-semibold tracking-tight ${
+          clair ? "text-white" : "text-violet-marque"
+        }`}
+      >
+        {marque.nom}
+      </span>
     </div>
   );
 }

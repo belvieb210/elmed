@@ -35,9 +35,8 @@ export function MiseEnPageAuth({
       <aside className="relative hidden overflow-hidden bg-[linear-gradient(160deg,#2b2a7a_0%,#4f46c7_48%,#5b4fe8_100%)] px-10 py-10 text-white lg:flex lg:flex-col">
         <div className="pointer-events-none absolute -right-16 top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 left-10 h-64 w-64 rounded-full bg-sky-300/10 blur-3xl" />
-        <Link href="/" className="relative z-10 inline-flex items-center gap-2 text-white">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 text-lg font-semibold">M</span>
-          <span className="text-xl font-semibold tracking-tight">MateMedical</span>
+        <Link href="/" className="relative z-10 inline-flex items-center gap-2">
+          <LogoMateMedical clair />
         </Link>
         <div className="relative z-10 mt-16 max-w-md">
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/70">Espace professionnel</p>
