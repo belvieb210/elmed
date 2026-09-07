@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   ClipboardList,
-  FolderTree,
   HelpCircle,
   Home,
   MessageCircle,
@@ -22,7 +21,6 @@ import { useClient } from "@/store/contexteClient";
 const liens = [
   { href: "/", libelle: "Accueil", icone: Home },
   { href: "/produits", libelle: "Produits", icone: Package },
-  { href: "/categories", libelle: "Catégories", icone: FolderTree },
   { href: "/panier", libelle: "Panier", icone: ShoppingCart, badge: "panier" as const },
   { href: "/commandes", libelle: "Mes commandes", icone: ClipboardList },
   { href: "/messagerie", libelle: "Messagerie", icone: MessageCircle, badge: "messages" as const },

@@ -6,6 +6,7 @@ import { baseDeDonnees } from "../config/baseDeDonnees";
 import { optionsCookieInvite, optionsCookieJeton } from "../config/environnement";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { genererNumeroClient } from "../clients/numero-client";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 const schemaConnexion = z.object({
   email: z.string().email(),
@@ -83,6 +84,15 @@ export async function connecterClient(requete: Request, reponse: Response) {
   const inviteId = requete.cookies?.mm_invite as string | undefined;
   await fusionnerCompteInvite(inviteId, utilisateur.id);
   poserSession(reponse, utilisateur.id, utilisateur.role, false);
+
+  void enregistrerAudit({
+    utilisateurId: utilisateur.id,
+    action: "CONNEXION",
+    tableCible: "sessions",
+    details: `Connexion de ${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.role}) — ${utilisateur.email}`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.json({
     succes: true,
     utilisateur: formaterUtilisateur({ ...utilisateur, estInvite: false }),
@@ -141,6 +151,15 @@ export async function inscrireClient(requete: Request, reponse: Response) {
     await fusionnerCompteInvite(inviteId, utilisateur.id);
   }
   poserSession(reponse, utilisateur.id, utilisateur.role, false);
+
+  void enregistrerAudit({
+    utilisateurId: utilisateur.id,
+    action: "INSCRIPTION_CLIENT",
+    tableCible: "utilisateurs",
+    details: `Inscription client : ${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.email})`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.status(201).json({
     succes: true,
     utilisateur: formaterUtilisateur(utilisateur),

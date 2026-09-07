@@ -46,7 +46,7 @@ const formVide: FormPersonnel = {
 export default function PageUtilisateursAdmin() {
   const { utilisateur } = useClient();
   const superAdmin = estSuperAdmin(utilisateur?.role);
-  const peutGerer = superAdmin || utilisateur?.role === "ADMIN";
+  const peutGerer = superAdmin;
 
   const [utilisateurs, setUtilisateurs] = useState<PersonnelAdmin[]>([]);
   const [formulaire, setFormulaire] = useState<FormPersonnel>(formVide);
@@ -205,6 +205,19 @@ export default function PageUtilisateursAdmin() {
     }
   }
 
+  if (!superAdmin) {
+    return (
+      <MiseEnPageAdmin titre="Utilisateurs" sousTitre="Comptes personnel MateMedical">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-8 text-center">
+          <p className="text-sm font-semibold text-amber-900">Accès réservé au Super Admin</p>
+          <p className="mt-1 text-sm text-amber-800">
+            Seul un Super Admin peut gérer les comptes personnel et consulter cette page.
+          </p>
+        </div>
+      </MiseEnPageAdmin>
+    );
+  }
+
   return (
     <MiseEnPageAdmin
       titre="Utilisateurs"
@@ -351,11 +364,7 @@ export default function PageUtilisateursAdmin() {
             )}
           </div>
         </form>
-      ) : (
-        <p className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-          Consultation seule. La création de personnel est réservée aux Admin / Super Admin.
-        </p>
-      )}
+      ) : null}
 
       <section className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
         <div className="border-b border-bleu-hero px-4 py-3">

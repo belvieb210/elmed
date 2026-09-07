@@ -10,6 +10,7 @@ import {
   LogOut,
   MessageCircle,
   Package,
+  ScrollText,
   Settings,
   Users,
   UserRound,
@@ -18,9 +19,10 @@ import {
 import { LogoMateMedical } from "@/composants/LogoMateMedical";
 import { PhotoProfil } from "@/composants/messagerie/PhotoProfil";
 import { libelleRole } from "@/lib/formatage";
+import { estSuperAdmin } from "@/lib/roles";
 import { useClient } from "@/store/contexteClient";
 
-const liens = [
+const liensBase = [
   { href: "/admin", libelle: "Tableau de bord", icone: LayoutDashboard },
   { href: "/admin/clients", libelle: "Clients", icone: UserRound },
   { href: "/admin/facturations", libelle: "Facturations", icone: Receipt, badge: "factures" as const },
@@ -28,8 +30,12 @@ const liens = [
   { href: "/admin/messagerie", libelle: "Messagerie", icone: MessageCircle, badge: "messages" as const },
   { href: "/admin/produits", libelle: "Produits", icone: Package },
   { href: "/admin/documents", libelle: "Documents", icone: FileText },
-  { href: "/admin/utilisateurs", libelle: "Utilisateurs", icone: Users },
   { href: "/admin/parametres", libelle: "Paramètres", icone: Settings },
+];
+
+const liensSuperAdmin = [
+  { href: "/admin/utilisateurs", libelle: "Utilisateurs", icone: Users, badge: undefined as undefined },
+  { href: "/admin/audit", libelle: "Audit", icone: ScrollText, badge: undefined as undefined },
 ];
 
 export function BarreLateraleAdmin({
@@ -43,6 +49,14 @@ export function BarreLateraleAdmin({
 }) {
   const chemin = usePathname();
   const { utilisateur, menuMobileOuvert, definirMenuMobileOuvert, deconnecter } = useClient();
+  const superAdmin = estSuperAdmin(utilisateur?.role);
+  const liens = superAdmin
+    ? [
+        ...liensBase.slice(0, -1),
+        ...liensSuperAdmin,
+        liensBase[liensBase.length - 1],
+      ]
+    : liensBase;
 
   function valeurBadge(type?: "commandes" | "messages" | "factures") {
     if (type === "commandes") return commandesAujourdhui;

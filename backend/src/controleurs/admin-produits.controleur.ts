@@ -4,6 +4,7 @@ import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 const schemaMedia = z.object({
   type: z.enum(["IMAGE", "VIDEO"]),
@@ -185,6 +186,14 @@ export async function creerProduitAdmin(requete: RequeteAuthentifiee, reponse: R
 
   emettreTempsReelEquipe("commande", { produitId: produit.id });
 
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "CREATION_PRODUIT",
+    tableCible: "produits",
+    details: `Produit créé : ${produit.nom} (${produit.sku})`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.status(201).json({
     succes: true,
     produit: formaterProduitAdmin(produit),
@@ -258,6 +267,14 @@ export async function mettreAJourProduitAdmin(requete: RequeteAuthentifiee, repo
 
   emettreTempsReelEquipe("commande", { produitId: misAJour.id });
 
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "MODIFICATION_PRODUIT",
+    tableCible: "produits",
+    details: `Produit modifié : ${misAJour.nom} (${misAJour.sku}) — stock ${misAJour.quantiteStock}`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.json({
     succes: true,
     produit: formaterProduitAdmin(misAJour),
@@ -284,6 +301,13 @@ export async function supprimerProduitAdmin(requete: RequeteAuthentifiee, repons
       data: { disponible: false },
     });
     emettreTempsReelEquipe("commande", { produitId: identifiant });
+    void enregistrerAudit({
+      utilisateurId: requete.utilisateurId,
+      action: "DESACTIVATION_PRODUIT",
+      tableCible: "produits",
+      details: `Produit masqué (historique commandes) : ${produit.nom} (${produit.sku})`,
+      adresseIp: adresseIpRequete(requete),
+    });
     reponse.json({
       succes: true,
       message: "Produit retiré du catalogue (conservé pour l’historique des commandes).",
@@ -298,6 +322,13 @@ export async function supprimerProduitAdmin(requete: RequeteAuthentifiee, repons
 
   await baseDeDonnees.produit.delete({ where: { id: identifiant } });
   emettreTempsReelEquipe("commande", { produitId: identifiant });
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "SUPPRESSION_PRODUIT",
+    tableCible: "produits",
+    details: `Produit supprimé : ${produit.nom} (${produit.sku})`,
+    adresseIp: adresseIpRequete(requete),
+  });
 
   reponse.json({ succes: true, message: "Produit supprimé.", desactive: false });
 }

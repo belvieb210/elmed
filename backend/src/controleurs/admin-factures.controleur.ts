@@ -12,6 +12,7 @@ import { identifiantRoute } from "../utils/identifiant";
 import { libelleModePaiement, libelleStatutPaiement } from "./commandes.controleur";
 import { genererNumeroClient } from "../clients/numero-client";
 import { debiterStockVente, numerosVisiteDossier } from "../stock/debiter";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 const modesFacture = [
   "CASH",
@@ -248,6 +249,14 @@ export async function creerClientAdmin(requete: RequeteAuthentifiee, reponse: Re
 
   emettreTempsReelEquipe("client", { clientId: client.id });
 
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "ENREGISTREMENT_CLIENT",
+    tableCible: "utilisateurs",
+    details: `Client enregistré : ${client.prenom} ${client.nom} (${client.numeroClient ?? client.email})`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.json({
     succes: true,
     client: formaterClient(client),
@@ -299,6 +308,13 @@ export async function mettreAJourClientAdmin(requete: RequeteAuthentifiee, repon
   });
 
   emettreTempsReelEquipe("client", { clientId: misAJour.id });
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "MODIFICATION_CLIENT",
+    tableCible: "utilisateurs",
+    details: `Client modifié : ${misAJour.prenom} ${misAJour.nom} (${misAJour.email})`,
+    adresseIp: adresseIpRequete(requete),
+  });
   reponse.json({ succes: true, client: formaterClient(misAJour) });
 }
 
@@ -796,6 +812,14 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
   emettreTempsReelEquipe("commande", { commandeId: commande.id, clientId: client.id });
   emettreTempsReelEquipe("client", { clientId: client.id });
 
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "ETABLISSEMENT_FACTURE",
+    tableCible: "commandes",
+    details: `Facture établie ${commande.numeroCommande} — ${nomClient(client)} — ${Number(commande.montantTotal).toFixed(2)} $`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.json({
     succes: true,
     commandeId: commande.id,
@@ -818,6 +842,14 @@ export async function telechargerFactureAdmin(requete: RequeteAuthentifiee, repo
 
   const type = requete.query.type === "proforma" ? "PROFORMA" : "FACTURE";
   const pdf = await genererProformaPdf(donneesProformaDepuisCommande(commande, type));
+
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: type === "PROFORMA" ? "CONSULTATION_PROFORMA" : "CONSULTATION_FACTURE",
+    tableCible: "documents",
+    details: `${type} consulté(e) — ${commande.numeroCommande} — ${nomClient(commande.client)}`,
+    adresseIp: adresseIpRequete(requete),
+  });
 
   reponse.setHeader("Content-Type", "application/pdf");
   reponse.setHeader(

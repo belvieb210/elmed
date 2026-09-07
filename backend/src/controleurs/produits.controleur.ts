@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { identifiantRoute } from "../utils/identifiant";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
+import type { RequeteAuthentifiee } from "../middlewares/authentification";
 
 type MediaProduitEnregistre = {
   url: string;
@@ -156,6 +158,15 @@ export async function obtenirProduit(requete: Request, reponse: Response) {
       })),
       produitsSimilaires: produitsSimilaires.map(formaterProduitListe),
     },
+  });
+
+  const requeteAuth = requete as RequeteAuthentifiee;
+  void enregistrerAudit({
+    utilisateurId: requeteAuth.utilisateurId,
+    action: "CONSULTATION_PRODUIT",
+    tableCible: "produits",
+    details: `Consultation du produit « ${produit.nom} » (${produit.sku})`,
+    adresseIp: adresseIpRequete(requete),
   });
 }
 

@@ -6,6 +6,7 @@ import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { configurationPasserelle, traiterPaiement, type CanalPaiement } from "../paiements/passerelle";
 import { verifierStockDisponible } from "../stock/debiter";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 function modeDepuisCanal(canal: CanalPaiement, telephone?: string): ModePaiement {
   if (canal === "VIREMENT") return ModePaiement.VIREMENT;
@@ -114,6 +115,14 @@ export async function confirmerPaiementEnLigne(requete: RequeteAuthentifiee, rep
         montantTotal: Number(commande.montantTotal),
         statut: commande.statut,
       },
+    });
+
+    void enregistrerAudit({
+      utilisateurId: requete.utilisateurId,
+      action: statutPaiement === StatutPaiement.PAYE ? "PAIEMENT_CONFIRME" : "PAIEMENT_ENREGISTRE",
+      tableCible: "paiements",
+      details: `Paiement ${statutPaiement} — commande ${commande.numeroCommande} — ${Number(commande.montantTotal).toFixed(2)} $ — canal ${canal}`,
+      adresseIp: adresseIpRequete(requete),
     });
   } catch (erreur) {
     reponse.status(400).json({

@@ -6,6 +6,7 @@ import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { libelleModePaiement, libelleStatutPaiement } from "./commandes.controleur";
 import { emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 function debutJour(date = new Date()) {
   const copie = new Date(date);
@@ -369,6 +370,15 @@ export async function mettreAJourStatutCommande(requete: RequeteAuthentifiee, re
   });
 
   emettreTempsReelEquipe("commande", { commandeId: commande.id });
+
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "MAJ_STATUT_COMMANDE",
+    tableCible: "commandes",
+    details: `Statut commande ${commande.numeroCommande} → ${analyse.data.statut}`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.json({ succes: true, commande: formaterCommandeResume(commande) });
 }
 

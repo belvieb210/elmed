@@ -132,7 +132,7 @@ export function middlewareSuperAdmin(
   if (!requete.utilisateurId || requete.estInvite || requete.roleUtilisateur !== "SUPER_ADMIN") {
     reponse.status(403).json({
       succes: false,
-      message: "Seuls les super admins peuvent modifier ou supprimer un produit.",
+      message: "Accès réservé au Super Admin.",
     });
     return;
   }

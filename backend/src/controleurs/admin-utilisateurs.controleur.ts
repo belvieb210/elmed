@@ -6,6 +6,7 @@ import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 const rolesPersonnelAutorises = [
   "SUPER_ADMIN",
@@ -126,6 +127,14 @@ export async function creerPersonnelAdmin(requete: RequeteAuthentifiee, reponse:
 
   emettreTempsReelEquipe("client", { utilisateurId: utilisateur.id });
 
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "CREATION_PERSONNEL",
+    tableCible: "utilisateurs",
+    details: `Personnel créé : ${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.email}) — rôle ${utilisateur.role}`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.status(201).json({
     succes: true,
     utilisateur: formaterPersonnel(utilisateur),
@@ -202,6 +211,14 @@ export async function mettreAJourPersonnelAdmin(requete: RequeteAuthentifiee, re
       photoProfil: analyse.data.photoProfil?.trim() || utilisateur.photoProfil,
       actif: analyse.data.actif ?? utilisateur.actif,
     },
+  });
+
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "MODIFICATION_PERSONNEL",
+    tableCible: "utilisateurs",
+    details: `Personnel modifié : ${misAJour.prenom} ${misAJour.nom} (${misAJour.email}) — rôle ${misAJour.role}`,
+    adresseIp: adresseIpRequete(requete),
   });
 
   reponse.json({ succes: true, utilisateur: formaterPersonnel(misAJour) });

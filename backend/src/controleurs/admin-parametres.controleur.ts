@@ -6,6 +6,7 @@ import {
   assurerParametresEntreprise,
   invaliderCacheInfosEntreprise,
 } from "../documents/infos-elmed";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 const schemaEntreprise = z.object({
   nomCommercial: z.string().trim().min(1, "Nom commercial requis."),
@@ -101,6 +102,14 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
   });
 
   invaliderCacheInfosEntreprise();
+
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "MAJ_ENTREPRISE",
+    tableCible: "parametres_entreprise",
+    details: `Paramètres entreprise mis à jour : ${misAJour.raisonSociale} / ${misAJour.nomCommercial}`,
+    adresseIp: adresseIpRequete(requete),
+  });
 
   reponse.json({
     succes: true,

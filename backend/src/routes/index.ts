@@ -46,6 +46,7 @@ import {
   obtenirEntreprisePublique,
   mettreAJourEntrepriseAdmin,
 } from "../controleurs/admin-parametres.controleur";
+import { listerJournalAudit } from "../controleurs/admin-audit.controleur";
 import {
   agirSurMessageAdmin,
   listerConversationsAdmin,
@@ -101,7 +102,7 @@ routeurPrincipal.post("/connexion", limiteConnexion, connecterClient);
 routeurPrincipal.post("/inscription", limiteConnexion, inscrireClient);
 routeurPrincipal.post("/deconnexion", deconnecterClient);
 routeurPrincipal.get("/produits", listerProduits);
-routeurPrincipal.get("/produits/:id", obtenirProduit);
+routeurPrincipal.get("/produits/:id", middlewareAuthentificationSouple, obtenirProduit);
 routeurPrincipal.get("/categories", listerCategories);
 routeurPrincipal.get("/entreprise", obtenirEntreprisePublique);
 routeurPrincipal.get("/accueil", middlewareAuthentificationSouple, obtenirTableauDeBord);
@@ -153,15 +154,16 @@ routeurPrincipal.patch("/admin/conversations/:id/messages/:messageId", ...espace
 routeurPrincipal.get("/admin/conversations/:id", ...espaceAdmin, obtenirConversationAdmin);
 routeurPrincipal.post("/admin/conversations/:id", ...espaceAdmin, repondreConversationAdmin);
 routeurPrincipal.get("/admin/documents", ...espaceAdmin, listerDocumentsAdmin);
-routeurPrincipal.get("/admin/utilisateurs", ...espaceAdmin, listerPersonnelAdmin);
-routeurPrincipal.post("/admin/utilisateurs", ...espaceAdminOuSuper, creerPersonnelAdmin);
-routeurPrincipal.put("/admin/utilisateurs/:id", ...espaceAdminOuSuper, mettreAJourPersonnelAdmin);
+routeurPrincipal.get("/admin/audit", ...espaceSuperAdmin, listerJournalAudit);
+routeurPrincipal.get("/admin/utilisateurs", ...espaceSuperAdmin, listerPersonnelAdmin);
+routeurPrincipal.post("/admin/utilisateurs", ...espaceSuperAdmin, creerPersonnelAdmin);
+routeurPrincipal.put("/admin/utilisateurs/:id", ...espaceSuperAdmin, mettreAJourPersonnelAdmin);
 routeurPrincipal.post(
   "/admin/utilisateurs/:id/mot-de-passe",
-  ...espaceAdminOuSuper,
+  ...espaceSuperAdmin,
   reinitialiserMotDePassePersonnel,
 );
-routeurPrincipal.patch("/admin/utilisateurs/:id/actif", ...espaceAdminOuSuper, desactiverPersonnelAdmin);
+routeurPrincipal.patch("/admin/utilisateurs/:id/actif", ...espaceSuperAdmin, desactiverPersonnelAdmin);
 routeurPrincipal.get("/admin/parametres/entreprise", ...espaceAdmin, obtenirEntrepriseAdmin);
 routeurPrincipal.put("/admin/parametres/entreprise", ...espaceAdminOuSuper, mettreAJourEntrepriseAdmin);
 routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdminComplet);

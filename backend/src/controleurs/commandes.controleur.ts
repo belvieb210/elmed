@@ -5,6 +5,7 @@ import { baseDeDonnees } from "../config/baseDeDonnees";
 import { genererProformaPdf } from "../documents/generer-proforma";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { identifiantRoute } from "../utils/identifiant";
+import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 export function libelleModePaiement(mode: string) {
   const libelles: Record<string, string> = {
@@ -205,6 +206,14 @@ export async function creerCommandeDepuisPanier(requete: RequeteAuthentifiee, re
       clientId: requete.utilisateurId!,
       modePaiement,
       notes: typeof requete.body?.notes === "string" ? requete.body.notes : null,
+    });
+
+    void enregistrerAudit({
+      utilisateurId: requete.utilisateurId,
+      action: "COMMANDE_CREEE",
+      tableCible: "commandes",
+      details: `Commande ${commande.numeroCommande} créée — ${Number(commande.montantTotal).toFixed(2)} $ — mode ${modePaiement}`,
+      adresseIp: adresseIpRequete(requete),
     });
 
     reponse.status(201).json({
