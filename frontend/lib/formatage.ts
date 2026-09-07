@@ -88,6 +88,7 @@ export function libelleRole(role?: string) {
   const libelles: Record<string, string> = {
     CLIENT: "Client",
     SUPER_ADMIN: "Super Admin",
+    ADMIN: "Admin",
     DIRECTEUR: "Directeur",
     COMMERCIAL: "Commercial",
     COMPTABLE: "Comptable",

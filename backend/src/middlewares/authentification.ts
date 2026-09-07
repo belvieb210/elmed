@@ -81,6 +81,7 @@ export async function middlewareAuthentificationSouple(
 
 const rolesPersonnel = new Set([
   "SUPER_ADMIN",
+  "ADMIN",
   "DIRECTEUR",
   "COMMERCIAL",
   "COMPTABLE",
@@ -132,6 +133,22 @@ export function middlewareSuperAdmin(
     reponse.status(403).json({
       succes: false,
       message: "Seuls les super admins peuvent modifier ou supprimer un produit.",
+    });
+    return;
+  }
+  suivant();
+}
+
+export function middlewareAdminOuSuper(
+  requete: RequeteAuthentifiee,
+  reponse: Response,
+  suivant: NextFunction,
+) {
+  const role = requete.roleUtilisateur;
+  if (!requete.utilisateurId || requete.estInvite || (role !== "SUPER_ADMIN" && role !== "ADMIN")) {
+    reponse.status(403).json({
+      succes: false,
+      message: "Accès réservé aux administrateurs.",
     });
     return;
   }

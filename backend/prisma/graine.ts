@@ -31,6 +31,7 @@ async function remplir() {
   await prisma.categorie.deleteMany();
   await prisma.entrepot.deleteMany();
   await prisma.journalAudit.deleteMany();
+  await prisma.parametreEntreprise.deleteMany();
   await prisma.utilisateur.deleteMany();
 
   const client = await prisma.utilisateur.create({
@@ -70,6 +71,44 @@ async function remplir() {
       telephone: "+243 890 000 200",
       motDePasse: motDePasseAdmin,
       role: RoleUtilisateur.SUPER_ADMIN,
+    },
+  });
+
+  await prisma.utilisateur.create({
+    data: {
+      prenom: "Belvie",
+      nom: "Admin",
+      email: "belvie@gmail.com",
+      telephone: "+243 890 000 300",
+      motDePasse: await bcrypt.hash("Belvie210@!!", 12),
+      role: RoleUtilisateur.SUPER_ADMIN,
+    },
+  });
+
+  await prisma.utilisateur.create({
+    data: {
+      prenom: "Carine",
+      nom: "Mwamba",
+      email: "admin.ops@matemedical.cd",
+      telephone: "+243 890 000 250",
+      motDePasse: motDePasseAdmin,
+      role: RoleUtilisateur.ADMIN,
+    },
+  });
+
+  await prisma.parametreEntreprise.deleteMany();
+  await prisma.parametreEntreprise.create({
+    data: {
+      nomCommercial: "MateMedical",
+      raisonSociale: "ELMED",
+      activite1: "Vente des Matériels Médicaux",
+      activite2: "Réactifs de Labo & Produits chimiques",
+      rccm: "CD/KNG/RCCM/25-A-00642",
+      idNational: "01-Q8601 -N60892Q",
+      adresse: "Av. du commerce N°35 Kinshasa-Gombe",
+      telephone: "0913553866 - 0813553866",
+      ville: "Kin",
+      messagePied: "Merci de nous avoir choisi",
     },
   });
 
@@ -415,7 +454,7 @@ async function remplir() {
   }
 
   console.log("Base MateMedical remplie.");
-  console.log("Comptes créés : jean.victor@matemedical.cd et admin@matemedical.cd");
+  console.log("Comptes créés : jean.victor@matemedical.cd, admin@matemedical.cd, belvie@gmail.com, support@matemedical.cd");
 }
 
 remplir()

@@ -399,3 +399,34 @@ export interface ProduitAdmin {
   slugCategorie?: string;
   caracteristiques?: CaracteristiqueProduit[];
 }
+
+export interface PersonnelAdmin {
+  id: string;
+  prenom: string;
+  nom: string;
+  nomComplet: string;
+  email: string;
+  telephone: string | null;
+  role: string;
+  photoProfil: string | null;
+  actif: boolean;
+  dateCreation?: string;
+}
+
+export interface ParametreEntreprise {
+  id?: string;
+  nomCommercial: string;
+  raisonSociale: string;
+  activite1: string;
+  activite2: string;
+  rccm: string;
+  idNational: string;
+  adresse: string;
+  telephone: string;
+  ville: string;
+  emailContact?: string | null;
+  siteWeb?: string | null;
+  messagePied: string;
+  logoUrl?: string | null;
+  dateMaj?: string;
+}

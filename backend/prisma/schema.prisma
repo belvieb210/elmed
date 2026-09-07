@@ -10,6 +10,7 @@ datasource db {
 enum RoleUtilisateur {
   CLIENT
   SUPER_ADMIN
+  ADMIN
   DIRECTEUR
   COMMERCIAL
   COMPTABLE
@@ -383,4 +384,24 @@ model JournalAudit {
   utilisateur Utilisateur? @relation(fields: [utilisateurId], references: [id])
 
   @@map("journaux_audit")
+}
+
+model ParametreEntreprise {
+  id               String   @id @default(uuid())
+  nomCommercial    String   @default("MateMedical") @map("nom_commercial")
+  raisonSociale    String   @default("ELMED") @map("raison_sociale")
+  activite1        String   @default("Vente des Matériels Médicaux") @map("activite_1")
+  activite2        String   @default("Réactifs de Labo & Produits chimiques") @map("activite_2")
+  rccm             String   @default("CD/KNG/RCCM/25-A-00642")
+  idNational       String   @default("01-Q8601 -N60892Q") @map("id_national")
+  adresse          String   @default("Av. du commerce N°35 Kinshasa-Gombe")
+  telephone        String   @default("0913553866 - 0813553866")
+  ville            String   @default("Kin")
+  emailContact     String?  @map("email_contact")
+  siteWeb          String?  @map("site_web")
+  messagePied      String   @default("Merci de nous avoir choisi") @map("message_pied")
+  logoUrl          String?  @map("logo_url")
+  dateMaj          DateTime @updatedAt @map("date_maj")
+
+  @@map("parametres_entreprise")
 }

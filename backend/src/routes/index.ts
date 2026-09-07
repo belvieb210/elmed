@@ -5,12 +5,12 @@ import {
   middlewareCompteReel,
   middlewarePersonnel,
   middlewareSuperAdmin,
+  middlewareAdminOuSuper,
 } from "../middlewares/authentification";
 import {
   listerClientsAdmin,
   listerCommandesAdmin,
   listerDocumentsAdmin,
-  listerUtilisateursAdmin,
   mettreAJourStatutCommande,
   obtenirBadgesAdmin,
   obtenirCommandeAdmin,
@@ -34,6 +34,18 @@ import {
   obtenirProduitAdmin,
   supprimerProduitAdmin,
 } from "../controleurs/admin-produits.controleur";
+import {
+  creerPersonnelAdmin,
+  desactiverPersonnelAdmin,
+  listerPersonnelAdmin,
+  mettreAJourPersonnelAdmin,
+  reinitialiserMotDePassePersonnel,
+} from "../controleurs/admin-utilisateurs.controleur";
+import {
+  obtenirEntrepriseAdmin,
+  obtenirEntreprisePublique,
+  mettreAJourEntrepriseAdmin,
+} from "../controleurs/admin-parametres.controleur";
 import {
   agirSurMessageAdmin,
   listerConversationsAdmin,
@@ -79,6 +91,7 @@ const sessionInvite = [middlewareAuthentificationSouple, assurerClientOuInvite];
 const compteClient = [middlewareAuthentificationSouple, middlewareCompteReel];
 const espaceAdmin = [middlewareAuthentificationSouple, middlewarePersonnel];
 const espaceSuperAdmin = [...espaceAdmin, middlewareSuperAdmin];
+const espaceAdminOuSuper = [...espaceAdmin, middlewareAdminOuSuper];
 
 routeurPrincipal.get("/sante", (_requete, reponse) => {
   reponse.json({ succes: true, service: "MateMedical API", statut: "ok" });
@@ -90,6 +103,7 @@ routeurPrincipal.post("/deconnexion", deconnecterClient);
 routeurPrincipal.get("/produits", listerProduits);
 routeurPrincipal.get("/produits/:id", obtenirProduit);
 routeurPrincipal.get("/categories", listerCategories);
+routeurPrincipal.get("/entreprise", obtenirEntreprisePublique);
 routeurPrincipal.get("/accueil", middlewareAuthentificationSouple, obtenirTableauDeBord);
 
 routeurPrincipal.get("/panier", ...sessionInvite, obtenirPanier);
@@ -139,7 +153,17 @@ routeurPrincipal.patch("/admin/conversations/:id/messages/:messageId", ...espace
 routeurPrincipal.get("/admin/conversations/:id", ...espaceAdmin, obtenirConversationAdmin);
 routeurPrincipal.post("/admin/conversations/:id", ...espaceAdmin, repondreConversationAdmin);
 routeurPrincipal.get("/admin/documents", ...espaceAdmin, listerDocumentsAdmin);
-routeurPrincipal.get("/admin/utilisateurs", ...espaceAdmin, listerUtilisateursAdmin);
+routeurPrincipal.get("/admin/utilisateurs", ...espaceAdmin, listerPersonnelAdmin);
+routeurPrincipal.post("/admin/utilisateurs", ...espaceAdminOuSuper, creerPersonnelAdmin);
+routeurPrincipal.put("/admin/utilisateurs/:id", ...espaceAdminOuSuper, mettreAJourPersonnelAdmin);
+routeurPrincipal.post(
+  "/admin/utilisateurs/:id/mot-de-passe",
+  ...espaceAdminOuSuper,
+  reinitialiserMotDePassePersonnel,
+);
+routeurPrincipal.patch("/admin/utilisateurs/:id/actif", ...espaceAdminOuSuper, desactiverPersonnelAdmin);
+routeurPrincipal.get("/admin/parametres/entreprise", ...espaceAdmin, obtenirEntrepriseAdmin);
+routeurPrincipal.put("/admin/parametres/entreprise", ...espaceAdminOuSuper, mettreAJourEntrepriseAdmin);
 routeurPrincipal.get("/admin/produits", ...espaceAdmin, listerProduitsAdminComplet);
 routeurPrincipal.post("/admin/produits", ...espaceAdmin, creerProduitAdmin);
 routeurPrincipal.get("/admin/produits/:id", ...espaceAdmin, obtenirProduitAdmin);

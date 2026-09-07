@@ -12,6 +12,7 @@ export type FicheProduitMessage = {
 
 const libellesRole: Record<string, string> = {
   SUPER_ADMIN: "Direction",
+  ADMIN: "Administration",
   DIRECTEUR: "Directeur",
   COMMERCIAL: "Commercial",
   COMPTABLE: "Comptable",

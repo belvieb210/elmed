@@ -69,6 +69,11 @@ export async function connecterClient(requete: Request, reponse: Response) {
     return;
   }
 
+  if (!utilisateur.actif) {
+    reponse.status(403).json({ succes: false, message: "Compte désactivé. Contactez un administrateur." });
+    return;
+  }
+
   const motDePasseValide = await bcrypt.compare(motDePasse, utilisateur.motDePasse);
   if (!motDePasseValide) {
     reponse.status(401).json({ succes: false, message: "Identifiants incorrects." });
@@ -169,6 +174,7 @@ export async function mettreAJourProfil(requete: RequeteAuthentifiee, reponse: R
     nomSociete: z.string().optional(),
     adresse: z.string().optional(),
     ville: z.string().optional(),
+    photoProfil: z.string().optional().nullable(),
   });
 
   const analyse = schema.safeParse(requete.body);
@@ -179,7 +185,13 @@ export async function mettreAJourProfil(requete: RequeteAuthentifiee, reponse: R
 
   const utilisateur = await baseDeDonnees.utilisateur.update({
     where: { id: requete.utilisateurId },
-    data: analyse.data,
+    data: {
+      ...analyse.data,
+      photoProfil:
+        analyse.data.photoProfil === undefined
+          ? undefined
+          : analyse.data.photoProfil?.trim() || null,
+    },
   });
 
   reponse.json({ succes: true, utilisateur: formaterUtilisateur(utilisateur) });
