@@ -9,20 +9,32 @@ import {
 import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
 const schemaEntreprise = z.object({
-  nomCommercial: z.string().trim().min(1, "Nom commercial requis."),
-  raisonSociale: z.string().trim().min(1, "Raison sociale requise."),
-  activite1: z.string().trim().min(1),
+  nomCommercial: z.string().trim().optional().or(z.literal("")),
+  raisonSociale: z.string().trim().optional().or(z.literal("")),
+  activite1: z.string().trim().optional().or(z.literal("")),
   activite2: z.string().trim().optional().or(z.literal("")),
-  rccm: z.string().trim().min(1, "RCCM requis."),
-  idNational: z.string().trim().min(1, "Identifiant national requis."),
-  adresse: z.string().trim().min(1),
-  telephone: z.string().trim().min(1),
-  ville: z.string().trim().min(1),
-  emailContact: z.string().trim().email().optional().or(z.literal("")),
+  rccm: z.string().trim().optional().or(z.literal("")),
+  idNational: z.string().trim().optional().or(z.literal("")),
+  adresse: z.string().trim().optional().or(z.literal("")),
+  telephone: z.string().trim().optional().or(z.literal("")),
+  ville: z.string().trim().optional().or(z.literal("")),
+  emailContact: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine((valeur) => !valeur || z.string().email().safeParse(valeur).success, {
+      message: "Email contact invalide.",
+    }),
   siteWeb: z.string().trim().optional().or(z.literal("")),
-  messagePied: z.string().trim().min(1),
+  messagePied: z.string().trim().optional().or(z.literal("")),
   logoUrl: z.string().optional().or(z.literal("")),
 });
+
+function valeurOuExistante(nouvelle: string | undefined, actuelle: string) {
+  const texte = nouvelle?.trim();
+  return texte ? texte : actuelle;
+}
 
 function formaterEntreprise(ligne: {
   id: string;
@@ -96,22 +108,34 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
 
   const actuel = await assurerParametresEntreprise();
   const donnees = analyse.data;
+
+  // Champs vides = on conserve la valeur déjà enregistrée (mise à jour partielle)
   const misAJour = await baseDeDonnees.parametreEntreprise.update({
     where: { id: actuel.id },
     data: {
-      nomCommercial: donnees.nomCommercial,
-      raisonSociale: donnees.raisonSociale,
-      activite1: donnees.activite1,
-      activite2: donnees.activite2?.trim() || "",
-      rccm: donnees.rccm,
-      idNational: donnees.idNational,
-      adresse: donnees.adresse,
-      telephone: donnees.telephone,
-      ville: donnees.ville,
-      emailContact: donnees.emailContact?.trim() || null,
-      siteWeb: donnees.siteWeb?.trim() || null,
-      messagePied: donnees.messagePied,
-      logoUrl: donnees.logoUrl?.trim() || null,
+      nomCommercial: valeurOuExistante(donnees.nomCommercial, actuel.nomCommercial),
+      raisonSociale: valeurOuExistante(donnees.raisonSociale, actuel.raisonSociale),
+      activite1: valeurOuExistante(donnees.activite1, actuel.activite1),
+      activite2:
+        donnees.activite2 === undefined
+          ? actuel.activite2
+          : donnees.activite2.trim() || actuel.activite2,
+      rccm: valeurOuExistante(donnees.rccm, actuel.rccm),
+      idNational: valeurOuExistante(donnees.idNational, actuel.idNational),
+      adresse: valeurOuExistante(donnees.adresse, actuel.adresse),
+      telephone: valeurOuExistante(donnees.telephone, actuel.telephone),
+      ville: valeurOuExistante(donnees.ville, actuel.ville),
+      emailContact:
+        donnees.emailContact === undefined
+          ? actuel.emailContact
+          : donnees.emailContact.trim() || null,
+      siteWeb:
+        donnees.siteWeb === undefined ? actuel.siteWeb : donnees.siteWeb.trim() || null,
+      messagePied: valeurOuExistante(donnees.messagePied, actuel.messagePied),
+      logoUrl:
+        donnees.logoUrl === undefined
+          ? actuel.logoUrl
+          : donnees.logoUrl.trim() || null,
     },
   });
 

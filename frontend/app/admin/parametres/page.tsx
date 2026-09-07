@@ -229,6 +229,7 @@ export default function PageParametresAdmin() {
               <h2 className="text-lg font-semibold text-[#1e3a8a]">Identité de l’entreprise</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Ces informations alimentent les factures, proformas, filigranes et l’interface.
+                Tous les champs sont optionnels : un champ vide conserve la valeur déjà enregistrée.
               </p>
             </div>
 
@@ -240,7 +241,7 @@ export default function PageParametresAdmin() {
                 Affiché dans le menu, la connexion et l’aperçu « App ». Ex. MateMedical, Elmed Shop…
               </p>
               <label className="mt-3 block">
-                <span className={label}>App (nom commercial) *</span>
+                <span className={label}>App (nom commercial)</span>
                 <input
                   className={champ}
                   disabled={!peutModifierEntreprise}
@@ -249,7 +250,6 @@ export default function PageParametresAdmin() {
                   onChange={(e) =>
                     setEntreprise((actuel) => ({ ...actuel, nomCommercial: e.target.value }))
                   }
-                  required
                 />
               </label>
               <div className="mt-3 flex items-center gap-3 rounded-xl border border-bleu-hero bg-white px-3 py-2.5">
@@ -295,7 +295,6 @@ export default function PageParametresAdmin() {
                     onChange={(e) =>
                       setEntreprise((actuel) => ({ ...actuel, [cle]: e.target.value }))
                     }
-                    required={!["emailContact", "siteWeb", "activite2"].includes(cle)}
                   />
                 </label>
               ))}
