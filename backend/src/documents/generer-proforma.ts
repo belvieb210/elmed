@@ -279,7 +279,7 @@ function dessinerPageFacture(doc: PDFKit.PDFDocument, donnees: DonneesProforma, 
   }
 
   doc.font("Helvetica-Oblique").fontSize(11).fillColor(bleuProforma);
-  doc.text(infos.merci, 36, 780, { width: 523, align: "center" });
+  doc.text(infos.merci, 36, yBas + 10, { width: 523, align: "center" });
 }
 
 export async function genererProformaPdf(donnees: DonneesProforma): Promise<Buffer> {

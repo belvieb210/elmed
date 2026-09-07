@@ -160,7 +160,7 @@ export function ApercuProforma({
           </p>
         )}
 
-        <p className="relative mt-5 text-center text-xs italic sm:mt-6 sm:text-sm">
+        <p className="relative mt-1.5 text-center text-xs italic sm:mt-2 sm:text-sm">
           {entreprise.messagePied}
         </p>
       </div>
