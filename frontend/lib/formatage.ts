@@ -16,6 +16,12 @@ export function formaterDate(dateIso: string) {
   return texte.replace(/^(\d+\s)([a-z])/, (_, prefixe: string, lettre: string) => `${prefixe}${lettre.toUpperCase()}`);
 }
 
+export function formaterTailleFichier(octets: number) {
+  if (octets < 1024) return `${octets} o`;
+  if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} Ko`;
+  return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
+}
+
 export function formaterHeure(dateIso: string) {
   return new Intl.DateTimeFormat("fr-FR", {
     hour: "2-digit",

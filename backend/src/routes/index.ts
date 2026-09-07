@@ -28,6 +28,7 @@ import {
   telechargerFacturesGroupeesAdmin,
 } from "../controleurs/admin-factures.controleur";
 import {
+  agirSurMessageAdmin,
   listerConversationsAdmin,
   obtenirConversationAdmin,
   repondreConversationAdmin,
@@ -58,7 +59,7 @@ import {
   telechargerFactureCommande,
 } from "../controleurs/commandes.controleur";
 import { confirmerPaiementEnLigne, obtenirConfigurationPaiement } from "../controleurs/paiements.controleur";
-import { envoyerMessage, obtenirConversation } from "../controleurs/messages.controleur";
+import { agirSurMessageClient, envoyerMessage, obtenirConversation } from "../controleurs/messages.controleur";
 import {
   listerNotifications,
   marquerNotificationLue,
@@ -104,6 +105,7 @@ routeurPrincipal.put("/profil/mot-de-passe", ...compteClient, changerMotDePasse)
 
 routeurPrincipal.get("/messagerie", ...sessionInvite, obtenirConversation);
 routeurPrincipal.post("/messagerie", ...sessionInvite, envoyerMessage);
+routeurPrincipal.patch("/messagerie/messages/:id", ...sessionInvite, agirSurMessageClient);
 
 routeurPrincipal.get("/notifications", ...compteClient, listerNotifications);
 routeurPrincipal.patch("/notifications/toutes", ...compteClient, marquerToutesLues);
@@ -125,6 +127,7 @@ routeurPrincipal.get("/admin/factures/:id", ...espaceAdmin, obtenirFactureAdmin)
 routeurPrincipal.get("/admin/factures/:id/pdf", ...espaceAdmin, telechargerFactureAdmin);
 routeurPrincipal.post("/admin/factures", ...espaceAdmin, enregistrerFactureAdmin);
 routeurPrincipal.get("/admin/conversations", ...espaceAdmin, listerConversationsAdmin);
+routeurPrincipal.patch("/admin/conversations/:id/messages/:messageId", ...espaceAdmin, agirSurMessageAdmin);
 routeurPrincipal.get("/admin/conversations/:id", ...espaceAdmin, obtenirConversationAdmin);
 routeurPrincipal.post("/admin/conversations/:id", ...espaceAdmin, repondreConversationAdmin);
 routeurPrincipal.get("/admin/documents", ...espaceAdmin, listerDocumentsAdmin);

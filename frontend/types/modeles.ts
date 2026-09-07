@@ -151,16 +151,70 @@ export interface FicheProduitMessage {
   sku: string;
 }
 
+export interface ReponseMessage {
+  id: string;
+  contenu: string;
+  nomAuteur: string;
+}
+
+export interface FichierConversation {
+  id: string;
+  url: string | null;
+  nom: string;
+  taille: number;
+  typeMessage: string;
+  epingle: boolean;
+  dateEnvoi: string;
+}
+
+export interface CommandeDiscussion {
+  id: string;
+  numeroCommande: string;
+  montantTotal: number;
+  dateCommande: string;
+  statut: string;
+  lignes: Array<{
+    nom: string;
+    image: string | null;
+    sku: string;
+    prix: number;
+    quantite: number;
+  }>;
+}
+
 export interface MessageChat {
   id: string;
   contenu: string;
   typeMessage: string;
   fichierUrl?: string | null;
+  fichierNom?: string | null;
+  fichierTaille?: number | null;
   lu?: boolean;
+  epingle?: boolean;
+  supprime?: boolean;
+  reponseA?: ReponseMessage | null;
   dateEnvoi: string;
+  dateModification?: string | null;
   estMoi: boolean;
   nomAuteur: string;
+  roleAuteur?: string;
+  initialsAuteur?: string;
   ficheProduit?: FicheProduitMessage;
+}
+
+export interface ClientDiscussion {
+  id: string;
+  nomComplet: string;
+  prenom?: string;
+  nom?: string;
+  email?: string;
+  telephone?: string | null;
+  ville?: string | null;
+  nomSociete?: string | null;
+  photoProfil?: string | null;
+  initials?: string;
+  numeroClient?: string | null;
+  role?: string;
 }
 
 export interface NotificationClient {

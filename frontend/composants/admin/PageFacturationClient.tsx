@@ -125,6 +125,7 @@ export function PageFacturationClient({
   const resteAPayer =
     modeFacture === "SOLDE" ? Math.max(0, soldeAEncaisser - montantPaye) : Math.max(0, totalAPayer - montantPaye);
   const nombreArticles = lignes.reduce((somme, ligne) => somme + ligne.quantite, 0);
+  const avanceEtablie = Boolean(factureAvance) || peutSolde || statutEncaissement === "PARTIEL";
   const peutImprimer =
     (modeFacture === "AVANCE" || statutEncaissement === "PARTIEL" || montantDejaAvance > 0) &&
     (statutEncaissement === "PARTIEL" || (modeFacture === "AVANCE" && montantPaye > 0)) &&
@@ -160,7 +161,9 @@ export function PageFacturationClient({
 
   function appliquerFacture(facture: FactureChargee, modeForce?: ModeFacture) {
     if (facture.clientId && facture.clientId !== clientId) return;
-    const mode = modeForce ?? facture.modeFacture;
+    const mode =
+      modeForce ??
+      ((facture.montantPaye > 0 && (facture.resteAPayer ?? 0) > 0.009 ? "SOLDE" : facture.modeFacture) as ModeFacture);
     const dejaAvance = facture.montantPaye;
     const reste = facture.resteAPayer ?? 0;
     setCommandeCourante(facture.id);
@@ -351,6 +354,7 @@ export function PageFacturationClient({
           setMessage(
             `Avance ${donnees.numeroCommande} encaissée : ${formaterMontant(montantPaye)} payés, reste ${formaterMontant(resteAPayer)} pour la facture solde.`,
           );
+          void chargerFacture(donnees.commandeId, "SOLDE").catch(() => setModeFacture("SOLDE"));
         } else {
           quitterApresEncaissement();
           return donnees.commandeId;
@@ -564,13 +568,14 @@ export function PageFacturationClient({
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {modesFacture.map((mode) => {
                 const actif = modeFacture === mode.id;
-                const bloque = mode.id === "SOLDE" && !peutSolde;
+                const bloque = avanceEtablie ? mode.id !== "SOLDE" : mode.id === "SOLDE" && !peutSolde;
                 return (
                   <button
                     key={mode.id}
                     type="button"
                     disabled={bloque}
                     onClick={() => {
+                      if (bloque) return;
                       if (mode.id === "SOLDE") {
                         const idAvance = commandeCourante ?? factureAvance?.id;
                         if (idAvance) {
@@ -586,7 +591,7 @@ export function PageFacturationClient({
                     }}
                     className={`rounded-xl border px-3 py-3 text-left ${
                       actif ? "border-2 border-bleu-hero bg-sky-50" : "border-bleu-hero bg-white"
-                    } ${bloque ? "opacity-50" : ""}`}
+                    } ${bloque ? "cursor-not-allowed opacity-40" : ""}`}
                   >
                     <span className="flex items-center justify-between">
                       <span className="font-semibold text-slate-800">{mode.titre}</span>
@@ -597,9 +602,11 @@ export function PageFacturationClient({
                       )}
                     </span>
                     <span className="mt-1 block text-xs text-slate-500">
-                      {mode.id === "SOLDE" && factureAvance
-                        ? `Reste ${formaterMontant(factureAvance.resteAPayer)} après l'avance`
-                        : mode.texte}
+                      {mode.id === "SOLDE" && (factureAvance || avanceEtablie)
+                        ? `Reste ${formaterMontant(factureAvance?.resteAPayer ?? soldeAEncaisser)} après l'avance`
+                        : avanceEtablie && mode.id === "AVANCE"
+                          ? "Avance déjà établie"
+                          : mode.texte}
                     </span>
                   </button>
                 );

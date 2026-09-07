@@ -324,18 +324,25 @@ model Conversation {
 }
 
 model Message {
-  id              String      @id @default(uuid())
-  conversationId  String      @map("conversation_id")
-  auteurId        String      @map("auteur_id")
-  contenu         String
-  typeMessage     TypeMessage @default(TEXTE) @map("type_message")
-  fichierUrl      String?     @map("fichier_url")
-  lu              Boolean     @default(false)
-  epingle         Boolean     @default(false)
-  dateEnvoi       DateTime    @default(now()) @map("date_envoi")
+  id               String      @id @default(uuid())
+  conversationId   String      @map("conversation_id")
+  auteurId         String      @map("auteur_id")
+  contenu          String
+  typeMessage      TypeMessage @default(TEXTE) @map("type_message")
+  fichierUrl       String?     @map("fichier_url")
+  fichierNom       String?     @map("fichier_nom")
+  fichierTaille    Int?        @map("fichier_taille")
+  lu               Boolean     @default(false)
+  epingle          Boolean     @default(false)
+  supprime         Boolean     @default(false)
+  reponseAId       String?     @map("reponse_a_id")
+  dateEnvoi        DateTime    @default(now()) @map("date_envoi")
+  dateModification DateTime?   @map("date_modification")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   auteur       Utilisateur  @relation(fields: [auteurId], references: [id])
+  reponseA     Message?     @relation("ReponsesMessage", fields: [reponseAId], references: [id], onDelete: SetNull)
+  reponses     Message[]    @relation("ReponsesMessage")
 
   @@map("messages")
 }

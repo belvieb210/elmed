@@ -225,6 +225,7 @@ export function FournisseurClient({ children }: { children: React.ReactNode }) {
         type,
         clientId: typeof extra?.clientId === "string" ? extra.clientId : undefined,
         commandeId: typeof extra?.commandeId === "string" ? extra.commandeId : undefined,
+        conversationId: typeof extra?.conversationId === "string" ? extra.conversationId : undefined,
       });
       if (type === "panier") {
         void chargerPanier();

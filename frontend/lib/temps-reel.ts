@@ -8,6 +8,7 @@ export type DetailTempsReel = {
   type: TypeEvenementTempsReel;
   clientId?: string;
   commandeId?: string;
+  conversationId?: string;
 };
 
 export const NOM_EVENEMENT_TEMPS_REEL = "elmed-temps-reel";

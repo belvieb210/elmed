@@ -1,43 +1,39 @@
 "use client";
 
-import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Send } from "lucide-react";
 import { BarriereCompte } from "@/composants/auth/BarriereCompte";
 import { MiseEnPageClient } from "@/composants/client/MiseEnPageClient";
 import { EnTetePage } from "@/composants/client/EnTetePage";
+import { BulleMessage } from "@/composants/messagerie/BulleMessage";
+import { ComposerMessage } from "@/composants/messagerie/ComposerMessage";
 import { appelerApi } from "@/lib/api";
 import { lienInscription } from "@/lib/compte";
-import { formaterHeure, formaterMontant } from "@/lib/formatage";
+import type { PieceJointeBrouillon } from "@/lib/messagerie";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
 import { useClient } from "@/store/contexteClient";
-import type { FicheProduitMessage, MessageChat } from "@/types/modeles";
-
-function ficheDuMessage(message: MessageChat): FicheProduitMessage | null {
-  if (message.ficheProduit) return message.ficheProduit;
-  if (message.typeMessage !== "PRODUIT") return null;
-  try {
-    return JSON.parse(message.contenu) as FicheProduitMessage;
-  } catch {
-    return null;
-  }
-}
+import type { FichierConversation, MessageChat, ReponseMessage } from "@/types/modeles";
 
 function FilDiscussion() {
   const params = useSearchParams();
   const produitId = params.get("produit");
   const { chargerTableauDeBord, compteReel } = useClient();
   const [messages, setMessages] = useState<MessageChat[]>([]);
-  const [contenu, setContenu] = useState("");
+  const [fichiers, setFichiers] = useState<FichierConversation[]>([]);
+  const [reponse, setReponse] = useState<ReponseMessage | null>(null);
+  const [edition, setEdition] = useState<MessageChat | null>(null);
   const [pret, setPret] = useState(false);
   const listeRef = useRef<HTMLDivElement>(null);
   const discussionInvite = Boolean(produitId);
   const peutDiscuter = compteReel || discussionInvite;
 
   const charger = useCallback(async () => {
-    const donnees = await appelerApi<{ conversation: { messages: MessageChat[] } }>("/messagerie");
+    const donnees = await appelerApi<{
+      conversation: { messages: MessageChat[]; fichiers?: FichierConversation[] };
+    }>("/messagerie");
     setMessages(donnees.conversation.messages);
+    setFichiers(donnees.conversation.fichiers ?? []);
     if (compteReel) await chargerTableauDeBord();
   }, [chargerTableauDeBord, compteReel]);
 
@@ -71,14 +67,33 @@ function FilDiscussion() {
     listeRef.current?.scrollTo({ top: listeRef.current.scrollHeight });
   }, [messages.length]);
 
-  async function envoyer(evenement: FormEvent) {
-    evenement.preventDefault();
-    if (!contenu.trim()) return;
+  async function agir(message: MessageChat, corps: Record<string, unknown>) {
+    await appelerApi(`/messagerie/messages/${message.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(corps),
+    });
+    await charger();
+  }
+
+  async function envoyer(donnees: { contenu: string; fichiers: PieceJointeBrouillon[]; reponseAId?: string }) {
+    if (edition) {
+      await agir(edition, { contenu: donnees.contenu });
+      setEdition(null);
+      return;
+    }
     await appelerApi("/messagerie", {
       method: "POST",
-      body: JSON.stringify({ contenu }),
+      body: JSON.stringify({
+        contenu: donnees.contenu || undefined,
+        reponseAId: donnees.reponseAId,
+        fichiers: donnees.fichiers.map((fichier) => ({
+          dataUrl: fichier.dataUrl,
+          nom: fichier.nom,
+          taille: fichier.taille,
+          typeMime: fichier.typeMime,
+        })),
+      }),
     });
-    setContenu("");
     await charger();
   }
 
@@ -97,7 +112,7 @@ function FilDiscussion() {
         titre={compteReel ? "Messagerie" : "Discussion produit"}
         description={
           compteReel
-            ? "Échanges directs avec l'équipe MateMedical."
+            ? "Échanges directs avec l'équipe ELMED."
             : "Posez vos questions sur ce produit. Créez un compte pour conserver tout l’historique."
         }
       />
@@ -117,63 +132,53 @@ function FilDiscussion() {
       )}
 
       <div className="flex h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
-        <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
+        {fichiers.length > 0 && (
+          <div className="border-b border-bleu-hero px-4 py-2 text-xs text-slate-500">
+            {fichiers.length} fichier{fichiers.length > 1 ? "s" : ""} joint{fichiers.length > 1 ? "s" : ""} dans cette
+            discussion
+          </div>
+        )}
+        <div ref={listeRef} className="flex-1 space-y-4 overflow-y-auto p-4">
           {!pret && <p className="text-sm text-slate-400">Ouverture de la discussion...</p>}
           {pret &&
-            messages.map((message) => {
-              const fiche = ficheDuMessage(message);
-              return (
-                <div key={message.id} className={`flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
-                  {fiche ? (
-                    <div className="max-w-[92%] sm:max-w-[80%]">
-                      <Link
-                        href={`/produits/${fiche.produitId}`}
-                        className="block overflow-hidden rounded-2xl border border-bleu-hero bg-white shadow-sm"
-                      >
-                        {fiche.image && (
-                          <img src={fiche.image} alt={fiche.nom} className="h-36 w-full object-cover" />
-                        )}
-                        <div className="p-3">
-                          <p className="line-clamp-2 text-sm font-semibold text-slate-900">{fiche.nom}</p>
-                          <p className="mt-1 text-base font-bold text-slate-900">{formaterMontant(fiche.prix)}</p>
-                          <p className="mt-1 text-xs text-slate-500">SKU : {fiche.sku}</p>
-                        </div>
-                      </Link>
-                      <p className={`mt-1 text-[10px] ${message.estMoi ? "text-right text-slate-400" : "text-slate-400"}`}>
-                        {message.estMoi ? "Vous" : message.nomAuteur} · {formaterHeure(message.dateEnvoi)}
-                      </p>
-                    </div>
-                  ) : (
-                    <div
-                      className={`max-w-[92%] rounded-2xl px-4 py-2.5 text-sm sm:max-w-[80%] ${
-                        message.estMoi ? "bg-violet-marque text-white" : "bg-slate-100 text-slate-800"
-                      }`}
-                    >
-                      <p>{message.contenu}</p>
-                      <p className={`mt-1 text-[10px] ${message.estMoi ? "text-white/70" : "text-slate-400"}`}>
-                        {formaterHeure(message.dateEnvoi)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            messages.map((message) => (
+              <BulleMessage
+                key={message.id}
+                message={message}
+                onRepondre={(cible) => {
+                  setEdition(null);
+                  setReponse({
+                    id: cible.id,
+                    contenu: cible.contenu || cible.fichierNom || "Message",
+                    nomAuteur: cible.nomAuteur,
+                  });
+                }}
+                onTransferer={(cible) =>
+                  void envoyer({
+                    contenu: cible.contenu ? `Transféré : ${cible.contenu}` : cible.fichierNom || "Fichier transféré",
+                    fichiers: [],
+                  })
+                }
+                onEpingler={(cible) => void agir(cible, { epingle: !cible.epingle })}
+                onModifier={(cible) => {
+                  setReponse(null);
+                  setEdition(cible);
+                }}
+                onSupprimer={(cible) => void agir(cible, { supprime: true })}
+              />
+            ))}
         </div>
-        <form onSubmit={envoyer} className="flex gap-2 border-t border-bleu-hero p-3">
-          <input
-            value={contenu}
-            onChange={(e) => setContenu(e.target.value)}
-            placeholder="Écrire un message sur ce produit..."
-            className="flex-1 rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
-          />
-          <button
-            type="submit"
-            className="grid h-11 w-11 place-items-center rounded-xl bg-violet-marque text-white"
-            aria-label="Envoyer"
-          >
-            <Send className="h-4 w-4" />
-          </button>
-        </form>
+        <ComposerMessage
+          key={`${edition?.id ?? "nouveau"}-${reponse?.id ?? ""}`}
+          placeholder="Écrire un message..."
+          reponse={reponse}
+          texteInitial={edition?.contenu ?? ""}
+          onAnnulerReponse={() => {
+            setReponse(null);
+            setEdition(null);
+          }}
+          onEnvoyer={envoyer}
+        />
       </div>
     </>
   );

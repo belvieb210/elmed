@@ -549,6 +549,27 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
     return;
   }
 
+  if (donnees.commandeId && donnees.modeFacture !== "SOLDE") {
+    const existante = await baseDeDonnees.commande.findFirst({
+      where: { id: donnees.commandeId, clientId: client.id },
+      include: { paiements: true },
+    });
+    if (existante) {
+      const paye = montantPayeCommande(existante.paiements);
+      const reste = arrondi(Math.max(0, Number(existante.montantTotal) - paye));
+      const estAvance =
+        reste > 0.009 &&
+        (existante.modeFacture === "AVANCE" || existante.paiements.some((paiement) => paiement.statut === "PARTIEL"));
+      if (estAvance) {
+        reponse.status(400).json({
+          succes: false,
+          message: "L'avance est déjà établie. Seul le mode solde reste disponible.",
+        });
+        return;
+      }
+    }
+  }
+
   const produits = await baseDeDonnees.produit.findMany({
     where: { id: { in: donnees.lignes.map((ligne) => ligne.produitId) } },
   });

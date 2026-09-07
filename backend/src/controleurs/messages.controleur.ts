@@ -1,62 +1,23 @@
 import type { Response } from "express";
 import { TypeMessage } from "@prisma/client";
-import { z } from "zod";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
-import { emettreTempsReelPlusieurs } from "../temps-reel/diffuseur";
+import { identifiantRoute } from "../utils/identifiant";
+import { appliquerActionMessage, creerMessagesConversation, schemaEnvoi } from "../messages/actions";
+import {
+  extraireFicheProduit,
+  extraireFichiersConversation,
+  formaterMessageChat,
+  notifierConversation,
+} from "../messages/formatage";
 
-type FicheProduitMessage = {
-  produitId: string;
-  nom: string;
-  prix: number;
-  image: string | null;
-  sku: string;
-};
-
-function extraireFicheProduit(contenu: string, typeMessage: TypeMessage): FicheProduitMessage | undefined {
-  if (typeMessage !== TypeMessage.PRODUIT) return undefined;
-  try {
-    const fiche = JSON.parse(contenu) as FicheProduitMessage;
-    if (!fiche?.produitId || !fiche.nom) return undefined;
-    return fiche;
-  } catch {
-    return undefined;
-  }
-}
-
-function formaterMessage(message: {
-  id: string;
-  contenu: string;
-  typeMessage: TypeMessage;
-  fichierUrl: string | null;
-  lu: boolean;
-  dateEnvoi: Date;
-  auteurId: string;
-  auteur: { prenom: string; nom: string };
-}, clientId: string) {
-  return {
-    id: message.id,
-    contenu: message.contenu,
-    typeMessage: message.typeMessage,
-    fichierUrl: message.fichierUrl,
-    lu: message.lu,
-    dateEnvoi: message.dateEnvoi,
-    estMoi: message.auteurId === clientId,
-    nomAuteur: `${message.auteur.prenom} ${message.auteur.nom}`,
-    ficheProduit: extraireFicheProduit(message.contenu, message.typeMessage),
-  };
-}
-
-async function ficheDepuisProduitId(produitId: string): Promise<FicheProduitMessage | null> {
+async function ficheDepuisProduitId(produitId: string) {
   const produit = await baseDeDonnees.produit.findUnique({
     where: { id: produitId },
     include: { images: { orderBy: { ordre: "asc" } } },
   });
   if (!produit) return null;
-
-  const image =
-    produit.images.find((media) => media.typeMedia === "IMAGE")?.url ?? produit.image;
-
+  const image = produit.images.find((media) => media.typeMedia === "IMAGE")?.url ?? produit.image;
   return {
     produitId: produit.id,
     nom: produit.nom,
@@ -66,37 +27,31 @@ async function ficheDepuisProduitId(produitId: string): Promise<FicheProduitMess
   };
 }
 
-export async function obtenirConversation(requete: RequeteAuthentifiee, reponse: Response) {
-  const clientId = requete.utilisateurId!;
-
+async function conversationClient(clientId: string) {
   let conversation = await baseDeDonnees.conversation.findFirst({
     where: { clientId, commandeId: null },
+  });
+  if (!conversation) {
+    conversation = await baseDeDonnees.conversation.create({ data: { clientId } });
+  }
+  return conversation;
+}
+
+export async function obtenirConversation(requete: RequeteAuthentifiee, reponse: Response) {
+  const clientId = requete.utilisateurId!;
+  const conversation = await conversationClient(clientId);
+  const complete = await baseDeDonnees.conversation.findUnique({
+    where: { id: conversation.id },
     include: {
       messages: {
         orderBy: { dateEnvoi: "asc" },
-        include: { auteur: true },
+        include: { auteur: true, reponseA: { include: { auteur: true } } },
       },
     },
   });
 
-  if (!conversation) {
-    conversation = await baseDeDonnees.conversation.create({
-      data: { clientId },
-      include: {
-        messages: {
-          orderBy: { dateEnvoi: "asc" },
-          include: { auteur: true },
-        },
-      },
-    });
-  }
-
   await baseDeDonnees.message.updateMany({
-    where: {
-      conversationId: conversation.id,
-      auteurId: { not: clientId },
-      lu: false,
-    },
+    where: { conversationId: conversation.id, auteurId: { not: clientId }, lu: false },
     data: { lu: true },
   });
 
@@ -104,38 +59,21 @@ export async function obtenirConversation(requete: RequeteAuthentifiee, reponse:
     succes: true,
     conversation: {
       id: conversation.id,
-      messages: conversation.messages.map((message) => formaterMessage(message, clientId)),
+      messages: (complete?.messages ?? []).map((message) => formaterMessageChat(message, clientId)),
+      fichiers: extraireFichiersConversation(complete?.messages ?? []),
     },
   });
 }
 
 export async function envoyerMessage(requete: RequeteAuthentifiee, reponse: Response) {
-  const schema = z
-    .object({
-      contenu: z.string().min(1).optional(),
-      typeMessage: z.enum(["TEXTE", "IMAGE", "PDF", "AUDIO", "VIDEO", "DOCUMENT", "PRODUIT"]).optional(),
-      produitId: z.string().min(1).optional(),
-    })
-    .refine((data) => Boolean(data.produitId || data.contenu?.trim()));
-
-  const analyse = schema.safeParse(requete.body);
+  const analyse = schemaEnvoi.safeParse(requete.body);
   if (!analyse.success) {
     reponse.status(400).json({ succes: false, message: "Message vide." });
     return;
   }
 
   const clientId = requete.utilisateurId!;
-  let conversation = await baseDeDonnees.conversation.findFirst({
-    where: { clientId, commandeId: null },
-  });
-
-  if (!conversation) {
-    conversation = await baseDeDonnees.conversation.create({ data: { clientId } });
-  }
-
-  let contenu = analyse.data.contenu?.trim() ?? "";
-  let typeMessage: TypeMessage = (analyse.data.typeMessage as TypeMessage | undefined) ?? TypeMessage.TEXTE;
-  let fichierUrl: string | null = null;
+  const conversation = await conversationClient(clientId);
 
   if (analyse.data.produitId) {
     const fiche = await ficheDepuisProduitId(analyse.data.produitId);
@@ -143,49 +81,46 @@ export async function envoyerMessage(requete: RequeteAuthentifiee, reponse: Resp
       reponse.status(404).json({ succes: false, message: "Produit introuvable." });
       return;
     }
-
     const dernier = await baseDeDonnees.message.findFirst({
       where: { conversationId: conversation.id },
       orderBy: { dateEnvoi: "desc" },
-      include: { auteur: true },
+      include: { auteur: true, reponseA: { include: { auteur: true } } },
     });
     const derniereFiche = dernier ? extraireFicheProduit(dernier.contenu, dernier.typeMessage) : undefined;
     if (dernier && derniereFiche?.produitId === fiche.produitId) {
-      reponse.json({
-        succes: true,
-        message: formaterMessage(dernier, clientId),
-      });
+      reponse.json({ succes: true, message: formaterMessageChat(dernier, clientId) });
       return;
     }
-
-    contenu = JSON.stringify(fiche);
-    typeMessage = TypeMessage.PRODUIT;
-    fichierUrl = fiche.image;
+    const message = await baseDeDonnees.message.create({
+      data: {
+        conversationId: conversation.id,
+        auteurId: clientId,
+        contenu: JSON.stringify(fiche),
+        typeMessage: TypeMessage.PRODUIT,
+        fichierUrl: fiche.image,
+      },
+      include: { auteur: true, reponseA: { include: { auteur: true } } },
+    });
+    await baseDeDonnees.conversation.update({ where: { id: conversation.id }, data: { dateMaj: new Date() } });
+    await notifierConversation(conversation.id, conversation.clientId);
+    reponse.status(201).json({ succes: true, message: formaterMessageChat(message, clientId) });
+    return;
   }
 
-  const message = await baseDeDonnees.message.create({
-    data: {
-      conversationId: conversation.id,
-      auteurId: clientId,
-      contenu,
-      typeMessage,
-      fichierUrl,
-    },
-    include: { auteur: true },
+  const crees = await creerMessagesConversation({
+    conversationId: conversation.id,
+    auteurId: clientId,
+    contenu: analyse.data.contenu,
+    reponseAId: analyse.data.reponseAId,
+    fichiers: analyse.data.fichiers,
   });
-
-  const equipe = await baseDeDonnees.utilisateur.findMany({
-    where: { role: { not: "CLIENT" } },
-    select: { id: true },
-  });
-  emettreTempsReelPlusieurs(
-    [conversation.clientId, ...equipe.map((membre) => membre.id)],
-    "message",
-    { conversationId: conversation.id },
-  );
-
+  await notifierConversation(conversation.id, conversation.clientId);
   reponse.status(201).json({
     succes: true,
-    message: formaterMessage(message, clientId),
+    messages: crees.map((message) => formaterMessageChat(message, clientId)),
   });
+}
+
+export async function agirSurMessageClient(requete: RequeteAuthentifiee, reponse: Response) {
+  await appliquerActionMessage(requete, reponse, identifiantRoute(requete.params.id));
 }

@@ -1,13 +1,23 @@
 "use client";
 
-import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Send } from "lucide-react";
+import { BulleMessage } from "@/composants/messagerie/BulleMessage";
+import { ComposerMessage } from "@/composants/messagerie/ComposerMessage";
+import { PanneauFicheClient } from "@/composants/messagerie/PanneauFicheClient";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { appelerApi } from "@/lib/api";
-import { formaterHeure, formaterMontant, formaterRelatif } from "@/lib/formatage";
+import { formaterRelatif } from "@/lib/formatage";
+import type { PieceJointeBrouillon } from "@/lib/messagerie";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
-import type { ConversationAdmin, FicheProduitMessage, MessageChat } from "@/types/modeles";
+import type {
+  ClientDiscussion,
+  CommandeDiscussion,
+  ConversationAdmin,
+  FichierConversation,
+  MessageChat,
+  ReponseMessage,
+} from "@/types/modeles";
 
 function MessagerieAdmin() {
   const params = useSearchParams();
@@ -15,7 +25,11 @@ function MessagerieAdmin() {
   const [active, setActive] = useState<string | null>(params.get("conversation"));
   const [messages, setMessages] = useState<MessageChat[]>([]);
   const [nomClient, setNomClient] = useState("Conversation");
-  const [contenu, setContenu] = useState("");
+  const [client, setClient] = useState<ClientDiscussion | null>(null);
+  const [fichiers, setFichiers] = useState<FichierConversation[]>([]);
+  const [commandes, setCommandes] = useState<CommandeDiscussion[]>([]);
+  const [reponse, setReponse] = useState<ReponseMessage | null>(null);
+  const [edition, setEdition] = useState<MessageChat | null>(null);
   const listeRef = useRef<HTMLDivElement>(null);
 
   const chargerListe = useCallback(async () => {
@@ -26,10 +40,19 @@ function MessagerieAdmin() {
 
   const chargerFil = useCallback(async (id: string) => {
     const donnees = await appelerApi<{
-      conversation: { nomClient: string; messages: MessageChat[] };
+      conversation: {
+        nomClient: string;
+        messages: MessageChat[];
+        client: ClientDiscussion;
+        fichiers: FichierConversation[];
+        commandes: CommandeDiscussion[];
+      };
     }>(`/admin/conversations/${id}`);
     setNomClient(donnees.conversation.nomClient);
     setMessages(donnees.conversation.messages);
+    setClient(donnees.conversation.client);
+    setFichiers(donnees.conversation.fichiers);
+    setCommandes(donnees.conversation.commandes);
   }, []);
 
   useEffect(() => {
@@ -41,32 +64,56 @@ function MessagerieAdmin() {
     void chargerFil(active);
   }, [active, chargerFil]);
 
-  useEvenementTempsReel("message", () => {
+  useEvenementTempsReel("message", (detail) => {
     void chargerListe();
-    if (active) void chargerFil(active);
+    if (!active) return;
+    if (detail?.conversationId && detail.conversationId !== active) return;
+    void chargerFil(active);
   });
 
   useEffect(() => {
     listeRef.current?.scrollTo({ top: listeRef.current.scrollHeight });
   }, [messages.length]);
 
-  async function envoyer(evenement: FormEvent) {
-    evenement.preventDefault();
-    if (!active || !contenu.trim()) return;
+  async function agir(message: MessageChat, corps: Record<string, unknown>) {
+    if (!active) return;
+    await appelerApi(`/admin/conversations/${active}/messages/${message.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(corps),
+    });
+    await chargerFil(active);
+    await chargerListe();
+  }
+
+  async function envoyer(donnees: { contenu: string; fichiers: PieceJointeBrouillon[]; reponseAId?: string }) {
+    if (!active) return;
+    if (edition) {
+      await agir(edition, { contenu: donnees.contenu });
+      setEdition(null);
+      return;
+    }
     await appelerApi(`/admin/conversations/${active}`, {
       method: "POST",
-      body: JSON.stringify({ contenu }),
+      body: JSON.stringify({
+        contenu: donnees.contenu || undefined,
+        reponseAId: donnees.reponseAId,
+        fichiers: donnees.fichiers.map((fichier) => ({
+          dataUrl: fichier.dataUrl,
+          nom: fichier.nom,
+          taille: fichier.taille,
+          typeMime: fichier.typeMime,
+        })),
+      }),
     });
-    setContenu("");
     await chargerFil(active);
     await chargerListe();
   }
 
   return (
-    <MiseEnPageAdmin titre="Messagerie" sousTitre="Toutes les conversations clients">
-      <div className="grid h-[calc(100dvh-10rem)] overflow-hidden rounded-2xl border border-bleu-hero bg-white lg:grid-cols-[280px_1fr]">
+    <MiseEnPageAdmin titre="Messagerie" sousTitre="Échanges avec les clients — sans groupes">
+      <div className="grid h-[calc(100dvh-10rem)] overflow-hidden rounded-2xl border border-bleu-hero bg-white lg:grid-cols-[250px_minmax(0,1fr)_280px]">
         <aside className="border-b border-bleu-hero lg:border-b-0 lg:border-r">
-          <div className="max-h-48 overflow-y-auto lg:max-h-none lg:h-full">
+          <div className="max-h-48 overflow-y-auto lg:h-full lg:max-h-none">
             {conversations.map((conversation) => (
               <button
                 key={conversation.id}
@@ -101,45 +148,59 @@ function MessagerieAdmin() {
         <section className="flex min-h-0 flex-col">
           <div className="border-b border-bleu-hero px-4 py-3">
             <p className="text-sm font-semibold text-slate-800">{nomClient}</p>
+            <p className="text-xs text-slate-400">Discussion client</p>
           </div>
-          <div ref={listeRef} className="flex-1 space-y-3 overflow-y-auto p-4">
-            {messages.map((message) => {
-              const fiche = message.ficheProduit as FicheProduitMessage | undefined;
-              return (
-                <div key={message.id} className={`flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
-                  {fiche ? (
-                    <div className="max-w-[85%] rounded-2xl border border-bleu-hero bg-white p-3 text-sm">
-                      <p className="font-semibold">{fiche.nom}</p>
-                      <p className="text-slate-500">{formaterMontant(fiche.prix)}</p>
-                    </div>
-                  ) : (
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-                        message.estMoi ? "bg-violet-marque text-white" : "bg-slate-100 text-slate-800"
-                      }`}
-                    >
-                      <p>{message.contenu}</p>
-                      <p className={`mt-1 text-[10px] ${message.estMoi ? "text-white/70" : "text-slate-400"}`}>
-                        {formaterHeure(message.dateEnvoi)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div ref={listeRef} className="flex-1 space-y-4 overflow-y-auto p-4">
+            {messages.map((message) => (
+              <BulleMessage
+                key={message.id}
+                message={message}
+                lienProduit
+                onRepondre={(cible) => {
+                  setEdition(null);
+                  setReponse({
+                    id: cible.id,
+                    contenu: cible.contenu || cible.fichierNom || "Message",
+                    nomAuteur: cible.nomAuteur,
+                  });
+                }}
+                onTransferer={(cible) => {
+                  setEdition(null);
+                  setReponse(null);
+                  void envoyer({
+                    contenu: cible.contenu ? `Transféré : ${cible.contenu}` : cible.fichierNom || "Fichier transféré",
+                    fichiers: [],
+                  });
+                }}
+                onEpingler={(cible) => void agir(cible, { epingle: !cible.epingle })}
+                onModifier={(cible) => {
+                  setReponse(null);
+                  setEdition(cible);
+                }}
+                onSupprimer={(cible) => void agir(cible, { supprime: true })}
+              />
+            ))}
           </div>
-          <form onSubmit={envoyer} className="flex gap-2 border-t border-bleu-hero p-3">
-            <input
-              value={contenu}
-              onChange={(e) => setContenu(e.target.value)}
-              placeholder="Répondre au client..."
-              className="flex-1 rounded-xl border border-bleu-hero px-3 py-2.5 text-sm outline-none"
-            />
-            <button type="submit" className="grid h-11 w-11 place-items-center rounded-xl bg-violet-marque text-white">
-              <Send className="h-4 w-4" />
-            </button>
-          </form>
+          <ComposerMessage
+            key={`${edition?.id ?? "nouveau"}-${reponse?.id ?? ""}`}
+            placeholder="Écrire un message..."
+            reponse={reponse}
+            texteInitial={edition?.contenu ?? ""}
+            onAnnulerReponse={() => {
+              setReponse(null);
+              setEdition(null);
+            }}
+            onEnvoyer={envoyer}
+          />
         </section>
+
+        {client ? (
+          <PanneauFicheClient client={client} fichiers={fichiers} commandes={commandes} />
+        ) : (
+          <aside className="hidden place-items-center border-l border-bleu-hero text-sm text-slate-400 lg:grid">
+            Sélectionnez une conversation
+          </aside>
+        )}
       </div>
     </MiseEnPageAdmin>
   );
