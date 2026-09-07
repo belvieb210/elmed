@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { FormulaireNouveauProduit } from "@/composants/admin/FormulaireNouveauProduit";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
+import { ModalConfirmation } from "@/composants/admin/ModalConfirmation";
 import {
   PanneauLateralProduit,
   type ApercuProduit,
@@ -46,6 +47,7 @@ export default function PageProduitsAdmin() {
   const [message, setMessage] = useState<string | null>(null);
   const [suppressionEnCours, setSuppressionEnCours] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [produitASupprimer, setProduitASupprimer] = useState<ProduitAdmin | null>(null);
 
   const enregistrerApercu = useCallback((suivant: ApercuProduit) => {
     setApercu((actuel) => {
@@ -120,12 +122,14 @@ export default function PageProduitsAdmin() {
     }
   }
 
-  async function supprimerProduit(produit: ProduitAdmin) {
+  async function supprimerProduit() {
+    if (!produitASupprimer) return;
     if (!superAdmin) {
       setMessage("Seul un Super Admin peut supprimer un produit.");
+      setProduitASupprimer(null);
       return;
     }
-    if (!window.confirm(`Retirer « ${produit.nom} » du catalogue ?`)) return;
+    const produit = produitASupprimer;
     setSuppressionEnCours(produit.id);
     try {
       const reponse = await appelerApi<{ message: string; desactive?: boolean }>(
@@ -143,6 +147,7 @@ export default function PageProduitsAdmin() {
       if (produitAModifier?.id === produit.id || produitAfficheId === produit.id) {
         reinitialiser();
       }
+      setProduitASupprimer(null);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Suppression impossible.");
     } finally {
@@ -381,18 +386,18 @@ export default function PageProduitsAdmin() {
                           Fiche
                         </Link>
                         {superAdmin && (
-                          <button
-                            type="button"
-                            disabled={suppressionEnCours === produit.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void supprimerProduit(produit);
-                            }}
-                            className="rounded-lg border border-rose-200 p-1.5 text-rose-600 disabled:opacity-50"
-                            aria-label="Supprimer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                        <button
+                          type="button"
+                          disabled={suppressionEnCours === produit.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProduitASupprimer(produit);
+                          }}
+                          className="rounded-lg border border-rose-200 p-1.5 text-rose-600 disabled:opacity-50"
+                          aria-label="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                         )}
                       </div>
                     </td>
@@ -437,6 +442,23 @@ export default function PageProduitsAdmin() {
           </div>
         )}
       </section>
+
+      <ModalConfirmation
+        ouverte={Boolean(produitASupprimer)}
+        titre="Retirer du catalogue"
+        message={
+          produitASupprimer
+            ? `Retirer « ${produitASupprimer.nom} » du catalogue ? Si le produit a déjà des commandes, il sera masqué plutôt que supprimé.`
+            : ""
+        }
+        confirmerLibelle="Retirer"
+        danger
+        enCours={Boolean(suppressionEnCours)}
+        onAnnuler={() => {
+          if (!suppressionEnCours) setProduitASupprimer(null);
+        }}
+        onConfirmer={() => void supprimerProduit()}
+      />
     </MiseEnPageAdmin>
   );
 }

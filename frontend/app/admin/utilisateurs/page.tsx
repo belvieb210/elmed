@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { KeyRound, Pencil, Power, Upload, UserPlus } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
+import { ModalConfirmation } from "@/composants/admin/ModalConfirmation";
 import { libelleRole } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import { estSuperAdmin } from "@/lib/roles";
@@ -55,6 +56,11 @@ export default function PageUtilisateursAdmin() {
   const [message, setMessage] = useState<string | null>(null);
   const [motDePasseAffiche, setMotDePasseAffiche] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    type: "mdp" | "actif";
+    personne: PersonnelAdmin;
+  } | null>(null);
+  const [confirmationEnCours, setConfirmationEnCours] = useState(false);
 
   const rolesDisponibles = useMemo(() => {
     const liste = [...rolesBase];
@@ -174,34 +180,34 @@ export default function PageUtilisateursAdmin() {
     }
   }
 
-  async function resetMotDePasse(personne: PersonnelAdmin) {
-    if (!peutGerer) return;
-    if (!window.confirm(`Réinitialiser le mot de passe de ${personne.nomComplet} ?`)) return;
+  async function confirmerAction() {
+    if (!confirmation || !peutGerer) return;
+    const { type, personne } = confirmation;
+    setConfirmationEnCours(true);
+    setErreur(null);
     try {
-      const reponse = await appelerApi<{ motDePasseTemporaire: string; message: string }>(
-        `/admin/utilisateurs/${personne.id}/mot-de-passe`,
-        { method: "POST", body: JSON.stringify({}) },
-      );
-      setMotDePasseAffiche(reponse.motDePasseTemporaire);
-      setMessage(`${reponse.message} (${personne.email})`);
-    } catch (err) {
-      setErreur(err instanceof Error ? err.message : "Réinitialisation impossible.");
-    }
-  }
-
-  async function basculerActif(personne: PersonnelAdmin) {
-    if (!peutGerer) return;
-    try {
-      const reponse = await appelerApi<{ utilisateur: PersonnelAdmin; message: string }>(
-        `/admin/utilisateurs/${personne.id}/actif`,
-        { method: "PATCH", body: JSON.stringify({}) },
-      );
-      setUtilisateurs((actuels) =>
-        actuels.map((item) => (item.id === reponse.utilisateur.id ? reponse.utilisateur : item)),
-      );
-      setMessage(reponse.message);
+      if (type === "mdp") {
+        const reponse = await appelerApi<{ motDePasseTemporaire: string; message: string }>(
+          `/admin/utilisateurs/${personne.id}/mot-de-passe`,
+          { method: "POST", body: JSON.stringify({}) },
+        );
+        setMotDePasseAffiche(reponse.motDePasseTemporaire);
+        setMessage(`${reponse.message} (${personne.email})`);
+      } else {
+        const reponse = await appelerApi<{ utilisateur: PersonnelAdmin; message: string }>(
+          `/admin/utilisateurs/${personne.id}/actif`,
+          { method: "PATCH", body: JSON.stringify({}) },
+        );
+        setUtilisateurs((actuels) =>
+          actuels.map((item) => (item.id === reponse.utilisateur.id ? reponse.utilisateur : item)),
+        );
+        setMessage(reponse.message);
+      }
+      setConfirmation(null);
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Action impossible.");
+    } finally {
+      setConfirmationEnCours(false);
     }
   }
 
@@ -423,7 +429,7 @@ export default function PageUtilisateursAdmin() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void resetMotDePasse(personne)}
+                          onClick={() => setConfirmation({ type: "mdp", personne })}
                           className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
                         >
                           <KeyRound className="h-3.5 w-3.5" />
@@ -431,7 +437,7 @@ export default function PageUtilisateursAdmin() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void basculerActif(personne)}
+                          onClick={() => setConfirmation({ type: "actif", personne })}
                           className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
                         >
                           <Power className="h-3.5 w-3.5" />
@@ -446,6 +452,37 @@ export default function PageUtilisateursAdmin() {
           </table>
         </div>
       </section>
+
+      <ModalConfirmation
+        ouverte={Boolean(confirmation)}
+        titre={
+          confirmation?.type === "mdp"
+            ? "Réinitialiser le mot de passe"
+            : confirmation?.personne.actif
+              ? "Désactiver le compte"
+              : "Réactiver le compte"
+        }
+        message={
+          confirmation?.type === "mdp"
+            ? `Générer un nouveau mot de passe temporaire pour ${confirmation.personne.nomComplet} ? Il devra le changer dans Profil / Paramètres.`
+            : confirmation?.personne.actif
+              ? `Désactiver le compte de ${confirmation.personne.nomComplet} ? Cette personne ne pourra plus se connecter.`
+              : `Réactiver le compte de ${confirmation?.personne.nomComplet} ?`
+        }
+        confirmerLibelle={
+          confirmation?.type === "mdp"
+            ? "Réinitialiser"
+            : confirmation?.personne.actif
+              ? "Désactiver"
+              : "Réactiver"
+        }
+        danger={confirmation?.type === "actif" && Boolean(confirmation.personne.actif)}
+        enCours={confirmationEnCours}
+        onAnnuler={() => {
+          if (!confirmationEnCours) setConfirmation(null);
+        }}
+        onConfirmer={() => void confirmerAction()}
+      />
     </MiseEnPageAdmin>
   );
 }

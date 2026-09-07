@@ -1,10 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Building2, ImagePlus, Shield, UserRound } from "lucide-react";
+import { Building2, ImagePlus, KeyRound, Shield, UserRound } from "lucide-react";
 import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { appelerApi } from "@/lib/api";
+import { libelleRole } from "@/lib/formatage";
 import { estSuperAdmin } from "@/lib/roles";
 import { useClient } from "@/store/contexteClient";
 import type { ParametreEntreprise, Utilisateur } from "@/types/modeles";
@@ -319,59 +320,187 @@ export default function PageParametresAdmin() {
       )}
 
       {onglet === "profil" && (
-        <form onSubmit={enregistrerProfil} className="max-w-xl space-y-4 rounded-2xl border border-bleu-hero bg-white p-6">
-          <h2 className="text-lg font-semibold text-[#1e3a8a]">Mon profil</h2>
-          <label className="flex w-fit cursor-pointer flex-col items-center gap-2">
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={(e) => lirePhoto(e.target.files?.[0])}
-            />
-            {profil.photoProfil ? (
-              <img src={profil.photoProfil} alt="" className="h-24 w-24 rounded-full object-cover" />
-            ) : (
-              <span className="grid h-24 w-24 place-items-center rounded-full bg-[#1e3a8a] text-xl text-white">
-                {(profil.prenom[0] || "U") + (profil.nom[0] || "")}
-              </span>
-            )}
-            <span className="text-xs text-slate-500">Changer la photo</span>
-          </label>
-          <label className="block">
-            <span className={label}>Prénom</span>
-            <input
-              className={champ}
-              value={profil.prenom}
-              onChange={(e) => setProfil((a) => ({ ...a, prenom: e.target.value }))}
-              required
-            />
-          </label>
-          <label className="block">
-            <span className={label}>Nom</span>
-            <input
-              className={champ}
-              value={profil.nom}
-              onChange={(e) => setProfil((a) => ({ ...a, nom: e.target.value }))}
-              required
-            />
-          </label>
-          <label className="block">
-            <span className={label}>Téléphone</span>
-            <input
-              className={champ}
-              value={profil.telephone}
-              onChange={(e) => setProfil((a) => ({ ...a, telephone: e.target.value }))}
-            />
-          </label>
-          <p className="text-sm text-slate-400">Email : {utilisateur?.email}</p>
-          <button
-            type="submit"
-            disabled={enCours}
-            className="rounded-2xl bg-[#1e3a8a] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        <div className="grid gap-4 xl:grid-cols-12">
+          <form
+            onSubmit={enregistrerProfil}
+            className="space-y-5 rounded-2xl border border-bleu-hero bg-white p-5 sm:p-6 xl:col-span-8"
           >
-            Enregistrer le profil
-          </button>
-        </form>
+            <div>
+              <h2 className="text-lg font-semibold text-[#1e3a8a]">Mon profil</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Identité visible dans l’administration, la messagerie et l’audit.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-5">
+              <label className="flex cursor-pointer flex-col items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => lirePhoto(e.target.files?.[0])}
+                />
+                {profil.photoProfil ? (
+                  <img
+                    src={profil.photoProfil}
+                    alt=""
+                    className="h-28 w-28 rounded-full object-cover ring-2 ring-bleu-hero"
+                  />
+                ) : (
+                  <span className="grid h-28 w-28 place-items-center rounded-full bg-[#1e3a8a] text-2xl font-semibold text-white">
+                    {(profil.prenom[0] || "U") + (profil.nom[0] || "")}
+                  </span>
+                )}
+                <span className="text-xs font-medium text-violet-marque">Changer la photo</span>
+              </label>
+              <div className="min-w-0 space-y-1 text-sm text-slate-500">
+                <p>
+                  <span className="font-medium text-slate-700">Compte :</span> {utilisateur?.email}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-700">Rôle :</span>{" "}
+                  {libelleRole(utilisateur?.role)}
+                </p>
+                <p className="text-xs text-slate-400">PNG ou JPG — max 3 Mo</p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className={label}>Prénom *</span>
+                <input
+                  className={champ}
+                  value={profil.prenom}
+                  onChange={(e) => setProfil((a) => ({ ...a, prenom: e.target.value }))}
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className={label}>Nom *</span>
+                <input
+                  className={champ}
+                  value={profil.nom}
+                  onChange={(e) => setProfil((a) => ({ ...a, nom: e.target.value }))}
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className={label}>Téléphone</span>
+                <input
+                  className={champ}
+                  value={profil.telephone}
+                  onChange={(e) => setProfil((a) => ({ ...a, telephone: e.target.value }))}
+                  placeholder="+243 …"
+                />
+              </label>
+              <label className="block">
+                <span className={label}>Email (lecture seule)</span>
+                <input className={`${champ} bg-slate-50 text-slate-500`} value={utilisateur?.email ?? ""} readOnly />
+              </label>
+              <label className="block">
+                <span className={label}>Rôle (lecture seule)</span>
+                <input
+                  className={`${champ} bg-slate-50 text-slate-500`}
+                  value={libelleRole(utilisateur?.role)}
+                  readOnly
+                />
+              </label>
+              <label className="block">
+                <span className={label}>Identifiant interne</span>
+                <input
+                  className={`${champ} bg-slate-50 font-mono text-xs text-slate-500`}
+                  value={utilisateur?.id ?? ""}
+                  readOnly
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-3 border-t border-bleu-hero pt-5">
+              <button
+                type="submit"
+                disabled={enCours}
+                className="rounded-2xl bg-[#1e3a8a] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Enregistrer le profil
+              </button>
+              <button
+                type="button"
+                onClick={() => setOnglet("securite")}
+                className="inline-flex items-center gap-2 rounded-2xl border border-bleu-hero px-5 py-2.5 text-sm font-semibold text-slate-600"
+              >
+                <KeyRound className="h-4 w-4" />
+                Changer le mot de passe
+              </button>
+            </div>
+          </form>
+
+          <aside className="space-y-4 xl:sticky xl:top-[calc(var(--hauteur-en-tete)+1rem)] xl:col-span-4 xl:self-start">
+            <article className="rounded-2xl border border-bleu-hero bg-white p-5 text-center">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Résumé du compte
+              </h3>
+              {profil.photoProfil ? (
+                <img
+                  src={profil.photoProfil}
+                  alt=""
+                  className="mx-auto mt-4 h-24 w-24 rounded-full object-cover"
+                />
+              ) : (
+                <span className="mx-auto mt-4 grid h-24 w-24 place-items-center rounded-full bg-[#1e3a8a] text-xl font-semibold text-white">
+                  {(profil.prenom[0] || "U") + (profil.nom[0] || "")}
+                </span>
+              )}
+              <p className="mt-3 text-base font-semibold uppercase text-[#1e3a8a]">
+                {[profil.prenom, profil.nom].filter(Boolean).join(" ") || "Gestionnaire"}
+              </p>
+              <p className="mt-1 text-sm text-violet-marque">{libelleRole(utilisateur?.role)}</p>
+              <dl className="mt-5 space-y-2.5 text-left text-sm">
+                {[
+                  { label: "Email", valeur: utilisateur?.email || "—" },
+                  { label: "Téléphone", valeur: profil.telephone || "—" },
+                  { label: "Rôle", valeur: libelleRole(utilisateur?.role) },
+                  {
+                    label: "Statut",
+                    valeur: "Compte actif",
+                  },
+                  {
+                    label: "Espace",
+                    valeur: "Administration MateMedical",
+                  },
+                ].map((ligne) => (
+                  <div key={ligne.label} className="flex items-start justify-between gap-3">
+                    <dt className="text-slate-400">{ligne.label}</dt>
+                    <dd className="text-right font-medium text-[#1e3a8a]">{ligne.valeur}</dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+
+            <article className="rounded-2xl border border-bleu-hero bg-white p-5">
+              <h3 className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Actions rapides
+              </h3>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOnglet("securite")}
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-bleu-hero bg-slate-50 px-2 py-3 text-center text-xs font-semibold text-[#1e3a8a] hover:bg-white"
+                >
+                  <Shield className="h-5 w-5" />
+                  Sécurité
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnglet("entreprise")}
+                  className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-bleu-hero bg-slate-50 px-2 py-3 text-center text-xs font-semibold text-[#1e3a8a] hover:bg-white"
+                >
+                  <Building2 className="h-5 w-5" />
+                  Entreprise
+                </button>
+              </div>
+            </article>
+          </aside>
+        </div>
       )}
 
       {onglet === "securite" && (
