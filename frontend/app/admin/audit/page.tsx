@@ -47,7 +47,12 @@ const LIMITE = 30;
 const filtresAction = [
   { valeur: "", libelle: "Toutes les actions" },
   { valeur: "CONNEXION", libelle: "Connexions" },
+  { valeur: "DECONNEXION", libelle: "Déconnexions" },
+  { valeur: "MODIFICATION_PROFIL", libelle: "Profils modifiés" },
+  { valeur: "MOT_DE_PASSE", libelle: "Mots de passe" },
+  { valeur: "INSCRIPTION_CLIENT", libelle: "Inscriptions" },
   { valeur: "ENREGISTREMENT_CLIENT", libelle: "Clients enregistrés" },
+  { valeur: "MODIFICATION_CLIENT", libelle: "Clients modifiés" },
   { valeur: "ETABLISSEMENT_FACTURE", libelle: "Factures" },
   { valeur: "COMMANDE", libelle: "Commandes" },
   { valeur: "PAIEMENT", libelle: "Paiements" },
@@ -57,6 +62,21 @@ const filtresAction = [
 ];
 
 function libelleAction(action: string) {
+  const libelles: Record<string, string> = {
+    CONNEXION: "Connexion",
+    DECONNEXION: "Déconnexion",
+    INSCRIPTION_CLIENT: "Inscription client",
+    MODIFICATION_PROFIL: "Modification du profil",
+    CHANGEMENT_MOT_DE_PASSE: "Changement de mot de passe",
+    REINITIALISATION_MOT_DE_PASSE: "Réinitialisation du mot de passe",
+    ENREGISTREMENT_CLIENT: "Enregistrement client",
+    MODIFICATION_CLIENT: "Modification client",
+    CREATION_PERSONNEL: "Création personnel",
+    MODIFICATION_PERSONNEL: "Modification personnel",
+    ACTIVATION_PERSONNEL: "Activation personnel",
+    DESACTIVATION_PERSONNEL: "Désactivation personnel",
+  };
+  if (libelles[action]) return libelles[action];
   const trouve = filtresAction.find(
     (filtre) => filtre.valeur && action.toUpperCase().includes(filtre.valeur),
   );

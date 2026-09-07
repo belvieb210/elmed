@@ -9,7 +9,13 @@ export async function listerJournalAudit(requete: RequeteAuthentifiee, reponse: 
   const recherche = String(requete.query.recherche ?? "").trim();
 
   const where = {
-    ...(action ? { action: { contains: action, mode: "insensitive" as const } } : {}),
+    ...(action
+      ? action === "MOT_DE_PASSE"
+        ? { action: { contains: "MOT_DE_PASSE", mode: "insensitive" as const } }
+        : action === "CONNEXION" || action === "DECONNEXION"
+          ? { action: { equals: action, mode: "insensitive" as const } }
+          : { action: { contains: action, mode: "insensitive" as const } }
+      : {}),
     ...(recherche
       ? {
           OR: [

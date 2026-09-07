@@ -241,6 +241,14 @@ export async function reinitialiserMotDePassePersonnel(requete: RequeteAuthentif
     data: { motDePasse: hash },
   });
 
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: "REINITIALISATION_MOT_DE_PASSE",
+    tableCible: "utilisateurs",
+    details: `Mot de passe réinitialisé pour ${utilisateur.prenom} ${utilisateur.nom} (${utilisateur.email})`,
+    adresseIp: adresseIpRequete(requete),
+  });
+
   reponse.json({
     succes: true,
     motDePasseTemporaire,
@@ -279,6 +287,14 @@ export async function desactiverPersonnelAdmin(requete: RequeteAuthentifiee, rep
   const misAJour = await baseDeDonnees.utilisateur.update({
     where: { id: identifiant },
     data: { actif: !utilisateur.actif },
+  });
+
+  void enregistrerAudit({
+    utilisateurId: requete.utilisateurId,
+    action: misAJour.actif ? "ACTIVATION_PERSONNEL" : "DESACTIVATION_PERSONNEL",
+    tableCible: "utilisateurs",
+    details: `Compte ${misAJour.actif ? "réactivé" : "désactivé"} : ${misAJour.prenom} ${misAJour.nom} (${misAJour.email})`,
+    adresseIp: adresseIpRequete(requete),
   });
 
   reponse.json({

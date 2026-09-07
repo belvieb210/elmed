@@ -166,7 +166,17 @@ export async function inscrireClient(requete: Request, reponse: Response) {
   });
 }
 
-export function deconnecterClient(_requete: Request, reponse: Response) {
+export async function deconnecterClient(requete: RequeteAuthentifiee, reponse: Response) {
+  if (requete.utilisateurId) {
+    void enregistrerAudit({
+      utilisateurId: requete.utilisateurId,
+      action: "DECONNEXION",
+      tableCible: "sessions",
+      details: `Déconnexion (${requete.roleUtilisateur ?? "inconnu"})`,
+      adresseIp: adresseIpRequete(requete),
+    });
+  }
+
   reponse.clearCookie("mm_jeton", { ...optionsCookieJeton, maxAge: 0 });
   reponse.clearCookie("mm_invite", { ...optionsCookieInvite, maxAge: 0 });
   reponse.json({ succes: true, message: "Déconnexion effectuée." });
@@ -202,6 +212,14 @@ export async function mettreAJourProfil(requete: RequeteAuthentifiee, reponse: R
     return;
   }
 
+  const avant = await baseDeDonnees.utilisateur.findUnique({
+    where: { id: requete.utilisateurId },
+  });
+  if (!avant) {
+    reponse.status(404).json({ succes: false, message: "Utilisateur introuvable." });
+    return;
+  }
+
   const utilisateur = await baseDeDonnees.utilisateur.update({
     where: { id: requete.utilisateurId },
     data: {
@@ -211,6 +229,27 @@ export async function mettreAJourProfil(requete: RequeteAuthentifiee, reponse: R
           ? undefined
           : analyse.data.photoProfil?.trim() || null,
     },
+  });
+
+  const champsModifies: string[] = [];
+  for (const cle of ["prenom", "nom", "telephone", "nomSociete", "adresse", "ville"] as const) {
+    if (analyse.data[cle] !== undefined && analyse.data[cle] !== (avant[cle] ?? undefined)) {
+      champsModifies.push(cle);
+    }
+  }
+  if (analyse.data.photoProfil !== undefined) {
+    const nouvellePhoto = analyse.data.photoProfil?.trim() || null;
+    if (nouvellePhoto !== avant.photoProfil) champsModifies.push("photoProfil");
+  }
+
+  void enregistrerAudit({
+    utilisateurId: utilisateur.id,
+    action: "MODIFICATION_PROFIL",
+    tableCible: "utilisateurs",
+    details: `${utilisateur.role} ${utilisateur.prenom} ${utilisateur.nom} a modifié son profil${
+      champsModifies.length ? ` (${champsModifies.join(", ")})` : ""
+    } — ${utilisateur.email}`,
+    adresseIp: adresseIpRequete(requete),
   });
 
   reponse.json({ succes: true, utilisateur: formaterUtilisateur(utilisateur) });
@@ -251,6 +290,14 @@ export async function changerMotDePasse(requete: RequeteAuthentifiee, reponse: R
   await baseDeDonnees.utilisateur.update({
     where: { id: utilisateur.id },
     data: { motDePasse: hash },
+  });
+
+  void enregistrerAudit({
+    utilisateurId: utilisateur.id,
+    action: "CHANGEMENT_MOT_DE_PASSE",
+    tableCible: "utilisateurs",
+    details: `${utilisateur.role} ${utilisateur.prenom} ${utilisateur.nom} a changé son mot de passe — ${utilisateur.email}`,
+    adresseIp: adresseIpRequete(requete),
   });
 
   reponse.json({ succes: true, message: "Mot de passe mis à jour." });

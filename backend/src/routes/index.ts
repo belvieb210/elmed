@@ -100,7 +100,7 @@ routeurPrincipal.get("/sante", (_requete, reponse) => {
 
 routeurPrincipal.post("/connexion", limiteConnexion, connecterClient);
 routeurPrincipal.post("/inscription", limiteConnexion, inscrireClient);
-routeurPrincipal.post("/deconnexion", deconnecterClient);
+routeurPrincipal.post("/deconnexion", middlewareAuthentificationSouple, deconnecterClient);
 routeurPrincipal.get("/produits", listerProduits);
 routeurPrincipal.get("/produits/:id", middlewareAuthentificationSouple, obtenirProduit);
 routeurPrincipal.get("/categories", listerCategories);
