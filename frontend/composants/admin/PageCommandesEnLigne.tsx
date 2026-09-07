@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, ExternalLink, FileText, ListChecks, Pill, Printer, SlidersHorizontal } from "lucide-react";
+import { ApercuPdf } from "@/composants/admin/ApercuPdf";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
-import { chargerUrlPdf, ouvrirPdf, appelerApi } from "@/lib/api";
+import { chargerUrlPdf, ouvrirPdf, telechargerPdf, appelerApi } from "@/lib/api";
 import { classeStatut, formaterHeure, formaterMontant } from "@/lib/formatage";
 import { useEvenementTempsReel } from "@/lib/temps-reel";
 import type { CommandeAdmin } from "@/types/modeles";
@@ -375,9 +376,9 @@ export function PageCommandesEnLigne() {
             <>
               <section className="overflow-hidden rounded-2xl border border-bleu-hero bg-white">
                 <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-violet-marque" />
-                    <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className="h-4 w-4 shrink-0 text-violet-marque" />
+                    <h2 className="truncate text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                       {selectionnees.length > 1
                         ? `Factures sélectionnées (${selectionnees.length})`
                         : `Facture ${premiereSelection.numeroCommande}`}
@@ -387,30 +388,32 @@ export function PageCommandesEnLigne() {
                     <button
                       type="button"
                       onClick={() => void ouvrirPdf(cheminPdfSelection)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-3 py-1.5 text-xs font-semibold text-slate-700"
+                      className="hidden items-center gap-1 rounded-lg border border-bleu-hero px-3 py-1.5 text-xs font-semibold text-slate-700 md:inline-flex"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                       Ouvrir
                     </button>
                   )}
                 </div>
-                <div className="bg-slate-700 p-3">
-                  {urlFacture ? (
-                    <iframe
-                      title={
-                        selectionnees.length > 1
-                          ? `Factures de ${premiereSelection.nomClient}`
-                          : `Facture ${premiereSelection.numeroCommande}`
-                      }
-                      src={urlFacture}
-                      className="h-[280px] w-full rounded-lg bg-white sm:h-[420px] xl:h-[520px]"
-                    />
-                  ) : (
-                    <div className="grid h-[280px] place-items-center rounded-lg bg-slate-800 text-sm text-slate-300 sm:h-[420px]">
-                      Chargement de la facture...
-                    </div>
-                  )}
-                </div>
+                <ApercuPdf
+                  url={urlFacture}
+                  titre={
+                    selectionnees.length > 1
+                      ? `${selectionnees.length} factures — ${premiereSelection.nomClient}`
+                      : `Facture ${premiereSelection.numeroCommande}`
+                  }
+                  sousTitre={premiereSelection.nomClient}
+                  onOuvrir={() => {
+                    if (cheminPdfSelection) void ouvrirPdf(cheminPdfSelection);
+                  }}
+                  onTelecharger={() => {
+                    if (!cheminPdfSelection) return;
+                    void telechargerPdf(
+                      cheminPdfSelection,
+                      `facture-${premiereSelection.numeroCommande}.pdf`,
+                    );
+                  }}
+                />
               </section>
 
               <section className="rounded-2xl border border-bleu-hero bg-white p-4 sm:p-5">
@@ -605,9 +608,11 @@ function ClientRows({
                         {cochee && <Check className="h-3 w-3" />}
                       </button>
                       <button type="button" onClick={() => onChoisir(commande.id)} className="min-w-0 flex-1 text-left">
-                        <span className="block font-semibold uppercase text-slate-800">{commande.numeroCommande}</span>
+                        <span className="block font-semibold uppercase text-slate-800">
+                          {commande.numeroVisite || commande.numeroCommande}
+                        </span>
                         <span className="block text-xs text-slate-400">
-                          {formaterMontant(commande.montantTotal)} · {libelleStatutVente(commande)}
+                          Dossier {commande.numeroDossier || commande.numeroCommande} · {formaterMontant(commande.montantTotal)} · {libelleStatutVente(commande)}
                         </span>
                       </button>
                       <button

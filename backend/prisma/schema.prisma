@@ -94,6 +94,11 @@ enum TypeDocument {
   AUTRE
 }
 
+enum OrigineCommande {
+  SUR_SITE
+  EN_LIGNE
+}
+
 enum TypeMediaProduit {
   IMAGE
   VIDEO
@@ -242,6 +247,10 @@ model Commande {
   remise          Decimal        @default(0) @db.Decimal(12, 2)
   fraisDivers     Decimal        @default(0) @db.Decimal(12, 2) @map("frais_divers")
   numeroRecu      String?        @map("numero_recu")
+  numeroVisite    String?        @unique @map("numero_visite")
+  numeroDossier   String?        @unique @map("numero_dossier")
+  origine         OrigineCommande @default(EN_LIGNE)
+  stockDebite     Boolean        @default(false) @map("stock_debite")
   monnaie         String         @default("USD")
   dateCommande    DateTime       @default(now()) @map("date_commande")
   dateMaj         DateTime       @updatedAt @map("date_maj")

@@ -36,10 +36,30 @@ export async function chargerUrlPdf(chemin: string) {
     throw new Error(donnees.message ?? "Téléchargement impossible.");
   }
 
-  return URL.createObjectURL(await reponse.blob());
+  const fichier = await reponse.blob();
+  return URL.createObjectURL(new Blob([fichier], { type: "application/pdf" }));
 }
 
-export async function ouvrirPdf(chemin: string) {
+function declencherLienPdf(url: string, options?: { telecharger?: boolean; nomFichier?: string }) {
+  const lien = document.createElement("a");
+  lien.href = url;
+  lien.rel = "noopener noreferrer";
+  if (options?.telecharger) {
+    lien.download = options.nomFichier || "facture-elmed.pdf";
+  } else {
+    lien.target = "_blank";
+  }
+  document.body.appendChild(lien);
+  lien.click();
+  lien.remove();
+}
+
+export async function ouvrirPdf(chemin: string, nomFichier?: string) {
   const url = await chargerUrlPdf(chemin);
-  window.open(url, "_blank", "noopener,noreferrer");
+  declencherLienPdf(url, { telecharger: false, nomFichier });
+}
+
+export async function telechargerPdf(chemin: string, nomFichier = "facture-elmed.pdf") {
+  const url = await chargerUrlPdf(chemin);
+  declencherLienPdf(url, { telecharger: true, nomFichier });
 }

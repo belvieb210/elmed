@@ -282,6 +282,9 @@ export async function listerCommandesAdmin(_requete: RequeteAuthentifiee, repons
         numeroClient:
           commande.client.numeroClient ||
           `CLT-${commande.client.id.replaceAll("-", "").slice(0, 8).toUpperCase()}`,
+        numeroVisite: commande.numeroVisite,
+        numeroDossier: commande.numeroDossier,
+        origine: commande.origine,
         nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
         image: commande.lignes[0]?.produit.image ?? null,
         montantPaye: paye,

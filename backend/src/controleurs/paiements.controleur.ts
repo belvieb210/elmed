@@ -5,6 +5,7 @@ import { encaisserCommandeExistante, enregistrerCommandeDepuisPanier } from "../
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { configurationPasserelle, traiterPaiement, type CanalPaiement } from "../paiements/passerelle";
+import { verifierStockDisponible } from "../stock/debiter";
 
 function modeDepuisCanal(canal: CanalPaiement, telephone?: string): ModePaiement {
   if (canal === "VIREMENT") return ModePaiement.VIREMENT;
@@ -57,6 +58,9 @@ export async function confirmerPaiementEnLigne(requete: RequeteAuthentifiee, rep
       montant = lignesPanier.reduce(
         (somme, ligne) => somme + Number(ligne.produit.prix) * ligne.quantite,
         0,
+      );
+      await verifierStockDisponible(
+        lignesPanier.map((ligne) => ({ produitId: ligne.produitId, quantite: ligne.quantite })),
       );
     }
 

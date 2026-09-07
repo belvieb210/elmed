@@ -1,6 +1,7 @@
-import { ModePaiement, StatutPaiement } from "@prisma/client";
+import { ModePaiement, OrigineCommande, StatutPaiement } from "@prisma/client";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { emettreTempsReel, emettreTempsReelEquipe } from "../temps-reel/diffuseur";
+import { debiterStockVente, numerosVisiteDossier } from "../stock/debiter";
 
 async function genererNumeroCommande() {
   const annee = new Date().getFullYear();
@@ -29,15 +30,26 @@ export async function enregistrerCommandeDepuisPanier(params: {
     0,
   );
   const statutPaiement = params.statutPaiement ?? StatutPaiement.EN_ATTENTE;
+  const numeroCommande = await genererNumeroCommande();
+  const numeros = numerosVisiteDossier(numeroCommande);
 
   return baseDeDonnees.$transaction(async (transaction) => {
+    await debiterStockVente(
+      transaction,
+      lignesPanier.map((ligne) => ({ produitId: ligne.produitId, quantite: ligne.quantite })),
+    );
+
     const creee = await transaction.commande.create({
       data: {
-        numeroCommande: await genererNumeroCommande(),
+        numeroCommande,
         clientId: params.clientId,
         statut: statutPaiement === StatutPaiement.PAYE ? "VALIDEE" : "EN_ATTENTE",
         montantTotal,
         notes: params.notes ?? null,
+        origine: OrigineCommande.EN_LIGNE,
+        stockDebite: true,
+        numeroVisite: numeros.numeroVisite,
+        numeroDossier: numeros.numeroDossier,
         lignes: {
           create: lignesPanier.map((ligne) => ({
             produitId: ligne.produitId,

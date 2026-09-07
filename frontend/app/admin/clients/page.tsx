@@ -104,12 +104,13 @@ export default function PageClientsAdmin() {
   useEvenementTempsReel("commande", chargerClients);
 
   const recents = useMemo(() => {
+    const idsSession = new Set(recentsSession.map((client) => client.id));
     const fusion = [
       ...recentsSession.map((client) => clients.find((item) => item.id === client.id) ?? client),
-      ...clients.filter((client) => !recentsSession.some((item) => item.id === client.id)),
+      ...clients.filter((client) => !idsSession.has(client.id)),
     ];
     return fusion
-      .filter(clientEnAttenteDeFacture)
+      .filter((client) => idsSession.has(client.id) || clientEnAttenteDeFacture(client))
       .filter((client) => correspondFiltres(client, filtresAppliques))
       .slice(0, 12);
   }, [clients, recentsSession, filtresAppliques]);
@@ -158,8 +159,11 @@ export default function PageClientsAdmin() {
               afficherClient(client);
             }}
             onSelectionnerAncien={(client) => {
-              ajouterRecent(client);
+              ajouterRecent({ ...client, statutFacture: client.statutFacture ?? "A_FACTURER" });
               afficherClient(client);
+              requestAnimationFrame(() =>
+                document.getElementById("clients-recents")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+              );
             }}
           />
         </div>
@@ -182,11 +186,11 @@ export default function PageClientsAdmin() {
       <section className="mt-6 overflow-hidden rounded-2xl border border-bleu-hero bg-white">
         <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <h2 id="clients-recents" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               Clients récemment enregistrés
             </h2>
             <p className="mt-1 text-xs text-slate-400">
-              {recents.length} client(s) à facturer ou à solder
+              {recents.length} client(s) — nouvelle visite, à facturer ou à solder
             </p>
           </div>
           <button
@@ -232,6 +236,7 @@ export default function PageClientsAdmin() {
               {recents.map((client) => {
                 const affiche = clientAfficheId === client.id;
                 const avance = client.statutFacture === "AVANCE";
+                const nouvelleVisite = client.statutFacture === "SOLDEE";
                 return (
                   <tr
                     key={client.id}
@@ -245,10 +250,14 @@ export default function PageClientsAdmin() {
                     <td className="px-4 py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          avance ? "bg-orange-100 text-orange-800" : "bg-amber-100 text-amber-800"
+                          avance
+                            ? "bg-orange-100 text-orange-800"
+                            : nouvelleVisite
+                              ? "bg-sky-100 text-sky-800"
+                              : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        {avance ? "Avance à solder" : "À facturer"}
+                        {avance ? "Avance à solder" : nouvelleVisite ? "Nouvelle visite" : "À facturer"}
                       </span>
                     </td>
                     <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{formaterHeure(client.dateCreation)}</td>
@@ -297,7 +306,7 @@ export default function PageClientsAdmin() {
         </div>
         {recents.length === 0 && (
           <p className="px-4 py-6 text-sm text-slate-400">
-            Aucun client en attente de facture ou de solde.
+            Aucun client récent. Enregistrez un nouveau client ou recherchez un ancien client.
           </p>
         )}
       </section>

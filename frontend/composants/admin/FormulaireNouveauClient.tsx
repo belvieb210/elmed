@@ -112,6 +112,10 @@ export function FormulaireNouveauClient({
       .slice(0, 8);
   }, [clientsExistants, rechercheAncien]);
 
+  const numeroPermanent =
+    clientAModifier?.numeroClient ||
+    clientsExistants.find((client) => client.id === clientSelectionneId)?.numeroClient ||
+    numeroApercu;
   const ancienClient = parcours === "Ancien client";
   const enModification = Boolean(clientAModifier);
 
@@ -215,7 +219,6 @@ export function FormulaireNouveauClient({
         });
         setClientSelectionneId(donnees.client.id);
         onModifie(donnees.client);
-        setEnCours(false);
         return;
       }
       const donnees = await appelerApi<{ client: ClientAdmin; motDePasseTemporaire: string }>("/admin/clients", {
@@ -226,6 +229,7 @@ export function FormulaireNouveauClient({
       onCree(donnees.client, donnees.motDePasseTemporaire);
     } catch (cause) {
       setErreur(cause instanceof Error ? cause.message : "Enregistrement impossible.");
+    } finally {
       setEnCours(false);
     }
   }
@@ -240,7 +244,7 @@ export function FormulaireNouveauClient({
       <div className="grid gap-4 md:grid-cols-3">
         <ChampLecture
           label="N° client (permanent)"
-          valeur={clientAModifier?.numeroClient || numeroApercu}
+          valeur={numeroPermanent}
         />
         <ChampLecture label="Date" valeur={dateTexte} />
         <ChampLecture label="Heure" valeur={heureTexte} />
@@ -277,6 +281,7 @@ export function FormulaireNouveauClient({
                       <button
                         type="button"
                         onClick={() => {
+                          const ficheExistante = ficheDepuisClient(client);
                           onSelectionnerAncien(client);
                           setRechercheAncien("");
                           setClientSelectionneId(client.id);
@@ -289,6 +294,7 @@ export function FormulaireNouveauClient({
                             adresse: client.adresse ?? "",
                             ville: client.ville ?? "",
                           });
+                          setFiche(ficheExistante);
                           setPhoto(client.photoProfil);
                         }}
                         className="flex w-full items-center gap-3 rounded-2xl border border-bleu-hero bg-white px-3 py-2.5 text-left hover:bg-slate-50"
@@ -308,6 +314,17 @@ export function FormulaireNouveauClient({
                     </li>
                   ))}
                 </ul>
+              )}
+              {clientSelectionneId && (
+                <div className="mt-3 rounded-2xl border border-bleu-hero bg-slate-50 px-3 py-3">
+                  <p className="text-sm font-semibold uppercase text-slate-800">
+                    {identite.prenom} {identite.nom}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    N° client {numeroPermanent} — le client est dans « Clients récemment enregistrés ».
+                    Établissez une nouvelle facture : chaque visite a son dossier, sans mélanger les commandes en ligne.
+                  </p>
+                </div>
               )}
               {rechercheAncien.trim().length >= 2 && anciens.length === 0 && (
                 <p className="mt-2 text-sm text-slate-400">Aucun ancien client trouvé.</p>

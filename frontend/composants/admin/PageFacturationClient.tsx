@@ -32,11 +32,24 @@ type FactureChargee = {
   remise: number;
   fraisDivers: number;
   numeroRecu: string | null;
+  numeroVisite?: string | null;
+  numeroDossier?: string | null;
   notes: string | null;
   montantPaye: number;
   resteAPayer?: number;
   modePaiement: ModePaiement;
   statutPaiement?: string;
+};
+
+type DossierClient = {
+  id: string;
+  numeroCommande: string;
+  numeroVisite?: string | null;
+  numeroDossier?: string | null;
+  origine?: "SUR_SITE" | "EN_LIGNE";
+  montantTotal: number;
+  resteAPayer: number;
+  dateCommande: string;
 };
 
 function numeroRecuDuJour() {
@@ -114,6 +127,9 @@ export function PageFacturationClient({
   const [erreur, setErreur] = useState<string | null>(null);
   const [motDePasseTemporaire, setMotDePasseTemporaire] = useState<string | null>(null);
   const [saisiePrete, setSaisiePrete] = useState(false);
+  const [dossiers, setDossiers] = useState<DossierClient[]>([]);
+  const [visiteCourante, setVisiteCourante] = useState<string | null>(null);
+  const [dossierCourant, setDossierCourant] = useState<string | null>(null);
 
   const totalProduits = useMemo(
     () => lignes.reduce((somme, ligne) => somme + ligne.prixUnitaire * ligne.quantite, 0),
@@ -150,6 +166,8 @@ export function PageFacturationClient({
     setMessage(null);
     setErreur(null);
     setSaisiePrete(false);
+    setVisiteCourante(null);
+    setDossierCourant(null);
   }
 
   function quitterApresEncaissement() {
@@ -167,6 +185,8 @@ export function PageFacturationClient({
     const dejaAvance = facture.montantPaye;
     const reste = facture.resteAPayer ?? 0;
     setCommandeCourante(facture.id);
+    setVisiteCourante(facture.numeroVisite ?? null);
+    setDossierCourant(facture.numeroDossier ?? null);
     setLignes(facture.lignes);
     setModeFacture(mode);
     setTypeFacture(facture.typeFacture);
@@ -193,7 +213,9 @@ export function PageFacturationClient({
       client: ClientAdmin;
       peutSolde: boolean;
       factureAvance: FactureAvanceAdmin | null;
+      commandes?: DossierClient[];
     }>(`/admin/clients/${clientId}`);
+    setDossiers(donnees.commandes ?? []);
     const aCharger = commandeId ?? donnees.factureAvance?.id;
     if (aCharger) {
       const facture = await appelerApi<{ facture: FactureChargee }>(`/admin/factures/${aCharger}`).then(
@@ -285,17 +307,33 @@ export function PageFacturationClient({
   }).slice(0, 8);
 
   function ajouterProduit(produit: ProduitAdmin) {
-    setLignes((actuelles) => [
-      ...actuelles,
-      {
-        produitId: produit.id,
-        nom: produit.nom,
-        sku: produit.sku,
-        quantite: 1,
-        prixUnitaire: produit.prix,
-      },
-    ]);
+    if ((produit.quantiteStock ?? 0) <= 0) {
+      setErreur(`« ${produit.nom} » n’a plus de stock.`);
+      return;
+    }
+    setLignes((actuelles) => {
+      const existante = actuelles.find((ligne) => ligne.produitId === produit.id);
+      if (existante) {
+        const max = Math.max(1, produit.quantiteStock);
+        return actuelles.map((ligne) =>
+          ligne.produitId === produit.id
+            ? { ...ligne, quantite: Math.min(ligne.quantite + 1, max) }
+            : ligne,
+        );
+      }
+      return [
+        ...actuelles,
+        {
+          produitId: produit.id,
+          nom: produit.nom,
+          sku: produit.sku,
+          quantite: 1,
+          prixUnitaire: produit.prix,
+        },
+      ];
+    });
     setRechercheProduit("");
+    setErreur(null);
   }
 
   async function enregistrer(valider: boolean) {
@@ -355,6 +393,10 @@ export function PageFacturationClient({
             `Avance ${donnees.numeroCommande} encaissée : ${formaterMontant(montantPaye)} payés, reste ${formaterMontant(resteAPayer)} pour la facture solde.`,
           );
           void chargerFacture(donnees.commandeId, "SOLDE").catch(() => setModeFacture("SOLDE"));
+          void chargerClient().catch(() => undefined);
+          void appelerApi<{ produits: ProduitAdmin[] }>("/admin/produits")
+            .then((reponse) => setProduits(reponse.produits))
+            .catch(() => undefined);
         } else {
           quitterApresEncaissement();
           return donnees.commandeId;
@@ -426,7 +468,9 @@ export function PageFacturationClient({
                 </span>
               </div>
               <p className="mt-2 text-sm text-slate-500">
-                Dossier {client.numeroDossier} · {client.email}
+                N° client {client.numeroClient || client.numeroDossier || "—"}
+                {visiteCourante ? ` · Visite ${visiteCourante}` : " · Nouvelle visite"}
+                {dossierCourant ? ` · Dossier ${dossierCourant}` : " · Dossier à l’établissement"}
                 {client.telephone ? ` · ${client.telephone}` : ""}
                 {client.ville ? ` · ${client.ville}` : ""}
               </p>
@@ -446,14 +490,69 @@ export function PageFacturationClient({
               )}
             </div>
           </div>
-          <Link
-            href="/admin/commandes"
-            className="shrink-0 rounded-xl border border-bleu-hero px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Voir les commandes
-          </Link>
+          {dossiers.length > 0 ? (
+            <a
+              href="#dossiers-client"
+              className="shrink-0 rounded-xl border border-bleu-hero px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Tous les dossiers
+            </a>
+          ) : (
+            <Link
+              href="/admin/commandes"
+              className="shrink-0 rounded-xl border border-bleu-hero px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Voir les commandes
+            </Link>
+          )}
         </div>
       </article>
+
+      {dossiers.length > 0 && (
+        <section id="dossiers-client" className="mb-4 overflow-hidden rounded-2xl border border-bleu-hero bg-white">
+          <div className="border-b border-bleu-hero px-4 py-3">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Dossiers du client ({dossiers.length})
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Le n° client reste le même. Chaque facture et chaque commande en ligne a sa visite et son dossier.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Visite</th>
+                  <th className="px-4 py-2 font-medium">Dossier</th>
+                  <th className="px-4 py-2 font-medium">Origine</th>
+                  <th className="px-4 py-2 font-medium">Montant</th>
+                  <th className="px-4 py-2 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dossiers.map((dossier) => (
+                  <tr key={dossier.id} className="border-t border-bleu-hero">
+                    <td className="px-4 py-2 font-medium text-slate-800">{dossier.numeroVisite || "—"}</td>
+                    <td className="px-4 py-2 text-violet-marque">{dossier.numeroDossier || dossier.numeroCommande}</td>
+                    <td className="px-4 py-2 text-slate-500">
+                      {dossier.origine === "SUR_SITE" ? "Sur place" : "En ligne"}
+                    </td>
+                    <td className="px-4 py-2">
+                      {formaterMontant(dossier.montantTotal)}
+                      {dossier.resteAPayer > 0.009 && (
+                        <span className="ml-1 text-[11px] text-orange-700">
+                          reste {formaterMontant(dossier.resteAPayer)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-slate-500">{formaterDate(dossier.dateCommande)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-12">
         <div className="space-y-4 xl:col-span-8">
@@ -486,6 +585,9 @@ export function PageFacturationClient({
                       <span>
                         <span className="font-medium text-slate-800">{produit.nom}</span>
                         <span className="ml-2 text-xs text-slate-400">{produit.sku}</span>
+                        <span className={`ml-2 text-xs ${produit.quantiteStock > 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                          Stock {produit.quantiteStock}
+                        </span>
                       </span>
                       <span className="text-xs font-semibold">{formaterMontant(produit.prix)}</span>
                     </button>
@@ -519,17 +621,19 @@ export function PageFacturationClient({
                         <input
                           type="number"
                           min={1}
+                          max={produits.find((item) => item.id === ligne.produitId)?.quantiteStock ?? undefined}
                           value={ligne.quantite}
                           readOnly={modeFacture === "SOLDE"}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const stock = produits.find((item) => item.id === ligne.produitId)?.quantiteStock ?? 1;
                             setLignes((actuelles) =>
                               actuelles.map((item) =>
                                 item.produitId === ligne.produitId
-                                  ? { ...item, quantite: Math.max(1, Number(e.target.value) || 1) }
+                                  ? { ...item, quantite: Math.min(stock, Math.max(1, Number(e.target.value) || 1)) }
                                   : item,
                               ),
-                            )
-                          }
+                            );
+                          }}
                           className={`w-16 rounded-lg border border-bleu-hero px-2 py-1 text-sm ${
                             modeFacture === "SOLDE" ? "bg-slate-50 text-slate-500" : ""
                           }`}

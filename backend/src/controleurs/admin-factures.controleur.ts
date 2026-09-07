@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { ModeFacture, ModePaiement, Prisma, StatutPaiement, TypeDocument, TypeFacture } from "@prisma/client";
+import { ModeFacture, ModePaiement, OrigineCommande, Prisma, StatutPaiement, TypeDocument, TypeFacture } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { z } from "zod";
@@ -10,6 +10,8 @@ import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import { emettreTempsReel, emettreTempsReelEquipe } from "../temps-reel/diffuseur";
 import { identifiantRoute } from "../utils/identifiant";
 import { libelleModePaiement, libelleStatutPaiement } from "./commandes.controleur";
+import { genererNumeroClient } from "../clients/numero-client";
+import { debiterStockVente, numerosVisiteDossier } from "../stock/debiter";
 
 const modesFacture = [
   "CASH",
@@ -73,15 +75,6 @@ function initials(prenom: string, nom: string) {
 
 function numeroDossier(id: string, numeroClient?: string | null) {
   return numeroClient || `CLT-${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
-}
-
-async function genererNumeroClient() {
-  const maintenant = new Date();
-  const prefixe = `${maintenant.getFullYear()}${String(maintenant.getMonth() + 1).padStart(2, "0")}${String(maintenant.getDate()).padStart(2, "0")}`;
-  const total = await baseDeDonnees.utilisateur.count({
-    where: { role: "CLIENT", numeroClient: { startsWith: prefixe } },
-  });
-  return `${prefixe}${String(total + 1).padStart(3, "0")}`;
 }
 
 async function genererNumeroCommande() {
@@ -172,9 +165,11 @@ function donneesProformaDepuisCommande(
   commande: {
     numeroRecu: string | null;
     numeroCommande: string;
+    numeroVisite?: string | null;
+    numeroDossier?: string | null;
     dateCommande: Date;
     montantTotal: { toString(): string } | number;
-    client: { prenom: string; nom: string; nomSociete: string | null; estInvite?: boolean };
+    client: { prenom: string; nom: string; nomSociete: string | null; estInvite?: boolean; numeroClient?: string | null };
     lignes: Array<{ quantite: number; prixUnitaire: { toString(): string } | number; produit: { nom: string } }>;
     paiements: Array<{
       statut: string;
@@ -191,6 +186,9 @@ function donneesProformaDepuisCommande(
     numero: commande.numeroRecu || commande.numeroCommande,
     dateTexte: dateFactureTexte(commande.dateCommande),
     nomClient: nomClient(commande.client),
+    numeroClient: commande.client.numeroClient ?? null,
+    numeroVisite: commande.numeroVisite ?? numerosVisiteDossier(commande.numeroCommande).numeroVisite,
+    numeroDossier: commande.numeroDossier ?? numerosVisiteDossier(commande.numeroCommande).numeroDossier,
     titreDocument: type,
     statutPaiement: paiement?.statut,
     libellePaiement: paiement ? libelleStatutPaiement(paiement.statut) : "En attente",
@@ -333,6 +331,9 @@ export async function obtenirClientAdmin(requete: RequeteAuthentifiee, reponse: 
       statut: commande.statut,
       statutPaiement: commande.paiements[0]?.statut ?? "EN_ATTENTE",
       modeFacture: commande.modeFacture,
+      origine: commande.origine,
+      numeroVisite: commande.numeroVisite,
+      numeroDossier: commande.numeroDossier,
       dateCommande: commande.dateCommande,
       nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
     };
@@ -471,6 +472,9 @@ export async function listerFacturationsAdmin(_requete: RequeteAuthentifiee, rep
         numeroClient:
           commande.client.numeroClient ||
           `CLT-${commande.client.id.replaceAll("-", "").slice(0, 8).toUpperCase()}`,
+        numeroVisite: commande.numeroVisite,
+        numeroDossier: commande.numeroDossier,
+        origine: commande.origine,
         nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
         montantTotal: total,
         montantPaye: paye,
@@ -519,6 +523,9 @@ export async function obtenirFactureAdmin(requete: RequeteAuthentifiee, reponse:
       remise: Number(commande.remise),
       fraisDivers: Number(commande.fraisDivers),
       numeroRecu: commande.numeroRecu,
+      numeroVisite: commande.numeroVisite,
+      numeroDossier: commande.numeroDossier,
+      origine: commande.origine,
       monnaie: commande.monnaie,
       notes: commande.notes,
       montantTotal: Number(commande.montantTotal),
@@ -625,7 +632,9 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
     .filter(Boolean)
     .join(" ");
 
-  const commande = await baseDeDonnees.$transaction(async (transaction) => {
+  let commande;
+  try {
+    commande = await baseDeDonnees.$transaction(async (transaction) => {
     let cible = commandeCibleId
       ? await transaction.commande.findFirst({
           where: { id: commandeCibleId, clientId: client.id },
@@ -634,6 +643,9 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
       : null;
 
     if (cible) {
+      const numeros = cible.numeroVisite
+        ? { numeroVisite: cible.numeroVisite, numeroDossier: cible.numeroDossier }
+        : numerosVisiteDossier(cible.numeroCommande);
       await transaction.ligneCommande.deleteMany({ where: { commandeId: cible.id } });
       await transaction.ligneCommande.createMany({
         data: lignes.map((ligne) => ({
@@ -654,14 +666,19 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
           fraisDivers: donnees.fraisDivers,
           numeroRecu: donnees.numeroRecu || cible.numeroRecu || genererNumeroRecu(),
           monnaie: donnees.monnaie,
+          origine: OrigineCommande.SUR_SITE,
+          numeroVisite: numeros.numeroVisite,
+          numeroDossier: numeros.numeroDossier,
           statut: statutPaiement === "PAYE" ? "VALIDEE" : cible.statut === "VALIDEE" ? "VALIDEE" : "EN_ATTENTE",
         },
         include: { paiements: true },
       });
     } else {
+      const numeroCommande = await genererNumeroCommande();
+      const numeros = numerosVisiteDossier(numeroCommande);
       cible = await transaction.commande.create({
         data: {
-          numeroCommande: await genererNumeroCommande(),
+          numeroCommande,
           clientId: client.id,
           statut: statutPaiement === "PAYE" ? "VALIDEE" : "EN_ATTENTE",
           montantTotal: total,
@@ -672,6 +689,9 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
           fraisDivers: donnees.fraisDivers,
           numeroRecu: donnees.numeroRecu || genererNumeroRecu(),
           monnaie: donnees.monnaie,
+          origine: OrigineCommande.SUR_SITE,
+          numeroVisite: numeros.numeroVisite,
+          numeroDossier: numeros.numeroDossier,
           lignes: {
             create: lignes.map((ligne) => ({
               produitId: ligne.produitId,
@@ -722,14 +742,13 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
       });
     }
 
-    const dejaPayee = cible.paiements.some((paiement) => paiement.statut === "PAYE");
-    if (donnees.valider && statutPaiement === "PAYE" && !dejaPayee) {
-      for (const ligne of lignes) {
-        await transaction.produit.update({
-          where: { id: ligne.produitId },
-          data: { quantiteStock: { decrement: ligne.quantite } },
-        });
-      }
+    if (donnees.valider && !cible.stockDebite) {
+      await debiterStockVente(transaction, lignes);
+      cible = await transaction.commande.update({
+        where: { id: cible.id },
+        data: { stockDebite: true },
+        include: { paiements: true },
+      });
     }
 
     await transaction.notification.create({
@@ -747,6 +766,11 @@ export async function enregistrerFactureAdmin(requete: RequeteAuthentifiee, repo
 
     return cible;
   });
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Facture impossible.";
+    reponse.status(400).json({ succes: false, message });
+    return;
+  }
 
   emettreTempsReel(client.id, "commande", { commandeId: commande.id });
   emettreTempsReel(client.id, "notification");

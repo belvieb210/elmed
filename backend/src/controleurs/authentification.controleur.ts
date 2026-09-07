@@ -5,6 +5,7 @@ import { fusionnerCompteInvite, poserSession } from "../authentification/invite"
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import { optionsCookieInvite, optionsCookieJeton } from "../config/environnement";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
+import { genererNumeroClient } from "../clients/numero-client";
 
 const schemaConnexion = z.object({
   email: z.string().email(),
@@ -101,6 +102,7 @@ export async function inscrireClient(requete: Request, reponse: Response) {
   }
 
   const hash = await bcrypt.hash(motDePasse, 12);
+  const numeroClient = existant?.numeroClient || (await genererNumeroClient());
   const utilisateur = existant?.estInvite
     ? await baseDeDonnees.utilisateur.update({
         where: { id: existant.id },
@@ -111,6 +113,7 @@ export async function inscrireClient(requete: Request, reponse: Response) {
           motDePasse: hash,
           telephone: telephone || null,
           nomSociete: nomSociete || null,
+          numeroClient,
           estInvite: false,
         },
       })
@@ -122,6 +125,7 @@ export async function inscrireClient(requete: Request, reponse: Response) {
           motDePasse: hash,
           telephone: telephone || null,
           nomSociete: nomSociete || null,
+          numeroClient,
           role: "CLIENT",
           estInvite: false,
         },

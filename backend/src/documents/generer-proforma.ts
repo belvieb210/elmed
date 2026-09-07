@@ -12,6 +12,9 @@ export type DonneesProforma = {
   numero: string;
   dateTexte: string;
   nomClient: string;
+  numeroClient?: string | null;
+  numeroVisite?: string | null;
+  numeroDossier?: string | null;
   lignes: LigneProforma[];
   montantTotal: number;
   montantPaye?: number;
@@ -85,8 +88,19 @@ function dessinerPageFacture(doc: PDFKit.PDFDocument, donnees: DonneesProforma) 
     dessinerEntete(doc, donnees);
 
     doc.fillColor(bleuProforma).font("Helvetica").fontSize(11);
-    doc.text(`Client (e)  ${donnees.nomClient}`, 36, 165, { width: 523 });
-    doc.moveTo(108, 178).lineTo(559, 178).strokeColor(bleuProforma).lineWidth(0.6).stroke();
+    doc.text(`Client (e)  ${donnees.nomClient}`, 36, 160, { width: 523 });
+    doc.moveTo(108, 173).lineTo(559, 173).strokeColor(bleuProforma).lineWidth(0.6).stroke();
+    const references = [
+      donnees.numeroClient ? `N° client ${donnees.numeroClient}` : null,
+      donnees.numeroVisite ? `Visite ${donnees.numeroVisite}` : null,
+      donnees.numeroDossier ? `Dossier ${donnees.numeroDossier}` : null,
+    ]
+      .filter(Boolean)
+      .join("  ·  ");
+    if (references) {
+      doc.font("Helvetica").fontSize(8);
+      doc.text(references, 36, 176, { width: 523 });
+    }
 
     doc.font("Helvetica-Oblique").fontSize(11);
     doc.text("doit pour ce qui suit :", 36, 188, { width: 523, align: "center" });

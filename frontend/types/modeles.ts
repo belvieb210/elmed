@@ -254,6 +254,9 @@ export interface CommandeAdmin {
   dateCommande: string;
   nomClient: string;
   numeroClient?: string | null;
+  numeroVisite?: string | null;
+  numeroDossier?: string | null;
+  origine?: "SUR_SITE" | "EN_LIGNE";
   nombreArticles?: number;
   image?: string | null;
   montantPaye?: number;
@@ -321,6 +324,16 @@ export interface ClientAdmin {
   statutFacture?: "A_FACTURER" | "AVANCE" | "SOLDEE";
   montantPaye?: number;
   resteAPayer?: number;
+  dossiers?: Array<{
+    id: string;
+    numeroCommande: string;
+    numeroVisite?: string | null;
+    numeroDossier?: string | null;
+    origine?: "SUR_SITE" | "EN_LIGNE";
+    montantTotal: number;
+    resteAPayer: number;
+    dateCommande: string;
+  }>;
 }
 
 export interface FactureAvanceAdmin {
@@ -340,6 +353,9 @@ export interface FacturationAdmin {
   numeroRecu?: string | null;
   nomClient: string;
   numeroClient?: string | null;
+  numeroVisite?: string | null;
+  numeroDossier?: string | null;
+  origine?: "SUR_SITE" | "EN_LIGNE";
   nombreArticles: number;
   montantTotal: number;
   montantPaye: number;
