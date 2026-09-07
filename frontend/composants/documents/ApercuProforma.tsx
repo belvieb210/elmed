@@ -5,22 +5,6 @@ import { formaterDate, formaterMontant } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import type { ParametreEntreprise } from "@/types/modeles";
 
-function IconeMicroscope() {
-  return (
-    <svg viewBox="0 0 64 72" className="h-10 w-9 text-[#2B6CB0] sm:h-16 sm:w-14" fill="none" aria-hidden>
-      <circle cx="32" cy="12" r="7" stroke="currentColor" strokeWidth="2.4" />
-      <path
-        d="M32 19v18M18 37h28M32 37L20 60M16 60h32"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <rect x="12" y="60" width="40" height="8" rx="2" stroke="currentColor" strokeWidth="2.4" />
-      <circle cx="20" cy="50" r="4" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
 const defaut: ParametreEntreprise = {
   nomCommercial: "MateMedical",
   raisonSociale: "ELMED",
@@ -32,6 +16,7 @@ const defaut: ParametreEntreprise = {
   telephone: "0913553866 - 0813553866",
   ville: "Kin",
   messagePied: "Merci de nous avoir choisi",
+  logoUrl: "/medias/logo-microscope.png",
 };
 
 export function ApercuProforma({
@@ -96,11 +81,11 @@ export function ApercuProforma({
             <p className="text-[10px] sm:text-[11px]">Tél. : {entreprise.telephone}</p>
           </div>
           <div className="hidden sm:block">
-            {entreprise.logoUrl ? (
-              <img src={entreprise.logoUrl} alt="" className="h-16 w-14 object-contain" />
-            ) : (
-              <IconeMicroscope />
-            )}
+            <img
+              src={entreprise.logoUrl || "/medias/logo-microscope.png"}
+              alt=""
+              className="h-16 w-16 object-contain"
+            />
           </div>
           <div className="sm:text-right">
             <p className="text-xs sm:text-sm">

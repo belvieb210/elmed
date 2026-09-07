@@ -1,4 +1,6 @@
 import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
 import {
   bleuFiligrane,
   bleuProforma,
@@ -37,10 +39,51 @@ function formaterMontant(montant: number) {
   }).format(montant)} $`;
 }
 
-function dessinerMicroscope(doc: PDFKit.PDFDocument, x: number, y: number) {
+const LOGO_DEFAUT_FICHIER = path.resolve(__dirname, "../../assets/logo-microscope.png");
+
+function cheminLogoPublic(urlRelative: string) {
+  const relatif = urlRelative.replace(/^\//, "");
+  const candidats = [
+    path.resolve(process.cwd(), "assets", path.basename(relatif)),
+    path.resolve(process.cwd(), "../frontend/public", relatif),
+    path.resolve(process.cwd(), "frontend/public", relatif),
+    LOGO_DEFAUT_FICHIER,
+  ];
+  return candidats.find((fichier) => fs.existsSync(fichier)) ?? null;
+}
+
+/** Résout le logo facture : data URL, fichier local, ou microscope par défaut. */
+function resoudreImageLogo(logoUrl?: string | null): Buffer | string | null {
+  if (logoUrl?.startsWith("data:image/")) {
+    const base64 = logoUrl.split(",")[1];
+    if (base64) return Buffer.from(base64, "base64");
+  }
+
+  if (logoUrl?.startsWith("/")) {
+    const local = cheminLogoPublic(logoUrl);
+    if (local) return local;
+  }
+
+  if (logoUrl && fs.existsSync(logoUrl)) return logoUrl;
+
+  if (fs.existsSync(LOGO_DEFAUT_FICHIER)) return LOGO_DEFAUT_FICHIER;
+  return null;
+}
+
+function dessinerLogoFacture(doc: PDFKit.PDFDocument, infos: InfosEntreprise, x: number, y: number) {
+  const image = resoudreImageLogo(infos.logoUrl);
+  if (image) {
+    try {
+      doc.image(image, x, y, { fit: [78, 78], align: "center", valign: "center" });
+      return;
+    } catch {
+      /* repli schéma trait */
+    }
+  }
+
+  // Repli : pictogramme trait (si fichier logo absent)
   doc.save();
   doc.strokeColor(bleuProforma).lineWidth(2.2);
-
   doc.circle(x + 28, y + 10, 7).stroke();
   doc.moveTo(x + 28, y + 17).lineTo(x + 28, y + 36).stroke();
   doc.moveTo(x + 16, y + 36).lineTo(x + 40, y + 36).stroke();
@@ -48,7 +91,6 @@ function dessinerMicroscope(doc: PDFKit.PDFDocument, x: number, y: number) {
   doc.moveTo(x + 18, y + 58).lineTo(x + 42, y + 58).stroke();
   doc.roundedRect(x + 10, y + 58, 36, 8, 2).stroke();
   doc.circle(x + 18, y + 48, 4).stroke();
-
   doc.restore();
 }
 
@@ -64,7 +106,7 @@ function dessinerEntete(doc: PDFKit.PDFDocument, donnees: DonneesProforma, infos
   doc.text(infos.adresse, 36, 122, { width: 240 });
   doc.text(`Tél. : ${infos.telephone}`, 36, 133, { width: 240 });
 
-  dessinerMicroscope(doc, 268, 42);
+  dessinerLogoFacture(doc, infos, 255, 32);
 
   doc.font("Helvetica").fontSize(10);
   doc.text(`${infos.ville} , le ${donnees.dateTexte}`, 360, 42, { width: 200, align: "right" });

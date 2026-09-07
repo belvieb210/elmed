@@ -109,6 +109,7 @@ async function remplir() {
       telephone: "0913553866 - 0813553866",
       ville: "Kin",
       messagePied: "Merci de nous avoir choisi",
+      logoUrl: "/medias/logo-microscope.png",
     },
   });
 

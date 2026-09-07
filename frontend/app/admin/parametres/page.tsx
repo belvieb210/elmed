@@ -313,8 +313,12 @@ export default function PageParametresAdmin() {
           <aside className="space-y-4 xl:col-span-4">
             <article className="rounded-2xl border border-bleu-hero bg-white p-5">
               <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Logo
+                Logo factures (microscope)
               </h3>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Image affichée en en-tête des factures et proformas (à la place du pictogramme trait).
+                PNG ou JPG recommandé, fond clair.
+              </p>
               <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-bleu-hero bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">
                 <input
                   type="file"
@@ -324,14 +328,39 @@ export default function PageParametresAdmin() {
                   onChange={(e) => lireLogo(e.target.files?.[0])}
                 />
                 {entreprise.logoUrl ? (
-                  <img src={entreprise.logoUrl} alt="Logo" className="max-h-24 object-contain" />
+                  <img src={entreprise.logoUrl} alt="Logo facture" className="max-h-28 object-contain" />
                 ) : (
                   <>
                     <ImagePlus className="mb-2 h-6 w-6 text-bleu-hero" />
-                    Upload logo (PNG/JPG — 2 Mo)
+                    Déposer le logo microscope (PNG/JPG — 2 Mo)
                   </>
                 )}
               </label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={!peutModifierEntreprise}
+                  onClick={() =>
+                    setEntreprise((actuel) => ({
+                      ...actuel,
+                      logoUrl: "/medias/logo-microscope.png",
+                    }))
+                  }
+                  className="rounded-xl border border-bleu-hero px-3 py-2 text-xs font-semibold uppercase text-slate-600 disabled:opacity-50"
+                >
+                  Logo microscope par défaut
+                </button>
+                {entreprise.logoUrl && (
+                  <button
+                    type="button"
+                    disabled={!peutModifierEntreprise}
+                    onClick={() => setEntreprise((actuel) => ({ ...actuel, logoUrl: "" }))}
+                    className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold uppercase text-rose-700 disabled:opacity-50"
+                  >
+                    Retirer
+                  </button>
+                )}
+              </div>
               <input
                 className={`${champ} mt-3`}
                 disabled={!peutModifierEntreprise}

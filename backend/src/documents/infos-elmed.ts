@@ -29,7 +29,7 @@ export const infosElmedDefaut: InfosEntreprise = {
   emailContact: null,
   siteWeb: null,
   merci: "Merci de nous avoir choisi",
-  logoUrl: null,
+  logoUrl: "/medias/logo-microscope.png",
 };
 
 /** @deprecated Utiliser obtenirInfosEntreprise() — conservé pour compatibilité */
@@ -86,7 +86,12 @@ export async function obtenirInfosEntreprise(): Promise<InfosEntreprise> {
     const ligne = await baseDeDonnees.parametreEntreprise.findFirst({
       orderBy: { dateMaj: "desc" },
     });
-    cache = ligne ? formaterLigne(ligne) : infosElmedDefaut;
+    cache = ligne
+      ? formaterLigne({
+          ...ligne,
+          logoUrl: ligne.logoUrl || infosElmedDefaut.logoUrl,
+        })
+      : infosElmedDefaut;
   } catch {
     cache = infosElmedDefaut;
   }
@@ -97,7 +102,15 @@ export async function obtenirInfosEntreprise(): Promise<InfosEntreprise> {
 export async function assurerParametresEntreprise() {
   try {
     const existant = await baseDeDonnees.parametreEntreprise.findFirst();
-    if (existant) return existant;
+    if (existant) {
+      if (!existant.logoUrl) {
+        return await baseDeDonnees.parametreEntreprise.update({
+          where: { id: existant.id },
+          data: { logoUrl: infosElmedDefaut.logoUrl },
+        });
+      }
+      return existant;
+    }
     return await baseDeDonnees.parametreEntreprise.create({
       data: {
         nomCommercial: infosElmedDefaut.nomCommercial,
@@ -110,6 +123,7 @@ export async function assurerParametresEntreprise() {
         telephone: infosElmedDefaut.telephone,
         ville: infosElmedDefaut.ville,
         messagePied: infosElmedDefaut.merci,
+        logoUrl: infosElmedDefaut.logoUrl,
       },
     });
   } catch (erreur) {
