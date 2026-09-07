@@ -3,11 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 export const IMAGE_ACCUEIL_DEFAUT = "/medias/hero-accueil-produits.png";
 export const LOGO_DEFAUT = "/medias/logo-microscope.png";
-export const IMAGES_ACCUEIL_DEFAUT = [
-  "/medias/logo-microscope.png",
-  "/medias/hero-accueil-produits.png",
-  "/medias/logo-microscope.png",
-];
+export const IMAGES_ACCUEIL_DEFAUT = ["/medias/hero-accueil-produits.png"];
 export const MAX_IMAGES_ACCUEIL = 6;
 
 export type InfosEntreprise = {

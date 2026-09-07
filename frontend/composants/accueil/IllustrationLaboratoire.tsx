@@ -1,19 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { appelerApi } from "@/lib/api";
 
-const IMAGES_DEFAUT = [
-  "/medias/logo-microscope.png",
-  "/medias/hero-accueil-produits.png",
-  "/medias/logo-microscope.png",
-];
+/** Secours unique (composition produits sur fond transparent / bleu). */
+const IMAGE_SECOURS = "/medias/hero-accueil-produits.png";
 
 function normaliserListe(images?: string[] | null, unique?: string | null) {
   const multi = (images ?? []).filter((item) => typeof item === "string" && item.trim().length > 0);
   if (multi.length > 0) return multi.slice(0, 6);
   if (unique?.trim()) return [unique.trim()];
-  return [...IMAGES_DEFAUT];
+  return [IMAGE_SECOURS];
+}
+
+/** Positions en éventail, comme la maquette (produits posés sur le bleu). */
+function styleProduit(index: number, total: number): CSSProperties {
+  if (total === 1) {
+    return {
+      position: "relative",
+      width: "100%",
+      maxWidth: 340,
+      height: "100%",
+      objectFit: "contain",
+    };
+  }
+
+  const milieu = (total - 1) / 2;
+  const decalage = index - milieu;
+  const translateX = decalage * (total <= 3 ? 18 : 14);
+  const rotate = decalage * (total <= 3 ? 5 : 3.5);
+  const scale = index === Math.round(milieu) ? 1.08 : 0.92 - Math.abs(decalage) * 0.02;
+
+  return {
+    position: "absolute",
+    bottom: `${4 + Math.abs(decalage) * 2}%`,
+    left: "50%",
+    height: `${72 + (index === Math.round(milieu) ? 14 : 0)}%`,
+    width: "auto",
+    maxWidth: `${42 - Math.abs(decalage) * 2}%`,
+    objectFit: "contain",
+    transform: `translateX(calc(-50% + ${translateX}%)) rotate(${rotate}deg) scale(${scale})`,
+    zIndex: 10 + index,
+  };
 }
 
 export function IllustrationLaboratoire({
@@ -41,7 +69,7 @@ export function IllustrationLaboratoire({
           );
         })
         .catch(() => {
-          if (!ignore) setListe([...IMAGES_DEFAUT]);
+          if (!ignore) setListe([IMAGE_SECOURS]);
         });
     }
 
@@ -54,44 +82,34 @@ export function IllustrationLaboratoire({
   }, [images]);
 
   const affichees = liste.slice(0, 6);
+  const uneSeule = affichees.length === 1;
 
   return (
     <div
-      className="flex w-full min-w-[240px] max-w-[440px] items-end justify-center gap-2 sm:gap-3"
+      className={`relative flex w-full max-w-[380px] items-end justify-center md:max-w-[420px] ${
+        uneSeule ? "min-h-[9.5rem] sm:min-h-[11.5rem]" : "h-40 sm:h-48"
+      }`}
       aria-hidden
     >
-      {affichees.map((src, index) => {
-        const total = affichees.length;
-        const estMilieu = total >= 3 && index === Math.floor((total - 1) / 2);
-        return (
-          <div
-            key={`${index}-${src.slice(0, 48)}`}
-            className={`flex flex-1 items-center justify-center rounded-2xl bg-white p-2 shadow-[0_12px_28px_rgba(15,23,42,0.22)] sm:p-2.5 ${
-              estMilieu ? "min-h-[9.5rem] sm:min-h-[11rem]" : "min-h-[8rem] sm:min-h-[9.5rem]"
-            }`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={src}
-              alt=""
-              width={160}
-              height={160}
-              className={`w-full object-contain ${
-                estMilieu ? "h-32 sm:h-40" : "h-28 sm:h-36"
-              }`}
-              onError={(evenement) => {
-                const cible = evenement.currentTarget;
-                if (cible.dataset.fallback === "1") {
-                  cible.style.visibility = "hidden";
-                  return;
-                }
-                cible.dataset.fallback = "1";
-                cible.src = IMAGES_DEFAUT[index % IMAGES_DEFAUT.length];
-              }}
-            />
-          </div>
-        );
-      })}
+      {affichees.map((src, index) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={`${index}-${src.slice(0, 48)}`}
+          src={src}
+          alt=""
+          style={styleProduit(index, affichees.length)}
+          className="pointer-events-none select-none drop-shadow-[0_14px_24px_rgba(15,23,42,0.28)]"
+          onError={(evenement) => {
+            const cible = evenement.currentTarget;
+            if (cible.dataset.fallback === "1") {
+              cible.style.visibility = "hidden";
+              return;
+            }
+            cible.dataset.fallback = "1";
+            cible.src = IMAGE_SECOURS;
+          }}
+        />
+      ))}
     </div>
   );
 }

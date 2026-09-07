@@ -6,6 +6,7 @@ import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import { IllustrationLaboratoire } from "@/composants/accueil/IllustrationLaboratoire";
 import { appelerApi } from "@/lib/api";
+import { preparerImageAccueilFichier } from "@/lib/image-accueil";
 import { libelleRole } from "@/lib/formatage";
 import { estSuperAdmin } from "@/lib/roles";
 import { useClient } from "@/store/contexteClient";
@@ -15,13 +16,9 @@ const champ =
   "mt-1.5 w-full rounded-2xl border border-bleu-hero bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none";
 const label = "text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500";
 const MAX_IMAGES_ACCUEIL = 6;
-const IMAGES_ACCUEIL_DEFAUT = [
-  "/medias/logo-microscope.png",
-  "/medias/hero-accueil-produits.png",
-  "/medias/logo-microscope.png",
-];
+const IMAGES_ACCUEIL_DEFAUT = ["/medias/hero-accueil-produits.png"];
 
-/** Compresse une image pour éviter un PUT trop lourd (logo + plusieurs photos). */
+/** Compresse une image (logo) sans retrait de fond. */
 function compresserImageFichier(fichier: File, maxCote = 900, qualite = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     const lecteur = new FileReader();
@@ -146,7 +143,7 @@ export default function PageParametresAdmin() {
       setErreur("Chaque image d’accueil ne doit pas dépasser 4 Mo.");
       return;
     }
-    void compresserImageFichier(fichier, 900, 0.82)
+    void preparerImageAccueilFichier(fichier, 1000)
       .then((dataUrl) => {
         setEntreprise((actuel) => {
           const images = [...(actuel.imagesAccueil ?? [])];
@@ -467,9 +464,9 @@ export default function PageParametresAdmin() {
                 Images d’accueil (hero)
               </h3>
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                Ajoutez au moins 3 images (microscope, boîtes, tubes…) puis cliquez sur
-                « Enregistrer » en bas du formulaire — sinon l’accueil ne les reçoit pas.
-                Maximum {MAX_IMAGES_ACCUEIL}.
+                Images dynamiques du bandeau d’accueil (1 à {MAX_IMAGES_ACCUEIL}). Préférez des PNG
+                déjà détourés, ou un fond uni blanc/bleu : le fond est retiré automatiquement pour
+                coller au bleu du bandeau. Enregistrez le formulaire pour publier.
               </p>
 
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -540,7 +537,7 @@ export default function PageParametresAdmin() {
                   }
                   className="rounded-xl border border-bleu-hero px-3 py-2 text-xs font-semibold uppercase text-slate-600 disabled:opacity-50"
                 >
-                  Reprendre les 3 images par défaut
+                  Reprendre l’image par défaut
                 </button>
                 {(entreprise.imagesAccueil?.length ?? 0) > 0 && (
                   <button

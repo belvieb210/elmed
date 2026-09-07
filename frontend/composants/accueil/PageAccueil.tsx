@@ -62,7 +62,7 @@ export function PageAccueil() {
                 )}
               </div>
             </div>
-            <div className="relative z-10 flex min-h-[9rem] items-center justify-center md:min-h-[11rem] md:justify-end">
+            <div className="relative z-10 flex min-h-[10rem] items-center justify-center md:min-h-[12rem] md:justify-end">
               <IllustrationLaboratoire />
             </div>
           </div>
