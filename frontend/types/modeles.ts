@@ -199,6 +199,7 @@ export interface MessageChat {
   nomAuteur: string;
   roleAuteur?: string;
   initialsAuteur?: string;
+  photoProfilAuteur?: string | null;
   ficheProduit?: FicheProduitMessage;
 }
 

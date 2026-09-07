@@ -59,7 +59,7 @@ export function formaterMessageChat(
     dateEnvoi: Date;
     dateModification?: Date | null;
     auteurId: string;
-    auteur: { prenom: string; nom: string; role: string };
+    auteur: { prenom: string; nom: string; role: string; photoProfil?: string | null; estInvite?: boolean };
     reponseA?: {
       id: string;
       contenu: string;
@@ -98,6 +98,7 @@ export function formaterMessageChat(
     nomAuteur: `${message.auteur.prenom} ${message.auteur.nom}`.trim(),
     roleAuteur: libelleRolePersonnel(message.auteur.role),
     initialsAuteur: `${message.auteur.prenom.charAt(0)}${message.auteur.nom.charAt(0)}`.toUpperCase(),
+    photoProfilAuteur: message.auteur.role === "CLIENT" && message.auteur.estInvite ? null : message.auteur.photoProfil ?? null,
     ficheProduit: message.supprime ? undefined : extraireFicheProduit(message.contenu, message.typeMessage),
   };
 }

@@ -37,7 +37,7 @@ export function BulleMessage({
 
   if (message.ficheProduit) {
     return (
-      <div ref={zone} className={`group relative ${message.estMoi ? "flex justify-end" : ""}`}>
+      <div ref={zone} className={`group relative ${message.estMoi ? "ml-auto" : ""} w-fit max-w-[92%] sm:max-w-[320px]`}>
         <CarteProduitMessage fiche={message.ficheProduit} message={message} lienProduit={lienProduit} />
         <BoutonMenu
           alignerDroite={message.estMoi}
@@ -69,11 +69,17 @@ export function BulleMessage({
   return (
     <div ref={zone} className={`group relative flex ${message.estMoi ? "justify-end" : "justify-start"}`}>
       {!message.estMoi && (
-        <span className="mr-2 mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-violet-marque text-[10px] font-semibold text-white">
-          {message.initialsAuteur || message.nomAuteur.slice(0, 2).toUpperCase()}
+        <span className="mr-2 mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full bg-violet-marque">
+          {message.photoProfilAuteur ? (
+            <img src={message.photoProfilAuteur} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="grid h-full w-full place-items-center text-[10px] font-semibold text-white">
+              {message.initialsAuteur || message.nomAuteur.slice(0, 2).toUpperCase()}
+            </span>
+          )}
         </span>
       )}
-      <div className={`max-w-[88%] sm:max-w-[78%] ${message.estMoi ? "" : ""}`}>
+      <div className="relative max-w-[88%] sm:max-w-[78%]">
         {!message.estMoi && (
           <p className="mb-1 text-xs font-semibold text-slate-800">
             {message.nomAuteur}
@@ -119,20 +125,20 @@ export function BulleMessage({
             {formaterHeure(message.dateEnvoi)}
             {message.dateModification ? " · modifié" : ""}
           </p>
+          <BoutonMenu
+            alignerDroite={message.estMoi}
+            ouvert={ouvert}
+            onOuvrir={() => setOuvert((actuel) => !actuel)}
+            message={message}
+            onRepondre={onRepondre}
+            onTransferer={onTransferer}
+            onEpingler={onEpingler}
+            onModifier={onModifier}
+            onSupprimer={onSupprimer}
+            onFermer={() => setOuvert(false)}
+          />
         </div>
       </div>
-      <BoutonMenu
-        alignerDroite={message.estMoi}
-        ouvert={ouvert}
-        onOuvrir={() => setOuvert((actuel) => !actuel)}
-        message={message}
-        onRepondre={onRepondre}
-        onTransferer={onTransferer}
-        onEpingler={onEpingler}
-        onModifier={onModifier}
-        onSupprimer={onSupprimer}
-        onFermer={() => setOuvert(false)}
-      />
     </div>
   );
 }
@@ -161,7 +167,7 @@ function BoutonMenu({
   onFermer: () => void;
 }) {
   return (
-    <div className={`absolute top-1 ${alignerDroite ? "left-1" : "right-1"}`}>
+    <div className={`absolute -top-2 ${alignerDroite ? "right-2" : "left-2"}`}>
       <button
         type="button"
         onClick={onOuvrir}
