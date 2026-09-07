@@ -116,7 +116,7 @@ function MessagerieAdmin() {
     <MiseEnPageAdmin titre="Messagerie" sousTitre="Échanges avec les clients — sans groupes">
       <div className="grid h-[calc(100dvh-var(--hauteur-en-tete)-2rem)] min-h-0 overflow-hidden rounded-2xl border border-bleu-hero bg-white lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_280px]">
         <aside className={`min-h-0 overflow-hidden border-bleu-hero lg:block lg:border-b-0 lg:border-r ${vueMobile === "liste" ? "block" : "hidden"}`}>
-          <div className="h-full max-h-[36vh] overflow-y-auto lg:max-h-none">
+          <div className="h-full overflow-y-auto">
             {conversations.map((conversation) => (
               <button
                 key={conversation.id}

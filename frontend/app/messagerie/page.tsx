@@ -132,7 +132,7 @@ function FilDiscussion() {
         </div>
       )}
 
-      <div className="flex h-[calc(100dvh-var(--hauteur-en-tete)-8rem)] min-h-0 flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[68vh]">
+      <div className="flex h-[calc(100dvh-var(--hauteur-en-tete)-6.5rem)] min-h-[20rem] min-w-0 flex-col overflow-hidden rounded-2xl border border-bleu-hero bg-white sm:h-[min(68vh,calc(100dvh-var(--hauteur-en-tete)-4rem))]">
         {fichiers.length > 0 && (
           <div className="border-b border-bleu-hero px-4 py-2 text-xs text-slate-500">
             {fichiers.length} fichier{fichiers.length > 1 ? "s" : ""} joint{fichiers.length > 1 ? "s" : ""} dans cette

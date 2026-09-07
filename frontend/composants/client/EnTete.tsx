@@ -20,11 +20,11 @@ export function EnTete() {
   }
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 h-[var(--hauteur-en-tete)] border-b-2 border-bleu-hero bg-white px-3 pt-[env(safe-area-inset-top)] sm:px-4 lg:left-[270px] lg:px-6">
-      <div className="flex h-full items-center gap-3">
+    <header className="fixed inset-x-0 top-0 z-40 h-[var(--hauteur-en-tete)] border-b-2 border-bleu-hero bg-white px-2 pt-[env(safe-area-inset-top)] sm:px-4 lg:left-[270px] lg:px-6">
+      <div className="flex h-full items-center gap-1.5 sm:gap-3">
         <button
           type="button"
-          className="rounded-xl border border-bleu-hero p-2 text-bleu-hero lg:hidden"
+          className="shrink-0 rounded-xl border border-bleu-hero p-2 text-bleu-hero lg:hidden"
           onClick={() => definirMenuMobileOuvert(true)}
           aria-label="Ouvrir le menu"
         >
@@ -33,18 +33,19 @@ export function EnTete() {
 
         <form onSubmit={soumettreRecherche} className="masque-recherche flex min-w-0 flex-1 items-center">
           <div className="flex w-full items-center overflow-hidden rounded-full border border-bleu-hero bg-white">
-            <Search className="ml-4 hidden h-4 w-4 text-slate-400 sm:block" />
+            <Search className="ml-3 hidden h-4 w-4 shrink-0 text-slate-400 sm:ml-4 sm:block" />
             <input
               value={texteRecherche}
               onChange={(e) => setTexteRecherche(e.target.value)}
-              placeholder="Rechercher un produit..."
-              className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-slate-400 sm:h-11"
+              placeholder="Rechercher…"
+              className="h-10 min-w-0 flex-1 bg-transparent px-2.5 text-base outline-none placeholder:text-slate-400 sm:h-11 sm:px-3 sm:text-sm"
             />
             <button
               type="submit"
-              className="m-1 rounded-full bg-violet-marque px-3 py-1.5 text-sm font-medium text-white transition hover:bg-violet-fonce sm:px-5 sm:py-2"
+              className="m-1 shrink-0 rounded-full bg-violet-marque p-2 text-sm font-medium text-white transition hover:bg-violet-fonce sm:px-5 sm:py-2"
+              aria-label="Rechercher"
             >
-              <span className="sm:hidden">OK</span>
+              <Search className="h-4 w-4 sm:hidden" />
               <span className="hidden sm:inline">Rechercher</span>
             </button>
           </div>
@@ -52,7 +53,7 @@ export function EnTete() {
 
         <Link
           href="/panier"
-          className="relative rounded-full p-2 text-slate-600 hover:bg-slate-50"
+          className="relative shrink-0 rounded-full p-2 text-slate-600 hover:bg-slate-50"
           aria-label="Panier"
         >
           <ShoppingCart className="h-5 w-5" />
@@ -65,7 +66,7 @@ export function EnTete() {
 
         <Link
           href={lienMessagerie(compteReel)}
-          className="relative rounded-full p-2 text-slate-600 hover:bg-slate-50"
+          className="relative shrink-0 rounded-full p-2 text-slate-600 hover:bg-slate-50"
           aria-label="Messages"
         >
           <MessageCircle className="h-5 w-5" />
@@ -77,11 +78,15 @@ export function EnTete() {
         </Link>
 
         {compteReel ? (
-          <Link href="/profil" className="hidden items-center gap-2 pl-1 sm:flex">
+          <Link
+            href="/profil"
+            className="shrink-0 rounded-full p-0.5 sm:flex sm:items-center sm:gap-2 sm:pl-1"
+            aria-label="Mon profil"
+          >
             <img
               src={utilisateur?.photoProfil ?? "https://i.pravatar.cc/80?img=12"}
               alt={utilisateur?.nomComplet ?? "Client"}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-8 w-8 rounded-full object-cover sm:h-10 sm:w-10"
             />
             <span className="hidden leading-tight md:block">
               <span className="block text-sm font-semibold text-slate-800">

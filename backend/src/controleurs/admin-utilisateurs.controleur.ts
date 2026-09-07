@@ -200,28 +200,39 @@ export async function mettreAJourPersonnelAdmin(requete: RequeteAuthentifiee, re
     return;
   }
 
-  const misAJour = await baseDeDonnees.utilisateur.update({
-    where: { id: identifiant },
-    data: {
-      prenom: analyse.data.prenom,
-      nom: analyse.data.nom,
-      email,
-      telephone: analyse.data.telephone?.trim() || null,
-      role: analyse.data.role,
-      photoProfil: analyse.data.photoProfil?.trim() || utilisateur.photoProfil,
-      actif: analyse.data.actif ?? utilisateur.actif,
-    },
-  });
+  try {
+    const misAJour = await baseDeDonnees.utilisateur.update({
+      where: { id: identifiant },
+      data: {
+        prenom: analyse.data.prenom,
+        nom: analyse.data.nom,
+        email,
+        telephone: analyse.data.telephone?.trim() || null,
+        role: analyse.data.role,
+        photoProfil: analyse.data.photoProfil?.trim() || utilisateur.photoProfil,
+        actif: analyse.data.actif ?? utilisateur.actif,
+      },
+    });
 
-  void enregistrerAudit({
-    utilisateurId: requete.utilisateurId,
-    action: "MODIFICATION_PERSONNEL",
-    tableCible: "utilisateurs",
-    details: `Personnel modifié : ${misAJour.prenom} ${misAJour.nom} (${misAJour.email}) — rôle ${misAJour.role}`,
-    adresseIp: adresseIpRequete(requete),
-  });
+    void enregistrerAudit({
+      utilisateurId: requete.utilisateurId,
+      action: "MODIFICATION_PERSONNEL",
+      tableCible: "utilisateurs",
+      details: `Personnel modifié : ${misAJour.prenom} ${misAJour.nom} (${misAJour.email}) — rôle ${misAJour.role}`,
+      adresseIp: adresseIpRequete(requete),
+    });
 
-  reponse.json({ succes: true, utilisateur: formaterPersonnel(misAJour) });
+    reponse.json({ succes: true, utilisateur: formaterPersonnel(misAJour) });
+  } catch (erreur) {
+    const detail = erreur instanceof Error ? erreur.message : String(erreur);
+    reponse.status(500).json({
+      succes: false,
+      message: detail.includes("ADMIN")
+        ? "Le rôle Admin n’est pas encore disponible en base. Attendez la migration puis réessayez."
+        : "Mise à jour impossible.",
+      detail,
+    });
+  }
 }
 
 export async function reinitialiserMotDePassePersonnel(requete: RequeteAuthentifiee, reponse: Response) {
@@ -341,15 +352,31 @@ export async function supprimerPersonnelAdmin(requete: RequeteAuthentifiee, repo
         where: { utilisateurId: identifiant },
         data: { utilisateurId: null },
       });
-      await tx.message.deleteMany({ where: { auteurId: identifiant } });
+
+      const messagesAuteur = await tx.message.findMany({
+        where: { auteurId: identifiant },
+        select: { id: true },
+      });
+      const idsMessages = messagesAuteur.map((message) => message.id);
+      if (idsMessages.length > 0) {
+        await tx.message.updateMany({
+          where: { reponseAId: { in: idsMessages } },
+          data: { reponseAId: null },
+        });
+        await tx.message.deleteMany({ where: { id: { in: idsMessages } } });
+      }
+
+      await tx.notification.deleteMany({ where: { utilisateurId: identifiant } });
       await tx.lignePanier.deleteMany({ where: { clientId: identifiant } });
       await tx.utilisateur.delete({ where: { id: identifiant } });
     });
-  } catch {
+  } catch (erreur) {
+    const detail = erreur instanceof Error ? erreur.message : String(erreur);
     reponse.status(409).json({
       succes: false,
       message:
         "Suppression impossible : ce compte est encore lié à des données (commandes, conversations…). Désactivez-le plutôt.",
+      detail,
     });
     return;
   }

@@ -219,17 +219,17 @@ export default function PageClientsAdmin() {
             }}
           />
         )}
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
               <tr>
-                <th className="px-4 py-3 font-medium">N° client</th>
-                <th className="px-4 py-3 font-medium">Nom complet</th>
-                <th className="px-4 py-3 font-medium">Téléphone</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Établissement</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
+                <th className="hidden px-4 py-3 font-medium sm:table-cell">N° client</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Nom</th>
+                <th className="hidden px-4 py-3 font-medium md:table-cell">Téléphone</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">Établissement</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Statut</th>
                 <th className="hidden px-4 py-3 font-medium sm:table-cell">Heure</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -243,13 +243,19 @@ export default function PageClientsAdmin() {
                     onClick={() => afficherClient(client)}
                     className={`cursor-pointer border-t border-bleu-hero ${affiche ? "bg-sky-50" : "hover:bg-slate-50"}`}
                   >
-                    <td className="px-4 py-3 text-slate-500">{client.numeroClient || "—"}</td>
-                    <td className="px-4 py-3 font-semibold uppercase text-slate-800">{client.nomComplet}</td>
-                    <td className="px-4 py-3 text-slate-500">{client.telephone || "—"}</td>
-                    <td className="hidden px-4 py-3 text-slate-500 md:table-cell">{client.nomSociete || "Client"}</td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{client.numeroClient || "—"}</td>
+                    <td className="px-3 py-3 sm:px-4">
+                      <p className="font-semibold uppercase text-slate-800">{client.nomComplet}</p>
+                      <p className="text-xs text-slate-400 sm:hidden">
+                        {client.numeroClient || "—"}
+                        {client.telephone ? ` · ${client.telephone}` : ""}
+                      </p>
+                    </td>
+                    <td className="hidden px-4 py-3 text-slate-500 md:table-cell">{client.telephone || "—"}</td>
+                    <td className="hidden px-4 py-3 text-slate-500 lg:table-cell">{client.nomSociete || "Client"}</td>
+                    <td className="px-3 py-3 sm:px-4">
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                        className={`rounded-full px-2 py-1 text-[10px] font-medium sm:px-2.5 sm:text-xs ${
                           avance
                             ? "bg-orange-100 text-orange-800"
                             : nouvelleVisite
@@ -257,12 +263,12 @@ export default function PageClientsAdmin() {
                               : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        {avance ? "Avance à solder" : nouvelleVisite ? "Nouvelle visite" : "À facturer"}
+                        {avance ? "Avance" : nouvelleVisite ? "Visite" : "À facturer"}
                       </span>
                     </td>
                     <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{formaterHeure(client.dateCreation)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <td className="px-3 py-3 sm:px-4">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -282,19 +288,20 @@ export default function PageClientsAdmin() {
                             afficherClient(client);
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero p-1.5 text-xs font-semibold uppercase text-slate-600 sm:px-2 sm:py-1.5"
                           aria-label="Modifier le client"
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                          Modifier
+                          <span className="hidden lg:inline">Modifier</span>
                         </button>
                         <Link
                           href={`/admin/clients/${client.id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                          className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero p-1.5 text-xs font-semibold uppercase text-slate-600 sm:px-2 sm:py-1.5"
+                          aria-label="Facturer"
                         >
                           <FileText className="h-3.5 w-3.5" />
-                          Facturer
+                          <span className="hidden lg:inline">Facturer</span>
                         </Link>
                       </div>
                     </td>

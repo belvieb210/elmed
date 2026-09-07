@@ -75,7 +75,7 @@ export function PageTableauDeBordAdmin() {
                   Voir toutes
                 </Link>
               </div>
-              <div className="-mx-1 overflow-x-auto">
+              <div className="table-scroll -mx-1">
                 <table className="min-w-full text-left text-sm">
                   <thead className="text-xs text-slate-400">
                     <tr>

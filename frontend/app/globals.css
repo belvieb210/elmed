@@ -75,3 +75,27 @@ select:focus {
     border-top-right-radius: 2rem;
   }
 }
+
+/* Empêche les tableaux larges de faire déborder toute la page */
+.table-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* Cibles tactiles confortables sur mobile */
+@media (max-width: 639px) {
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+/* Conteneur page : évite le zoom involontaire sur iOS pour les inputs ≥16px déjà géré ailleurs */
+@supports (padding: max(0px)) {
+  .safe-pad-x {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+}

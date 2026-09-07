@@ -403,7 +403,89 @@ export default function PageUtilisateursAdmin() {
             Équipe ({utilisateurs.length})
           </h2>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Cartes mobiles */}
+        <div className="divide-y divide-bleu-hero md:hidden">
+          {utilisateurs.map((personne) => {
+            const estSoi = utilisateur?.id === personne.id;
+            return (
+              <article key={personne.id} className="space-y-3 p-4">
+                <div className="flex items-start gap-3">
+                  {personne.photoProfil ? (
+                    <img
+                      src={personne.photoProfil}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#1e3a8a] text-xs text-white">
+                      {personne.prenom[0]}
+                      {personne.nom[0]}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800">
+                      {personne.nomComplet}
+                      {estSoi ? (
+                        <span className="ml-1 text-xs font-normal text-slate-400">(vous)</span>
+                      ) : null}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">{personne.email}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                        {libelleRole(personne.role)}
+                      </span>
+                      <span className={personne.actif ? "text-emerald-600" : "text-slate-400"}>
+                        {personne.actif ? "Actif" : "Inactif"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {peutGerer && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => preparerEdition(personne)}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl border border-bleu-hero px-2 py-2 text-xs font-semibold uppercase text-slate-600"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Modifier
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmation({ type: "mdp", personne })}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl border border-bleu-hero px-2 py-2 text-xs font-semibold uppercase text-slate-600"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                      MDP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmation({ type: "actif", personne })}
+                      disabled={estSoi}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl border border-bleu-hero px-2 py-2 text-xs font-semibold uppercase text-slate-600 disabled:opacity-40"
+                    >
+                      <Power className="h-3.5 w-3.5" />
+                      {personne.actif ? "Désactiver" : "Activer"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmation({ type: "supprimer", personne })}
+                      disabled={estSoi}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2 py-2 text-xs font-semibold uppercase text-rose-700 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+
+        {/* Tableau desktop */}
+        <div className="table-scroll hidden md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
               <tr>
@@ -455,35 +537,41 @@ export default function PageUtilisateursAdmin() {
                             type="button"
                             onClick={() => preparerEdition(personne)}
                             className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                            title="Modifier"
                           >
                             <Pencil className="h-3.5 w-3.5" />
-                            Modifier
+                            <span className="hidden lg:inline">Modifier</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setConfirmation({ type: "mdp", personne })}
                             className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                            title="Mot de passe"
                           >
                             <KeyRound className="h-3.5 w-3.5" />
-                            MDP
+                            <span className="hidden lg:inline">MDP</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setConfirmation({ type: "actif", personne })}
                             disabled={estSoi}
                             className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600 disabled:opacity-40"
+                            title={personne.actif ? "Désactiver" : "Activer"}
                           >
                             <Power className="h-3.5 w-3.5" />
-                            {personne.actif ? "Désactiver" : "Activer"}
+                            <span className="hidden lg:inline">
+                              {personne.actif ? "Désactiver" : "Activer"}
+                            </span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setConfirmation({ type: "supprimer", personne })}
                             disabled={estSoi}
                             className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-semibold uppercase text-rose-700 disabled:opacity-40"
+                            title="Supprimer"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Supprimer
+                            <span className="hidden lg:inline">Supprimer</span>
                           </button>
                         </div>
                       </td>

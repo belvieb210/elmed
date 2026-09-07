@@ -33,6 +33,16 @@ export function formaterDateHeure(dateIso: string) {
   return `${formaterDate(dateIso)} • ${formaterHeure(dateIso)}`;
 }
 
+/** Date courte pour tableaux mobiles (ex. 07 sept. 15:42) */
+export function formaterDateCompacte(dateIso: string) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateIso));
+}
+
 export function libelleStatutCommande(statut: string) {
   const libelles: Record<string, string> = {
     BROUILLON: "Brouillon",

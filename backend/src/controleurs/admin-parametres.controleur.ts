@@ -61,13 +61,27 @@ function formaterEntreprise(ligne: {
 }
 
 export async function obtenirEntreprisePublique(_requete: Request, reponse: Response) {
-  const ligne = await assurerParametresEntreprise();
-  reponse.json({ succes: true, entreprise: formaterEntreprise(ligne) });
+  try {
+    const ligne = await assurerParametresEntreprise();
+    reponse.json({ succes: true, entreprise: formaterEntreprise(ligne) });
+  } catch (erreur) {
+    reponse.status(500).json({
+      succes: false,
+      message: erreur instanceof Error ? erreur.message : "Impossible de charger l’entreprise.",
+    });
+  }
 }
 
 export async function obtenirEntrepriseAdmin(_requete: RequeteAuthentifiee, reponse: Response) {
-  const ligne = await assurerParametresEntreprise();
-  reponse.json({ succes: true, entreprise: formaterEntreprise(ligne) });
+  try {
+    const ligne = await assurerParametresEntreprise();
+    reponse.json({ succes: true, entreprise: formaterEntreprise(ligne) });
+  } catch (erreur) {
+    reponse.status(500).json({
+      succes: false,
+      message: erreur instanceof Error ? erreur.message : "Impossible de charger l’entreprise.",
+    });
+  }
 }
 
 export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, reponse: Response) {

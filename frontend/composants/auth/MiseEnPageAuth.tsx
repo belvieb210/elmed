@@ -68,18 +68,18 @@ export function MiseEnPageAuth({
         </p>
       </aside>
 
-      <main className="flex flex-col bg-fond-page px-4 py-6 sm:px-8 lg:px-12">
-        <div className="mb-6 flex items-center justify-between lg:justify-end">
-          <Link href="/" className="lg:hidden">
-            <LogoMateMedical />
+      <main className="flex flex-col bg-fond-page px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-8 lg:px-12">
+        <div className="mb-6 flex items-center justify-between gap-3 lg:justify-end">
+          <Link href="/" className="min-w-0 lg:hidden">
+            <LogoMateMedical taille="sm" />
           </Link>
-          <Link href="/" className="text-sm font-medium text-slate-500 transition hover:text-violet-marque">
+          <Link href="/" className="shrink-0 text-sm font-medium text-slate-500 transition hover:text-violet-marque">
             Continuer sans compte
           </Link>
         </div>
         <div className="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center">
-          <div className="rounded-3xl border border-bleu-hero bg-white p-6 shadow-[0_20px_50px_rgba(31,41,55,0.08)] sm:p-8">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{titre}</h2>
+          <div className="rounded-3xl border border-bleu-hero bg-white p-5 shadow-[0_20px_50px_rgba(31,41,55,0.08)] sm:p-8">
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{titre}</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">{sousTitre}</p>
             {children}
           </div>

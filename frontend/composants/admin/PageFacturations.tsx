@@ -74,7 +74,7 @@ export function PageFacturations() {
               Clients facturés ici. Pour une avance, imprimez puis établissez le solde.
             </p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
                 <tr>

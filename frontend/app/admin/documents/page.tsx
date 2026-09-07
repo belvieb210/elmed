@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
 import {
+  formaterDateCompacte,
   formaterDateHeure,
   formaterMontant,
   libelleStatutCommande,
@@ -62,11 +63,21 @@ export default function PageDocumentsAdmin() {
   });
   const [chargement, setChargement] = useState(false);
   const [erreurPdf, setErreurPdf] = useState<string | null>(null);
+  const panneauRef = useRef<HTMLElement>(null);
 
   const selection = useMemo(
     () => documents.find((document) => document.id === selectionId) ?? null,
     [documents, selectionId],
   );
+
+  function selectionner(id: string) {
+    setSelectionId(id);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1279px)").matches) {
+      window.setTimeout(() => {
+        panneauRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }
 
   const charger = useCallback(() => {
     setChargement(true);
@@ -259,15 +270,15 @@ export default function PageDocumentsAdmin() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Document</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
-                  <th className="px-4 py-3 font-medium">Client</th>
+                  <th className="px-3 py-3 font-medium sm:px-4">Document</th>
+                  <th className="px-3 py-3 font-medium sm:px-4">Type</th>
+                  <th className="hidden px-4 py-3 font-medium sm:table-cell">Client</th>
                   <th className="hidden px-4 py-3 font-medium md:table-cell">Montant</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">Date</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,20 +287,29 @@ export default function PageDocumentsAdmin() {
                   return (
                     <tr
                       key={document.id}
-                      onClick={() => setSelectionId(document.id)}
+                      onClick={() => selectionner(document.id)}
                       className={`cursor-pointer border-t border-bleu-hero ${
                         actif ? "bg-sky-50" : "hover:bg-slate-50"
                       }`}
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 sm:px-4">
                         <p className="font-semibold text-slate-800">{document.numeroDocument}</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-400 sm:hidden">
+                          {document.nomClient}
+                          {document.montantTotal != null
+                            ? ` · ${formaterMontant(document.montantTotal)}`
+                            : ""}
+                        </p>
+                        <p className="hidden text-xs text-slate-400 sm:block">
                           {document.numeroCommande || "Sans commande"}
                         </p>
+                        <p className="mt-0.5 text-[11px] text-slate-400 lg:hidden">
+                          {formaterDateCompacte(document.dateCreation)}
+                        </p>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 sm:px-4">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                          className={`rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${
                             document.typeDocument === "FACTURE"
                               ? "bg-emerald-100 text-emerald-800"
                               : document.typeDocument === "PROFORMA"
@@ -300,11 +320,11 @@ export default function PageDocumentsAdmin() {
                           {libelleTypeDocument(document.typeDocument)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{document.nomClient}</td>
+                      <td className="hidden px-4 py-3 text-slate-600 sm:table-cell">{document.nomClient}</td>
                       <td className="hidden px-4 py-3 font-medium text-slate-800 md:table-cell">
                         {document.montantTotal != null ? formaterMontant(document.montantTotal) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
+                      <td className="hidden px-4 py-3 text-slate-500 lg:table-cell">
                         {formaterDateHeure(document.dateCreation)}
                       </td>
                     </tr>
@@ -322,7 +342,10 @@ export default function PageDocumentsAdmin() {
           )}
         </section>
 
-        <aside className="xl:sticky xl:top-[calc(var(--hauteur-en-tete)+1rem)] xl:col-span-4 xl:self-start">
+        <aside
+          ref={panneauRef}
+          className="scroll-mt-24 xl:sticky xl:top-[calc(var(--hauteur-en-tete)+1rem)] xl:col-span-4 xl:self-start"
+        >
           {selection ? (
             <article className="space-y-4 rounded-2xl border border-bleu-hero bg-white p-5">
               <div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,7 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
-import { formaterDateHeure, libelleRole } from "@/lib/formatage";
+import { formaterDateCompacte, formaterDateHeure, libelleRole } from "@/lib/formatage";
 import { appelerApi } from "@/lib/api";
 import { estSuperAdmin } from "@/lib/roles";
 import { useClient } from "@/store/contexteClient";
@@ -141,11 +141,21 @@ export default function PageAuditAdmin() {
   const [action, setAction] = useState("");
   const [selectionId, setSelectionId] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
+  const panneauRef = useRef<HTMLElement>(null);
 
   const selection = useMemo(
     () => entrees.find((entree) => entree.id === selectionId) ?? null,
     [entrees, selectionId],
   );
+
+  function selectionner(id: string) {
+    setSelectionId(id);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1279px)").matches) {
+      window.setTimeout(() => {
+        panneauRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }
 
   const charger = useCallback(() => {
     if (!superAdmin) return;
@@ -274,13 +284,13 @@ export default function PageAuditAdmin() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Date / heure</th>
-                  <th className="px-4 py-3 font-medium">Auteur</th>
-                  <th className="px-4 py-3 font-medium">Action</th>
+                  <th className="px-3 py-3 font-medium sm:px-4">Date</th>
+                  <th className="px-3 py-3 font-medium sm:px-4">Auteur</th>
+                  <th className="px-3 py-3 font-medium sm:px-4">Action</th>
                   <th className="hidden px-4 py-3 font-medium md:table-cell">Détails</th>
                 </tr>
               </thead>
@@ -290,16 +300,19 @@ export default function PageAuditAdmin() {
                   return (
                     <tr
                       key={entree.id}
-                      onClick={() => setSelectionId(entree.id)}
+                      onClick={() => selectionner(entree.id)}
                       className={`cursor-pointer border-t border-bleu-hero align-middle ${
                         actif ? "bg-sky-50" : "hover:bg-slate-50"
                       }`}
                     >
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-500">
-                        {formaterDateHeure(entree.dateAction)}
+                      <td className="px-3 py-3 text-slate-500 sm:px-4">
+                        <span className="md:hidden">{formaterDateCompacte(entree.dateAction)}</span>
+                        <span className="hidden whitespace-nowrap md:inline">
+                          {formaterDateHeure(entree.dateAction)}
+                        </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
+                      <td className="px-3 py-3 sm:px-4">
+                        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                           <AvatarAuteur auteur={entree.auteur} taille="sm" />
                           <div className="min-w-0">
                             {entree.auteur ? (
@@ -317,8 +330,8 @@ export default function PageAuditAdmin() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                      <td className="px-3 py-3 sm:px-4">
+                        <span className="inline-block max-w-[7.5rem] truncate rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-700 sm:max-w-none sm:px-2.5 sm:text-[11px]">
                           {libelleAction(entree.action)}
                         </span>
                       </td>
@@ -341,7 +354,10 @@ export default function PageAuditAdmin() {
           )}
         </section>
 
-        <aside className="xl:sticky xl:top-[calc(var(--hauteur-en-tete)+1rem)] xl:col-span-4 xl:self-start">
+        <aside
+          ref={panneauRef}
+          className="scroll-mt-24 xl:sticky xl:top-[calc(var(--hauteur-en-tete)+1rem)] xl:col-span-4 xl:self-start"
+        >
           {selection ? (
             <article className="space-y-5 rounded-2xl border border-bleu-hero bg-white p-5">
               <div>

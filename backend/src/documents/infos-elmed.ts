@@ -95,20 +95,27 @@ export async function obtenirInfosEntreprise(): Promise<InfosEntreprise> {
 }
 
 export async function assurerParametresEntreprise() {
-  const existant = await baseDeDonnees.parametreEntreprise.findFirst();
-  if (existant) return existant;
-  return baseDeDonnees.parametreEntreprise.create({
-    data: {
-      nomCommercial: infosElmedDefaut.nomCommercial,
-      raisonSociale: infosElmedDefaut.nom,
-      activite1: infosElmedDefaut.activite1,
-      activite2: infosElmedDefaut.activite2,
-      rccm: infosElmedDefaut.rccm,
-      idNational: infosElmedDefaut.idNational,
-      adresse: infosElmedDefaut.adresse,
-      telephone: infosElmedDefaut.telephone,
-      ville: infosElmedDefaut.ville,
-      messagePied: infosElmedDefaut.merci,
-    },
-  });
+  try {
+    const existant = await baseDeDonnees.parametreEntreprise.findFirst();
+    if (existant) return existant;
+    return await baseDeDonnees.parametreEntreprise.create({
+      data: {
+        nomCommercial: infosElmedDefaut.nomCommercial,
+        raisonSociale: infosElmedDefaut.nom,
+        activite1: infosElmedDefaut.activite1,
+        activite2: infosElmedDefaut.activite2,
+        rccm: infosElmedDefaut.rccm,
+        idNational: infosElmedDefaut.idNational,
+        adresse: infosElmedDefaut.adresse,
+        telephone: infosElmedDefaut.telephone,
+        ville: infosElmedDefaut.ville,
+        messagePied: infosElmedDefaut.merci,
+      },
+    });
+  } catch (erreur) {
+    const message = erreur instanceof Error ? erreur.message : String(erreur);
+    throw new Error(
+      `Paramètres entreprise indisponibles. Vérifiez la migration parametres_entreprise. (${message})`,
+    );
+  }
 }

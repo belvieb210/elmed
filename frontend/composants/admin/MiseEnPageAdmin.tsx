@@ -52,7 +52,7 @@ export function MiseEnPageAdmin({
   }
 
   return (
-    <div className="min-h-dvh bg-fond-page">
+    <div className="min-h-dvh overflow-x-clip bg-fond-page">
       <BarreLateraleAdmin
         commandesAujourdhui={badges.commandesAujourdhui}
         messagesNonLus={badges.messagesNonLus}
@@ -60,28 +60,30 @@ export function MiseEnPageAdmin({
       />
       <div className="min-w-0 lg:pl-[280px]">
         <header className="fixed inset-x-0 top-0 z-40 h-[var(--hauteur-en-tete)] border-b-2 border-bleu-hero bg-white px-3 pt-[env(safe-area-inset-top)] sm:px-5 lg:left-[280px] lg:px-6">
-          <div className="flex h-full items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-full items-center justify-between gap-2 sm:gap-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <button
                 type="button"
-                className="rounded-xl border border-bleu-hero p-2 text-bleu-hero lg:hidden"
+                className="shrink-0 rounded-xl border border-bleu-hero p-2 text-bleu-hero lg:hidden"
                 onClick={() => definirMenuMobileOuvert(true)}
                 aria-label="Ouvrir le menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
               <div className="min-w-0">
-                <h1 className="truncate text-lg font-semibold text-slate-900 sm:text-xl">{titre}</h1>
-                {sousTitre && <p className="truncate text-sm text-slate-400">{sousTitre}</p>}
+                <h1 className="truncate text-base font-semibold text-slate-900 sm:text-xl">{titre}</h1>
+                {sousTitre && (
+                  <p className="hidden truncate text-sm text-slate-400 sm:block">{sousTitre}</p>
+                )}
               </div>
             </div>
-            <div className="hidden shrink-0 rounded-xl border border-bleu-hero bg-white px-3 py-2 text-sm text-slate-600 sm:block">
+            <div className="hidden shrink-0 rounded-xl border border-bleu-hero bg-white px-3 py-2 text-sm text-slate-600 md:block">
               {formaterDateCourte()}
             </div>
           </div>
         </header>
         <div className="h-[var(--hauteur-en-tete)]" aria-hidden />
-        <main className="min-w-0 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 lg:px-6">
+        <main className="safe-pad-x min-w-0 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 lg:px-6">
           {children}
         </main>
       </div>

@@ -281,17 +281,17 @@ export default function PageProduitsAdmin() {
             </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
               <tr>
-                <th className="px-4 py-3 font-medium">Produit</th>
-                <th className="px-4 py-3 font-medium">SKU</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Produit</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">SKU</th>
                 <th className="hidden px-4 py-3 font-medium md:table-cell">Catégorie</th>
-                <th className="px-4 py-3 font-medium">Prix</th>
-                <th className="px-4 py-3 font-medium">Stock</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Prix</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Stock</th>
+                <th className="hidden px-4 py-3 font-medium sm:table-cell">Statut</th>
+                <th className="px-3 py-3 font-medium sm:px-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -306,28 +306,28 @@ export default function PageProduitsAdmin() {
                       affiche ? "bg-sky-50" : "hover:bg-slate-50"
                     }`}
                   >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 py-3 sm:px-4">
+                      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         {produit.image ? (
                           <img
                             src={produit.image}
                             alt=""
-                            className="h-10 w-10 rounded-lg object-cover"
+                            className="h-9 w-9 shrink-0 rounded-lg object-cover sm:h-10 sm:w-10"
                           />
                         ) : (
-                          <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400">
+                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400 sm:h-10 sm:w-10">
                             —
                           </span>
                         )}
-                        <span className="font-medium text-slate-800">{produit.nom}</span>
+                        <span className="min-w-0 truncate font-medium text-slate-800">{produit.nom}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{produit.sku}</td>
+                    <td className="hidden px-4 py-3 text-slate-500 lg:table-cell">{produit.sku}</td>
                     <td className="hidden px-4 py-3 text-slate-500 md:table-cell">
                       {produit.nomCategorie}
                     </td>
-                    <td className="px-4 py-3">{formaterMontant(produit.prix)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 text-xs sm:px-4 sm:text-sm">{formaterMontant(produit.prix)}</td>
+                    <td className="px-3 py-3 sm:px-4">
                       <span
                         className={
                           stockFaible
@@ -340,7 +340,7 @@ export default function PageProduitsAdmin() {
                         {produit.quantiteStock}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 sm:table-cell">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                           produit.disponible
@@ -351,8 +351,8 @@ export default function PageProduitsAdmin() {
                         {produit.disponible ? "Publié" : "Masqué"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <td className="px-3 py-3 sm:px-4">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -371,19 +371,22 @@ export default function PageProduitsAdmin() {
                               e.stopPropagation();
                               void chargerPourEdition(produit);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                            className="inline-flex items-center gap-1 rounded-lg border border-bleu-hero p-1.5 text-xs font-semibold uppercase text-slate-600 sm:px-2 sm:py-1.5"
+                            aria-label="Modifier"
                           >
                             <Pencil className="h-3.5 w-3.5" />
-                            Modifier
+                            <span className="hidden lg:inline">Modifier</span>
                           </button>
                         )}
                         <Link
                           href={`/produits/${produit.id}`}
                           target="_blank"
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-lg border border-bleu-hero px-2 py-1.5 text-xs font-semibold uppercase text-slate-600"
+                          className="rounded-lg border border-bleu-hero p-1.5 text-xs font-semibold uppercase text-slate-600 sm:px-2 sm:py-1.5"
+                          aria-label="Fiche publique"
                         >
-                          Fiche
+                          <span className="lg:hidden">↗</span>
+                          <span className="hidden lg:inline">Fiche</span>
                         </Link>
                         {superAdmin && (
                         <button
