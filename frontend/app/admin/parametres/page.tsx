@@ -21,6 +21,48 @@ const IMAGES_ACCUEIL_DEFAUT = [
   "/medias/logo-microscope.png",
 ];
 
+/** Compresse une image pour éviter un PUT trop lourd (logo + plusieurs photos). */
+function compresserImageFichier(fichier: File, maxCote = 900, qualite = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onerror = () => reject(new Error("Lecture image impossible."));
+    lecteur.onload = () => {
+      const dataUrl = lecteur.result;
+      if (typeof dataUrl !== "string") {
+        reject(new Error("Lecture image impossible."));
+        return;
+      }
+      if (!fichier.type.startsWith("image/") || fichier.type === "image/svg+xml") {
+        resolve(dataUrl);
+        return;
+      }
+      const image = new Image();
+      image.onload = () => {
+        const ratio = Math.min(1, maxCote / Math.max(image.width, image.height));
+        const largeur = Math.max(1, Math.round(image.width * ratio));
+        const hauteur = Math.max(1, Math.round(image.height * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = largeur;
+        canvas.height = hauteur;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(image, 0, 0, largeur, hauteur);
+        try {
+          resolve(canvas.toDataURL("image/jpeg", qualite));
+        } catch {
+          resolve(dataUrl);
+        }
+      };
+      image.onerror = () => resolve(dataUrl);
+      image.src = dataUrl;
+    };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
 const entrepriseVide: ParametreEntreprise = {
   nomCommercial: "",
   raisonSociale: "",
@@ -93,13 +135,9 @@ export default function PageParametresAdmin() {
       setErreur("Le logo ne doit pas dépasser 2 Mo.");
       return;
     }
-    const lecteur = new FileReader();
-    lecteur.onload = () => {
-      if (typeof lecteur.result === "string") {
-        setEntreprise((actuel) => ({ ...actuel, logoUrl: lecteur.result as string }));
-      }
-    };
-    lecteur.readAsDataURL(fichier);
+    void compresserImageFichier(fichier, 512, 0.88)
+      .then((logoUrl) => setEntreprise((actuel) => ({ ...actuel, logoUrl })))
+      .catch(() => setErreur("Impossible de lire le logo."));
   }
 
   function lireImageAccueil(fichier?: File, index?: number) {
@@ -108,25 +146,23 @@ export default function PageParametresAdmin() {
       setErreur("Chaque image d’accueil ne doit pas dépasser 4 Mo.");
       return;
     }
-    const lecteur = new FileReader();
-    lecteur.onload = () => {
-      if (typeof lecteur.result !== "string") return;
-      const dataUrl = lecteur.result;
-      setEntreprise((actuel) => {
-        const images = [...(actuel.imagesAccueil ?? [])];
-        if (typeof index === "number") {
-          images[index] = dataUrl;
-        } else if (images.length < MAX_IMAGES_ACCUEIL) {
-          images.push(dataUrl);
-        }
-        return {
-          ...actuel,
-          imagesAccueil: images,
-          imageAccueilUrl: images[0] ?? "",
-        };
-      });
-    };
-    lecteur.readAsDataURL(fichier);
+    void compresserImageFichier(fichier, 900, 0.82)
+      .then((dataUrl) => {
+        setEntreprise((actuel) => {
+          const images = [...(actuel.imagesAccueil ?? [])];
+          if (typeof index === "number") {
+            images[index] = dataUrl;
+          } else if (images.length < MAX_IMAGES_ACCUEIL) {
+            images.push(dataUrl);
+          }
+          return {
+            ...actuel,
+            imagesAccueil: images,
+            imageAccueilUrl: images[0] ?? "",
+          };
+        });
+      })
+      .catch(() => setErreur("Impossible de lire l’image d’accueil."));
   }
 
   function retirerImageAccueil(index: number) {
@@ -431,8 +467,9 @@ export default function PageParametresAdmin() {
                 Images d’accueil (hero)
               </h3>
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                Ajoutez 3 images ou plus (microscope, boîtes, tubes…) pour le bandeau de la page
-                d’accueil. Maximum {MAX_IMAGES_ACCUEIL}.
+                Ajoutez au moins 3 images (microscope, boîtes, tubes…) puis cliquez sur
+                « Enregistrer » en bas du formulaire — sinon l’accueil ne les reçoit pas.
+                Maximum {MAX_IMAGES_ACCUEIL}.
               </p>
 
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -119,10 +119,17 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
   const actuel = await assurerParametresEntreprise();
   const donnees = analyse.data;
 
+  // Liste explicite (même vide) : on respecte le choix admin.
+  // Si le champ est omis, on conserve la valeur en base.
   const imagesAccueil =
     donnees.imagesAccueil !== undefined
-      ? normaliserImagesAccueil(donnees.imagesAccueil)
+      ? donnees.imagesAccueil
+          .filter((item) => typeof item === "string" && item.trim().length > 0)
+          .slice(0, MAX_IMAGES_ACCUEIL)
       : normaliserImagesAccueil(actuel.imagesAccueil, actuel.imageAccueilUrl);
+
+  const imagesPourStockage =
+    imagesAccueil.length > 0 ? imagesAccueil : normaliserImagesAccueil(null, null);
 
   const donneesCommunes = {
     nomCommercial: valeurOuExistante(donnees.nomCommercial, actuel.nomCommercial),
@@ -145,7 +152,7 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
     messagePied: valeurOuExistante(donnees.messagePied, actuel.messagePied),
     logoUrl:
       donnees.logoUrl === undefined ? actuel.logoUrl : donnees.logoUrl.trim() || null,
-    imageAccueilUrl: imagesAccueil[0] || null,
+    imageAccueilUrl: imagesPourStockage[0] || null,
   };
 
   let misAJour;
@@ -154,7 +161,7 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
       where: { id: actuel.id },
       data: {
         ...donneesCommunes,
-        imagesAccueil: imagesAccueil as Prisma.InputJsonValue,
+        imagesAccueil: imagesPourStockage as Prisma.InputJsonValue,
       },
     });
   } catch {

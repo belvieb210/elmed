@@ -57,31 +57,41 @@ export function IllustrationLaboratoire({
 
   return (
     <div
-      className="flex min-h-[8.5rem] w-full max-w-[320px] items-end justify-center gap-2 rounded-2xl bg-white/10 px-2 py-2 backdrop-blur-[1px] sm:min-h-[10.5rem] sm:max-w-[380px] sm:gap-3 sm:px-3 md:max-w-[420px]"
+      className="flex w-full min-w-[240px] max-w-[440px] items-end justify-center gap-2 sm:gap-3"
       aria-hidden
     >
-      {affichees.map((src, index) => (
-        <div
-          key={`${index}-${src.slice(0, 48)}`}
-          className="flex h-28 flex-1 items-end justify-center sm:h-36 md:h-40"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt=""
-            className="max-h-full max-w-full object-contain drop-shadow-[0_10px_20px_rgba(15,23,42,0.28)]"
-            onError={(evenement) => {
-              const cible = evenement.currentTarget;
-              if (cible.dataset.fallback === "1") {
-                cible.style.display = "none";
-                return;
-              }
-              cible.dataset.fallback = "1";
-              cible.src = IMAGES_DEFAUT[index % IMAGES_DEFAUT.length];
-            }}
-          />
-        </div>
-      ))}
+      {affichees.map((src, index) => {
+        const total = affichees.length;
+        const estMilieu = total >= 3 && index === Math.floor((total - 1) / 2);
+        return (
+          <div
+            key={`${index}-${src.slice(0, 48)}`}
+            className={`flex flex-1 items-center justify-center rounded-2xl bg-white p-2 shadow-[0_12px_28px_rgba(15,23,42,0.22)] sm:p-2.5 ${
+              estMilieu ? "min-h-[9.5rem] sm:min-h-[11rem]" : "min-h-[8rem] sm:min-h-[9.5rem]"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              width={160}
+              height={160}
+              className={`w-full object-contain ${
+                estMilieu ? "h-32 sm:h-40" : "h-28 sm:h-36"
+              }`}
+              onError={(evenement) => {
+                const cible = evenement.currentTarget;
+                if (cible.dataset.fallback === "1") {
+                  cible.style.visibility = "hidden";
+                  return;
+                }
+                cible.dataset.fallback = "1";
+                cible.src = IMAGES_DEFAUT[index % IMAGES_DEFAUT.length];
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
