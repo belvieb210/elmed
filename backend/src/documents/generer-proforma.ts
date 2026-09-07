@@ -70,11 +70,17 @@ function resoudreImageLogo(logoUrl?: string | null): Buffer | string | null {
   return null;
 }
 
-function dessinerLogoFacture(doc: PDFKit.PDFDocument, infos: InfosEntreprise, x: number, y: number) {
+function dessinerLogoFacture(
+  doc: PDFKit.PDFDocument,
+  infos: InfosEntreprise,
+  x: number,
+  y: number,
+  taille = 105,
+) {
   const image = resoudreImageLogo(infos.logoUrl);
   if (image) {
     try {
-      doc.image(image, x, y, { fit: [78, 78], align: "center", valign: "center" });
+      doc.image(image, x, y, { fit: [taille, taille], align: "center", valign: "center" });
       return;
     } catch {
       /* repli schéma trait */
@@ -82,31 +88,38 @@ function dessinerLogoFacture(doc: PDFKit.PDFDocument, infos: InfosEntreprise, x:
   }
 
   // Repli : pictogramme trait (si fichier logo absent)
+  const s = taille / 78;
   doc.save();
-  doc.strokeColor(bleuProforma).lineWidth(2.2);
-  doc.circle(x + 28, y + 10, 7).stroke();
-  doc.moveTo(x + 28, y + 17).lineTo(x + 28, y + 36).stroke();
-  doc.moveTo(x + 16, y + 36).lineTo(x + 40, y + 36).stroke();
-  doc.moveTo(x + 28, y + 36).lineTo(x + 18, y + 58).stroke();
-  doc.moveTo(x + 18, y + 58).lineTo(x + 42, y + 58).stroke();
-  doc.roundedRect(x + 10, y + 58, 36, 8, 2).stroke();
-  doc.circle(x + 18, y + 48, 4).stroke();
+  doc.strokeColor(bleuProforma).lineWidth(2.2 * s);
+  doc.circle(x + 28 * s, y + 10 * s, 7 * s).stroke();
+  doc.moveTo(x + 28 * s, y + 17 * s).lineTo(x + 28 * s, y + 36 * s).stroke();
+  doc.moveTo(x + 16 * s, y + 36 * s).lineTo(x + 40 * s, y + 36 * s).stroke();
+  doc.moveTo(x + 28 * s, y + 36 * s).lineTo(x + 18 * s, y + 58 * s).stroke();
+  doc.moveTo(x + 18 * s, y + 58 * s).lineTo(x + 42 * s, y + 58 * s).stroke();
+  doc.roundedRect(x + 10 * s, y + 58 * s, 36 * s, 8 * s, 2 * s).stroke();
+  doc.circle(x + 18 * s, y + 48 * s, 4 * s).stroke();
   doc.restore();
 }
 
 function dessinerEntete(doc: PDFKit.PDFDocument, donnees: DonneesProforma, infos: InfosEntreprise) {
+  const xTexte = 36;
+  const largeurTexte = 168;
+  const xLogo = xTexte + largeurTexte + 6;
+  const tailleLogo = 108;
+
   doc.fillColor(bleuProforma).font("Helvetica-Bold").fontSize(26);
-  doc.text(infos.nom, 36, 38, { width: 200 });
+  doc.text(infos.nom, xTexte, 38, { width: largeurTexte });
 
   doc.font("Helvetica").fontSize(8);
-  doc.text(infos.activite1, 36, 70, { width: 220 });
-  doc.text(infos.activite2, 36, 81, { width: 220 });
-  doc.text(`RCCM : ${infos.rccm}`, 36, 96, { width: 240 });
-  doc.text(`Id. Nat. ${infos.idNational}`, 36, 107, { width: 240 });
-  doc.text(infos.adresse, 36, 122, { width: 240 });
-  doc.text(`Tél. : ${infos.telephone}`, 36, 133, { width: 240 });
+  doc.text(infos.activite1, xTexte, 70, { width: largeurTexte });
+  doc.text(infos.activite2, xTexte, 81, { width: largeurTexte });
+  doc.text(`RCCM : ${infos.rccm}`, xTexte, 96, { width: largeurTexte + 20 });
+  doc.text(`Id. Nat. ${infos.idNational}`, xTexte, 107, { width: largeurTexte + 20 });
+  doc.text(infos.adresse, xTexte, 122, { width: largeurTexte + 20 });
+  doc.text(`Tél. : ${infos.telephone}`, xTexte, 133, { width: largeurTexte + 20 });
 
-  dessinerLogoFacture(doc, infos, 255, 32);
+  // Microscope collé au bloc texte gauche, plus grand (comme le modèle)
+  dessinerLogoFacture(doc, infos, xLogo, 26, tailleLogo);
 
   doc.font("Helvetica").fontSize(10);
   doc.text(`${infos.ville} , le ${donnees.dateTexte}`, 360, 42, { width: 200, align: "right" });

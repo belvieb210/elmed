@@ -428,5 +428,7 @@ export interface ParametreEntreprise {
   siteWeb?: string | null;
   messagePied: string;
   logoUrl?: string | null;
+  imageAccueilUrl?: string | null;
+  imagesAccueil?: string[] | null;
   dateMaj?: string;
 }

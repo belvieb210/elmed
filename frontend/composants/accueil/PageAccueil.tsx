@@ -34,35 +34,37 @@ export function PageAccueil() {
   return (
     <div className="mx-auto max-w-[1400px]">
       <div className="grid gap-4 xl:grid-cols-12">
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#4f74ff] to-[#5b63f5] px-6 py-7 text-white shadow-sm xl:col-span-8">
-          <div className="relative z-10 max-w-xl">
-            <h1 className="text-2xl font-semibold sm:text-3xl">
-              {compteReel ? `Bienvenue ${prenomNom}` : "Fournitures médicales professionnelles"}
-            </h1>
-            <p className="mt-3 max-w-md text-sm leading-6 text-white/90 sm:text-base">
-              {compteReel
-                ? "Nous sommes là pour vous fournir les meilleurs produits médicaux et de laboratoire."
-                : "Parcourez le catalogue, commandez et payez sans créer de compte. Un compte sert uniquement au suivi et à la messagerie."}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/produits"
-                className="inline-flex rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#4f6bff] shadow-sm transition hover:bg-slate-50"
-              >
-                Voir les produits
-              </Link>
-              {!compteReel && (
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#4f74ff] to-[#5b63f5] px-5 py-6 text-white shadow-sm sm:px-6 sm:py-7 xl:col-span-8">
+          <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <h1 className="text-2xl font-semibold sm:text-3xl">
+                {compteReel ? `Bienvenue ${prenomNom}` : "Fournitures médicales professionnelles"}
+              </h1>
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/90 sm:text-base">
+                {compteReel
+                  ? "Nous sommes là pour vous fournir les meilleurs produits médicaux et de laboratoire."
+                  : "Parcourez le catalogue, commandez et payez sans créer de compte. Un compte sert uniquement au suivi et à la messagerie."}
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  href="/inscription"
-                  className="inline-flex rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20"
+                  href="/produits"
+                  className="inline-flex rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#4f6bff] shadow-sm transition hover:bg-slate-50"
                 >
-                  Créer un compte
+                  Voir les produits
                 </Link>
-              )}
+                {!compteReel && (
+                  <Link
+                    href="/inscription"
+                    className="inline-flex rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20"
+                  >
+                    Créer un compte
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="pointer-events-none absolute -right-2 bottom-0 hidden sm:block">
-            <IllustrationLaboratoire />
+            <div className="pointer-events-none relative mx-auto shrink-0 sm:mx-0 sm:self-end">
+              <IllustrationLaboratoire />
+            </div>
           </div>
         </section>
 

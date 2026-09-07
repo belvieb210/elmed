@@ -68,26 +68,26 @@ export function ApercuProforma({
           {entreprise.raisonSociale}
         </p>
 
-        <div className="relative flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-start">
-          <div>
-            <p className="text-2xl font-bold tracking-wide text-[#2B6CB0] sm:text-3xl">
-              {entreprise.raisonSociale}
-            </p>
-            <p className="mt-1 text-[10px] leading-4 sm:text-[11px]">{entreprise.activite1}</p>
-            <p className="text-[10px] leading-4 sm:text-[11px]">{entreprise.activite2}</p>
-            <p className="mt-2 text-[10px] sm:text-[11px]">RCCM : {entreprise.rccm}</p>
-            <p className="text-[10px] sm:text-[11px]">Id. Nat. {entreprise.idNational}</p>
-            <p className="text-[10px] sm:text-[11px]">{entreprise.adresse}</p>
-            <p className="text-[10px] sm:text-[11px]">Tél. : {entreprise.telephone}</p>
-          </div>
-          <div className="hidden sm:block">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
+            <div className="min-w-0 max-w-[11.5rem] sm:max-w-[13rem]">
+              <p className="text-2xl font-bold tracking-wide text-[#2B6CB0] sm:text-3xl">
+                {entreprise.raisonSociale}
+              </p>
+              <p className="mt-1 text-[10px] leading-4 sm:text-[11px]">{entreprise.activite1}</p>
+              <p className="text-[10px] leading-4 sm:text-[11px]">{entreprise.activite2}</p>
+              <p className="mt-2 text-[10px] sm:text-[11px]">RCCM : {entreprise.rccm}</p>
+              <p className="text-[10px] sm:text-[11px]">Id. Nat. {entreprise.idNational}</p>
+              <p className="text-[10px] sm:text-[11px]">{entreprise.adresse}</p>
+              <p className="text-[10px] sm:text-[11px]">Tél. : {entreprise.telephone}</p>
+            </div>
             <img
               src={entreprise.logoUrl || "/medias/logo-microscope.png"}
               alt=""
-              className="h-16 w-16 object-contain"
+              className="mt-1 h-24 w-24 shrink-0 object-contain sm:h-28 sm:w-28"
             />
           </div>
-          <div className="sm:text-right">
+          <div className="shrink-0 sm:text-right">
             <p className="text-xs sm:text-sm">
               {entreprise.ville} , le {aujourdHui}
             </p>

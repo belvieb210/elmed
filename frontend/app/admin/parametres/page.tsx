@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Building2, ImagePlus, KeyRound, Shield, UserRound } from "lucide-react";
+import { Building2, ImagePlus, KeyRound, Plus, Shield, Trash2, UserRound } from "lucide-react";
 import { ChampMotDePasse } from "@/composants/auth/ChampMotDePasse";
 import { MiseEnPageAdmin } from "@/composants/admin/MiseEnPageAdmin";
+import { IllustrationLaboratoire } from "@/composants/accueil/IllustrationLaboratoire";
 import { appelerApi } from "@/lib/api";
 import { libelleRole } from "@/lib/formatage";
 import { estSuperAdmin } from "@/lib/roles";
@@ -13,6 +14,12 @@ import type { ParametreEntreprise, Utilisateur } from "@/types/modeles";
 const champ =
   "mt-1.5 w-full rounded-2xl border border-bleu-hero bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none";
 const label = "text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500";
+const MAX_IMAGES_ACCUEIL = 6;
+const IMAGES_ACCUEIL_DEFAUT = [
+  "/medias/logo-microscope.png",
+  "/medias/hero-accueil-produits.png",
+  "/medias/logo-microscope.png",
+];
 
 const entrepriseVide: ParametreEntreprise = {
   nomCommercial: "",
@@ -28,6 +35,8 @@ const entrepriseVide: ParametreEntreprise = {
   siteWeb: "",
   messagePied: "",
   logoUrl: "",
+  imageAccueilUrl: "",
+  imagesAccueil: [],
 };
 
 export default function PageParametresAdmin() {
@@ -56,6 +65,13 @@ export default function PageParametresAdmin() {
           emailContact: donnees.entreprise.emailContact ?? "",
           siteWeb: donnees.entreprise.siteWeb ?? "",
           logoUrl: donnees.entreprise.logoUrl ?? "",
+          imageAccueilUrl: donnees.entreprise.imageAccueilUrl ?? "",
+          imagesAccueil:
+            donnees.entreprise.imagesAccueil?.length
+              ? donnees.entreprise.imagesAccueil
+              : donnees.entreprise.imageAccueilUrl
+                ? [donnees.entreprise.imageAccueilUrl]
+                : [],
         }),
       )
       .catch(() => undefined);
@@ -84,6 +100,44 @@ export default function PageParametresAdmin() {
       }
     };
     lecteur.readAsDataURL(fichier);
+  }
+
+  function lireImageAccueil(fichier?: File, index?: number) {
+    if (!fichier) return;
+    if (fichier.size > 4 * 1024 * 1024) {
+      setErreur("Chaque image d’accueil ne doit pas dépasser 4 Mo.");
+      return;
+    }
+    const lecteur = new FileReader();
+    lecteur.onload = () => {
+      if (typeof lecteur.result !== "string") return;
+      const dataUrl = lecteur.result;
+      setEntreprise((actuel) => {
+        const images = [...(actuel.imagesAccueil ?? [])];
+        if (typeof index === "number") {
+          images[index] = dataUrl;
+        } else if (images.length < MAX_IMAGES_ACCUEIL) {
+          images.push(dataUrl);
+        }
+        return {
+          ...actuel,
+          imagesAccueil: images,
+          imageAccueilUrl: images[0] ?? "",
+        };
+      });
+    };
+    lecteur.readAsDataURL(fichier);
+  }
+
+  function retirerImageAccueil(index: number) {
+    setEntreprise((actuel) => {
+      const images = (actuel.imagesAccueil ?? []).filter((_, i) => i !== index);
+      return {
+        ...actuel,
+        imagesAccueil: images,
+        imageAccueilUrl: images[0] ?? "",
+      };
+    });
   }
 
   function lirePhoto(fichier?: File) {
@@ -119,6 +173,8 @@ export default function PageParametresAdmin() {
         emailContact: reponse.entreprise.emailContact ?? "",
         siteWeb: reponse.entreprise.siteWeb ?? "",
         logoUrl: reponse.entreprise.logoUrl ?? "",
+        imageAccueilUrl: reponse.entreprise.imageAccueilUrl ?? "",
+        imagesAccueil: reponse.entreprise.imagesAccueil ?? [],
       });
       setMessage(
         `Paramètres enregistrés. L’application s’affiche désormais sous « ${reponse.entreprise.nomCommercial} ».`,
@@ -369,6 +425,120 @@ export default function PageParametresAdmin() {
                 placeholder="Ou coller une URL de logo…"
               />
             </article>
+
+            <article className="rounded-2xl border border-bleu-hero bg-white p-5">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Images d’accueil (hero)
+              </h3>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Ajoutez 3 images ou plus (microscope, boîtes, tubes…) pour le bandeau de la page
+                d’accueil. Maximum {MAX_IMAGES_ACCUEIL}.
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {(entreprise.imagesAccueil ?? []).map((src, index) => (
+                  <div
+                    key={`${index}-${src.slice(0, 24)}`}
+                    className="relative rounded-xl border border-bleu-hero bg-slate-50 p-2"
+                  >
+                    <img src={src} alt="" className="mx-auto h-24 w-full object-contain" />
+                    <p className="mt-1 text-center text-[10px] font-semibold uppercase text-slate-400">
+                      Image {index + 1}
+                    </p>
+                    {peutModifierEntreprise && (
+                      <div className="mt-2 flex gap-1">
+                        <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-bleu-hero px-2 py-1.5 text-[10px] font-semibold uppercase text-slate-600">
+                          Remplacer
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              lireImageAccueil(e.target.files?.[0], index);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => retirerImageAccueil(index)}
+                          className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-700"
+                          aria-label={`Retirer image ${index + 1}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {(entreprise.imagesAccueil?.length ?? 0) < MAX_IMAGES_ACCUEIL &&
+                  peutModifierEntreprise && (
+                    <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-bleu-hero bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          lireImageAccueil(e.target.files?.[0]);
+                          e.target.value = "";
+                        }}
+                      />
+                      <Plus className="mb-1 h-5 w-5 text-bleu-hero" />
+                      Ajouter une image
+                    </label>
+                  )}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={!peutModifierEntreprise}
+                  onClick={() =>
+                    setEntreprise((actuel) => ({
+                      ...actuel,
+                      imagesAccueil: [...IMAGES_ACCUEIL_DEFAUT],
+                      imageAccueilUrl: IMAGES_ACCUEIL_DEFAUT[0],
+                    }))
+                  }
+                  className="rounded-xl border border-bleu-hero px-3 py-2 text-xs font-semibold uppercase text-slate-600 disabled:opacity-50"
+                >
+                  Reprendre les 3 images par défaut
+                </button>
+                {(entreprise.imagesAccueil?.length ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    disabled={!peutModifierEntreprise}
+                    onClick={() =>
+                      setEntreprise((actuel) => ({
+                        ...actuel,
+                        imagesAccueil: [],
+                        imageAccueilUrl: "",
+                      }))
+                    }
+                    className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold uppercase text-rose-700 disabled:opacity-50"
+                  >
+                    Tout retirer
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-xl bg-gradient-to-r from-[#4f74ff] to-[#5b63f5] p-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                  Aperçu bandeau ({entreprise.imagesAccueil?.length ?? 0} image
+                  {(entreprise.imagesAccueil?.length ?? 0) > 1 ? "s" : ""})
+                </p>
+                <div className="flex justify-end">
+                  <IllustrationLaboratoire
+                    images={
+                      entreprise.imagesAccueil?.length
+                        ? entreprise.imagesAccueil
+                        : IMAGES_ACCUEIL_DEFAUT
+                    }
+                  />
+                </div>
+              </div>
+            </article>
             <article className="rounded-2xl border border-bleu-hero bg-white p-5">
               <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                 Aperçu application & facture
@@ -388,14 +558,23 @@ export default function PageParametresAdmin() {
                   </p>
                 </div>
               </div>
-              <p className="mt-4 text-2xl font-bold text-[#2B6CB0]">
-                {entreprise.raisonSociale || "ELMED"}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">{entreprise.activite1}</p>
-              <p className="text-xs text-slate-500">{entreprise.activite2}</p>
-              <p className="mt-3 text-xs text-slate-600">RCCM : {entreprise.rccm || "—"}</p>
-              <p className="text-xs text-slate-600">Id. Nat. {entreprise.idNational || "—"}</p>
-              <p className="text-xs text-slate-600">{entreprise.adresse || "—"}</p>
+              <div className="mt-4 flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-2xl font-bold text-[#2B6CB0]">
+                    {entreprise.raisonSociale || "ELMED"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">{entreprise.activite1}</p>
+                  <p className="text-xs text-slate-500">{entreprise.activite2}</p>
+                  <p className="mt-3 text-xs text-slate-600">RCCM : {entreprise.rccm || "—"}</p>
+                  <p className="text-xs text-slate-600">Id. Nat. {entreprise.idNational || "—"}</p>
+                  <p className="text-xs text-slate-600">{entreprise.adresse || "—"}</p>
+                </div>
+                <img
+                  src={entreprise.logoUrl || "/medias/logo-microscope.png"}
+                  alt=""
+                  className="h-24 w-24 shrink-0 object-contain"
+                />
+              </div>
             </article>
           </aside>
         </form>

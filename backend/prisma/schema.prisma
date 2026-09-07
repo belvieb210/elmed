@@ -401,6 +401,8 @@ model ParametreEntreprise {
   siteWeb          String?  @map("site_web")
   messagePied      String   @default("Merci de nous avoir choisi") @map("message_pied")
   logoUrl          String?  @map("logo_url")
+  imageAccueilUrl  String?  @map("image_accueil_url")
+  imagesAccueil    Json?    @map("images_accueil")
   dateMaj          DateTime @updatedAt @map("date_maj")
 
   @@map("parametres_entreprise")

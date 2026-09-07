@@ -110,6 +110,12 @@ async function remplir() {
       ville: "Kin",
       messagePied: "Merci de nous avoir choisi",
       logoUrl: "/medias/logo-microscope.png",
+      imageAccueilUrl: "/medias/hero-accueil-produits.png",
+      imagesAccueil: [
+        "/medias/logo-microscope.png",
+        "/medias/hero-accueil-produits.png",
+        "/medias/logo-microscope.png",
+      ],
     },
   });
 

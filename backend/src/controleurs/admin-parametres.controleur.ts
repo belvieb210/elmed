@@ -1,10 +1,13 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { baseDeDonnees } from "../config/baseDeDonnees";
 import type { RequeteAuthentifiee } from "../middlewares/authentification";
 import {
   assurerParametresEntreprise,
   invaliderCacheInfosEntreprise,
+  MAX_IMAGES_ACCUEIL,
+  normaliserImagesAccueil,
 } from "../documents/infos-elmed";
 import { adresseIpRequete, enregistrerAudit } from "../audit/enregistrer";
 
@@ -29,6 +32,8 @@ const schemaEntreprise = z.object({
   siteWeb: z.string().trim().optional().or(z.literal("")),
   messagePied: z.string().trim().optional().or(z.literal("")),
   logoUrl: z.string().optional().or(z.literal("")),
+  imageAccueilUrl: z.string().optional().or(z.literal("")),
+  imagesAccueil: z.array(z.string()).max(MAX_IMAGES_ACCUEIL).optional(),
 });
 
 function valeurOuExistante(nouvelle: string | undefined, actuelle: string) {
@@ -51,8 +56,11 @@ function formaterEntreprise(ligne: {
   siteWeb: string | null;
   messagePied: string;
   logoUrl: string | null;
+  imageAccueilUrl: string | null;
+  imagesAccueil?: unknown;
   dateMaj: Date;
 }) {
+  const imagesAccueil = normaliserImagesAccueil(ligne.imagesAccueil, ligne.imageAccueilUrl);
   return {
     id: ligne.id,
     nomCommercial: ligne.nomCommercial,
@@ -68,6 +76,8 @@ function formaterEntreprise(ligne: {
     siteWeb: ligne.siteWeb,
     messagePied: ligne.messagePied,
     logoUrl: ligne.logoUrl,
+    imageAccueilUrl: imagesAccueil[0] || ligne.imageAccueilUrl,
+    imagesAccueil,
     dateMaj: ligne.dateMaj,
   };
 }
@@ -109,7 +119,11 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
   const actuel = await assurerParametresEntreprise();
   const donnees = analyse.data;
 
-  // Champs vides = on conserve la valeur déjà enregistrée (mise à jour partielle)
+  const imagesAccueil =
+    donnees.imagesAccueil !== undefined
+      ? normaliserImagesAccueil(donnees.imagesAccueil)
+      : normaliserImagesAccueil(actuel.imagesAccueil, actuel.imageAccueilUrl);
+
   const misAJour = await baseDeDonnees.parametreEntreprise.update({
     where: { id: actuel.id },
     data: {
@@ -136,6 +150,8 @@ export async function mettreAJourEntrepriseAdmin(requete: RequeteAuthentifiee, r
         donnees.logoUrl === undefined
           ? actuel.logoUrl
           : donnees.logoUrl.trim() || null,
+      imageAccueilUrl: imagesAccueil[0] || null,
+      imagesAccueil: imagesAccueil as Prisma.InputJsonValue,
     },
   });
 

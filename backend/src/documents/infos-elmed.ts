@@ -1,4 +1,14 @@
 import { baseDeDonnees } from "../config/baseDeDonnees";
+import type { Prisma } from "@prisma/client";
+
+export const IMAGE_ACCUEIL_DEFAUT = "/medias/hero-accueil-produits.png";
+export const LOGO_DEFAUT = "/medias/logo-microscope.png";
+export const IMAGES_ACCUEIL_DEFAUT = [
+  "/medias/logo-microscope.png",
+  "/medias/hero-accueil-produits.png",
+  "/medias/logo-microscope.png",
+];
+export const MAX_IMAGES_ACCUEIL = 6;
 
 export type InfosEntreprise = {
   nomCommercial: string;
@@ -14,7 +24,18 @@ export type InfosEntreprise = {
   siteWeb: string | null;
   merci: string;
   logoUrl: string | null;
+  imageAccueilUrl: string | null;
+  imagesAccueil: string[];
 };
+
+export function normaliserImagesAccueil(valeur: unknown, secours?: string | null): string[] {
+  const depuisJson = Array.isArray(valeur)
+    ? valeur.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  if (depuisJson.length > 0) return depuisJson.slice(0, MAX_IMAGES_ACCUEIL);
+  if (secours?.trim()) return [secours.trim()];
+  return [...IMAGES_ACCUEIL_DEFAUT];
+}
 
 export const infosElmedDefaut: InfosEntreprise = {
   nomCommercial: "MateMedical",
@@ -29,7 +50,9 @@ export const infosElmedDefaut: InfosEntreprise = {
   emailContact: null,
   siteWeb: null,
   merci: "Merci de nous avoir choisi",
-  logoUrl: "/medias/logo-microscope.png",
+  logoUrl: LOGO_DEFAUT,
+  imageAccueilUrl: IMAGE_ACCUEIL_DEFAUT,
+  imagesAccueil: [...IMAGES_ACCUEIL_DEFAUT],
 };
 
 /** @deprecated Utiliser obtenirInfosEntreprise() — conservé pour compatibilité */
@@ -56,7 +79,10 @@ function formaterLigne(ligne: {
   siteWeb: string | null;
   messagePied: string;
   logoUrl: string | null;
+  imageAccueilUrl?: string | null;
+  imagesAccueil?: unknown;
 }): InfosEntreprise {
+  const imagesAccueil = normaliserImagesAccueil(ligne.imagesAccueil, ligne.imageAccueilUrl);
   return {
     nomCommercial: ligne.nomCommercial,
     nom: ligne.raisonSociale,
@@ -70,7 +96,9 @@ function formaterLigne(ligne: {
     emailContact: ligne.emailContact,
     siteWeb: ligne.siteWeb,
     merci: ligne.messagePied,
-    logoUrl: ligne.logoUrl,
+    logoUrl: ligne.logoUrl || LOGO_DEFAUT,
+    imageAccueilUrl: imagesAccueil[0] || IMAGE_ACCUEIL_DEFAUT,
+    imagesAccueil,
   };
 }
 
@@ -86,12 +114,7 @@ export async function obtenirInfosEntreprise(): Promise<InfosEntreprise> {
     const ligne = await baseDeDonnees.parametreEntreprise.findFirst({
       orderBy: { dateMaj: "desc" },
     });
-    cache = ligne
-      ? formaterLigne({
-          ...ligne,
-          logoUrl: ligne.logoUrl || infosElmedDefaut.logoUrl,
-        })
-      : infosElmedDefaut;
+    cache = ligne ? formaterLigne(ligne) : infosElmedDefaut;
   } catch {
     cache = infosElmedDefaut;
   }
@@ -103,10 +126,20 @@ export async function assurerParametresEntreprise() {
   try {
     const existant = await baseDeDonnees.parametreEntreprise.findFirst();
     if (existant) {
-      if (!existant.logoUrl) {
+      const images = normaliserImagesAccueil(existant.imagesAccueil, existant.imageAccueilUrl);
+      const maj: Prisma.ParametreEntrepriseUpdateInput = {};
+      if (!existant.logoUrl) maj.logoUrl = LOGO_DEFAUT;
+      if (!existant.imageAccueilUrl) maj.imageAccueilUrl = images[0] || IMAGE_ACCUEIL_DEFAUT;
+      const actuelVide =
+        !Array.isArray(existant.imagesAccueil) ||
+        (existant.imagesAccueil as unknown[]).length === 0;
+      if (actuelVide) {
+        maj.imagesAccueil = images as Prisma.InputJsonValue;
+      }
+      if (Object.keys(maj).length > 0) {
         return await baseDeDonnees.parametreEntreprise.update({
           where: { id: existant.id },
-          data: { logoUrl: infosElmedDefaut.logoUrl },
+          data: maj,
         });
       }
       return existant;
@@ -123,7 +156,9 @@ export async function assurerParametresEntreprise() {
         telephone: infosElmedDefaut.telephone,
         ville: infosElmedDefaut.ville,
         messagePied: infosElmedDefaut.merci,
-        logoUrl: infosElmedDefaut.logoUrl,
+        logoUrl: LOGO_DEFAUT,
+        imageAccueilUrl: IMAGE_ACCUEIL_DEFAUT,
+        imagesAccueil: IMAGES_ACCUEIL_DEFAUT,
       },
     });
   } catch (erreur) {
