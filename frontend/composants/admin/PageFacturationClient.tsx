@@ -128,6 +128,7 @@ export function PageFacturationClient({
   const [motDePasseTemporaire, setMotDePasseTemporaire] = useState<string | null>(null);
   const [saisiePrete, setSaisiePrete] = useState(false);
   const [dossiers, setDossiers] = useState<DossierClient[]>([]);
+  const [dossiersOuverts, setDossiersOuverts] = useState(false);
   const [visiteCourante, setVisiteCourante] = useState<string | null>(null);
   const [dossierCourant, setDossierCourant] = useState<string | null>(null);
 
@@ -255,6 +256,8 @@ export function PageFacturationClient({
     viderSaisieFacture();
     setClient(null);
     setCommandeCourante(commandeId);
+    setDossiers([]);
+    setDossiersOuverts(false);
 
     const temporaire = sessionStorage.getItem("mm_mdp_client");
     if (temporaire) {
@@ -491,12 +494,18 @@ export function PageFacturationClient({
             </div>
           </div>
           {dossiers.length > 0 ? (
-            <a
-              href="#dossiers-client"
-              className="shrink-0 rounded-xl border border-bleu-hero px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            <button
+              type="button"
+              onClick={() => setDossiersOuverts((actuel) => !actuel)}
+              className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-medium ${
+                dossiersOuverts
+                  ? "border-[#1e3a8a] bg-[#1e3a8a] text-white"
+                  : "border-bleu-hero text-slate-700 hover:bg-slate-50"
+              }`}
+              aria-expanded={dossiersOuverts}
             >
-              Tous les dossiers
-            </a>
+              {dossiersOuverts ? "Masquer les dossiers" : `Tous les dossiers (${dossiers.length})`}
+            </button>
           ) : (
             <Link
               href="/admin/commandes"
@@ -508,7 +517,7 @@ export function PageFacturationClient({
         </div>
       </article>
 
-      {dossiers.length > 0 && (
+      {dossiersOuverts && dossiers.length > 0 && (
         <section id="dossiers-client" className="mb-4 overflow-hidden rounded-2xl border border-bleu-hero bg-white">
           <div className="border-b border-bleu-hero px-4 py-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">

@@ -81,22 +81,41 @@ export async function obtenirBadgesAdmin(_requete: RequeteAuthentifiee, reponse:
       where: {
         role: "CLIENT",
         estInvite: false,
-        commandes: {
-          none: {
-            statut: { notIn: ["ANNULEE", "REFUSEE"] },
-            OR: [
-              { numeroRecu: { not: null } },
-              { modeFacture: "AVANCE" },
-              { paiements: { some: { statut: "PARTIEL" } } },
-            ],
+        AND: [
+          {
+            commandes: {
+              none: {
+                statut: { notIn: ["ANNULEE", "REFUSEE"] },
+                OR: [
+                  { origine: "SUR_SITE" },
+                  { numeroRecu: { not: null } },
+                  { modeFacture: "AVANCE" },
+                  { paiements: { some: { statut: "PARTIEL" } } },
+                ],
+              },
+            },
           },
-        },
+          {
+            commandes: {
+              none: {
+                statut: { notIn: ["ANNULEE", "REFUSEE"] },
+                origine: "EN_LIGNE",
+                numeroRecu: null,
+              },
+            },
+          },
+        ],
       },
     }),
     baseDeDonnees.commande.count({
       where: {
         statut: { notIn: ["ANNULEE", "REFUSEE"] },
-        OR: [{ modeFacture: "AVANCE" }, { paiements: { some: { statut: "PARTIEL" } } }],
+        OR: [{ origine: "SUR_SITE" }, { numeroRecu: { not: null } }],
+        AND: [
+          {
+            OR: [{ modeFacture: "AVANCE" }, { paiements: { some: { statut: "PARTIEL" } } }],
+          },
+        ],
       },
     }),
   ]);

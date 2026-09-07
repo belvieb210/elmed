@@ -171,11 +171,6 @@ export function PageCommandesEnLigne() {
   }, [cheminPdfSelection]);
 
   function ouvrirClient(groupe: (typeof groupes)[number]) {
-    if (groupe.commandes.length === 1) {
-      setClientOuvertId(null);
-      setSelectionIds([groupe.commandeRecente.id]);
-      return;
-    }
     setClientOuvertId((actuel) => {
       const suivant = actuel === groupe.id ? null : groupe.id;
       if (suivant) {
@@ -535,7 +530,7 @@ function ClientRows({
   return (
     <>
       <tr
-        onClick={() => (plusieurs ? onOuvrir() : onChoisir(groupe.commandeRecente.id))}
+        onClick={() => onChoisir(groupe.commandeRecente.id)}
         className={`cursor-pointer border-t border-bleu-hero ${actif ? "bg-sky-50" : "hover:bg-slate-50"}`}
       >
         <td className="px-4 py-3 text-slate-500">{index}</td>
@@ -557,19 +552,23 @@ function ClientRows({
           </span>
         </td>
         <td className="px-4 py-3">
-          {plusieurs && (
-            <button
-              type="button"
-              onClick={(evenement) => {
-                evenement.stopPropagation();
-                onOuvrir();
-              }}
-              className="grid h-8 w-8 place-items-center rounded-lg border border-bleu-hero bg-white text-[#1e3a8a]"
-              aria-label="Voir les commandes du client"
-            >
-              <ChevronRight className={`h-4 w-4 transition ${ouvert ? "rotate-90" : ""}`} />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={(evenement) => {
+              evenement.stopPropagation();
+              onOuvrir();
+            }}
+            className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-semibold ${
+              ouvert
+                ? "border-[#1e3a8a] bg-[#1e3a8a] text-white"
+                : "border-bleu-hero bg-white text-[#1e3a8a]"
+            }`}
+            aria-label={ouvert ? "Masquer les dossiers" : "Tous les dossiers"}
+            aria-expanded={ouvert}
+          >
+            <ChevronRight className={`h-3.5 w-3.5 transition ${ouvert ? "rotate-90" : ""}`} />
+            <span className="hidden sm:inline">{ouvert ? "Masquer" : "Dossiers"}</span>
+          </button>
         </td>
       </tr>
       {ouvert && (
@@ -577,9 +576,14 @@ function ClientRows({
           <td colSpan={9} className="px-4 py-4">
             <div className="rounded-2xl border border-bleu-hero bg-white">
               <div className="flex items-center justify-between border-b border-bleu-hero px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {groupe.commandes.length} commande(s)
-                </p>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Tous les dossiers ({groupe.commandes.length})
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Visites et dossiers des commandes en ligne — n° client {groupe.numeroClient}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={onSelectionnerToutes}

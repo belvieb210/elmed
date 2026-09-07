@@ -357,7 +357,10 @@ export async function obtenirClientAdmin(requete: RequeteAuthentifiee, reponse: 
 
 export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, reponse: Response) {
   const commandes = await baseDeDonnees.commande.findMany({
-    where: { statut: { notIn: ["ANNULEE", "REFUSEE"] } },
+    where: {
+      statut: { notIn: ["ANNULEE", "REFUSEE"] },
+      OR: [{ origine: "SUR_SITE" }, { numeroRecu: { not: null } }],
+    },
     include: {
       client: true,
       lignes: true,
@@ -383,7 +386,7 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
         clientId: commande.clientId,
         numeroCommande: commande.numeroCommande,
         nomClient: nomClient(commande.client),
-        provenance: commande.numeroRecu ? "Administration" : "Boutique",
+        provenance: "Administration",
         nombreArticles: commande.lignes.reduce((somme, ligne) => somme + ligne.quantite, 0),
         montantTotal: total,
         montantPaye: paye,
@@ -397,21 +400,37 @@ export async function listerFacturesEnAttente(_requete: RequeteAuthentifiee, rep
     .filter((facture) => facture !== null);
 
   const dejaListes = [...new Set(factures.map((facture) => facture.clientId))];
+  // Clients enregistrés sur place, sans facture admin, et sans commandes en ligne
+  // (les commandes en ligne restent sur /admin/commandes).
   const clientsSansFacture = await baseDeDonnees.utilisateur.findMany({
     where: {
       role: "CLIENT",
       estInvite: false,
       ...(dejaListes.length > 0 ? { id: { notIn: dejaListes } } : {}),
-      commandes: {
-        none: {
-          statut: { notIn: ["ANNULEE", "REFUSEE"] },
-          OR: [
-            { numeroRecu: { not: null } },
-            { modeFacture: "AVANCE" },
-            { paiements: { some: { statut: "PARTIEL" } } },
-          ],
+      AND: [
+        {
+          commandes: {
+            none: {
+              statut: { notIn: ["ANNULEE", "REFUSEE"] },
+              OR: [
+                { origine: "SUR_SITE" },
+                { numeroRecu: { not: null } },
+                { modeFacture: "AVANCE" },
+                { paiements: { some: { statut: "PARTIEL" } } },
+              ],
+            },
+          },
         },
-      },
+        {
+          commandes: {
+            none: {
+              statut: { notIn: ["ANNULEE", "REFUSEE"] },
+              origine: "EN_LIGNE",
+              numeroRecu: null,
+            },
+          },
+        },
+      ],
     },
     orderBy: { dateCreation: "desc" },
     take: 40,
